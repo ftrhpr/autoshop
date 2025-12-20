@@ -6,20 +6,20 @@ $serverItems = isset($items) && is_array($items);
 function esc($s){ return htmlspecialchars((string)$s); }
 ?>
 <div class="w-full overflow-x-auto pb-8 print:pb-0 print:overflow-visible flex justify-center bg-gray-200/50 p-4 rounded-lg print:bg-white print:p-0">
-    <div class="bg-white p-8 shadow-xl print-no-shadow w-[210mm] min-w-[210mm] min-h-[297mm] a4-container print:w-full print:max-w-none print:min-w-0 print:p-4 mx-auto box-border text-black relative">
+    <div class="bg-white p-4 sm:p-6 lg:p-8 shadow-xl print-no-shadow w-full max-w-[210mm] min-w-0 min-h-[297mm] a4-container print:w-full print:max-w-none print:min-w-0 print:p-4 mx-auto box-border text-black invoice-container">
 
         <!-- Header -->
-        <div class="grid grid-cols-2 mb-4 gap-8 items-start">
-            <div class="text-sm space-y-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 mb-4 gap-4 sm:gap-8 items-start">
+            <div class="text-xs sm:text-sm space-y-1">
                 <div class="mb-2 text-slate-800">
-                    <img src="https://service.otoexpress.ge/wp-content/uploads/2023/08/cropped-otomotors.png" width="50%" alt="Logo">
+                    <img src="https://service.otoexpress.ge/wp-content/uploads/2023/08/cropped-otomotors.png" width="60%" alt="Logo" class="sm:w-1/2">
                 </div>
-                <p class="font-bold text-lg">ს.ს. თიბისი ბანკი</p>
+                <p class="font-bold text-base sm:text-lg">ს.ს. თიბისი ბანკი</p>
                 <p>ბანკის კოდი: <span class="font-mono">TBCBGE22</span></p>
                 <p>ა/ნ: <span class="font-mono">GE64TB7669336080100009</span></p>
             </div>
-            <div class="text-sm space-y-1 text-right">
-                <p class="font-bold text-lg">შპს "ოტო მოტორს ჰოლდესი"</p>
+            <div class="text-xs sm:text-sm space-y-1 text-left sm:text-right">
+                <p class="font-bold text-base sm:text-lg">შპს "ოტო მოტორს ჰოლდესი"</p>
                 <p>ს/კ: <span class="font-mono">406239887</span></p>
                 <p>მის: აღმაშენებლის ხეივანი მე-13 კმ.</p>
             </div>
@@ -28,9 +28,9 @@ function esc($s){ return htmlspecialchars((string)$s); }
         <hr class="border-2 border-black mb-4" />
 
         <!-- Info Grid -->
-        <div class="grid grid-cols-2 gap-x-12 gap-y-2 mb-4 text-sm">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 mb-4 text-xs sm:text-sm info-grid">
             <!-- Left -->
-            <div class="grid grid-cols-[150px_1fr] gap-2 items-center">
+            <div class="grid grid-cols-[120px_1fr] sm:grid-cols-[150px_1fr] gap-2 items-center info-section">
                 <div class="font-bold whitespace-nowrap">შემოსვლის დრო:</div>
                 <?php if ($server): ?>
                     <div class="border-b border-black px-2 h-6 flex items-center"><?php echo esc($invoice['creation_date']); ?></div>
@@ -68,7 +68,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
             </div>
 
             <!-- Right -->
-            <div class="grid grid-cols-[200px_1fr] gap-2 items-center">
+            <div class="grid grid-cols-[160px_1fr] sm:grid-cols-[200px_1fr] gap-2 items-center info-section">
                 <div class="font-bold whitespace-nowrap">სერვისის დაწყების დრო:</div>
                 <div class="border-b border-black px-2 h-6 flex items-center"></div>
 
@@ -107,7 +107,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
 
 
         <!-- Table -->
-        <div class="mb-2">
+        <div class="mb-2 overflow-x-auto">
 <?php if ($server && $serverItems):
     $computedParts = 0.0;
     $computedSvc = 0.0;
@@ -120,17 +120,17 @@ function esc($s){ return htmlspecialchars((string)$s); }
     }
     $computedGrand = $computedParts + $computedSvc;
 endif; ?>
-            <table class="w-full text-[8px] border-collapse border border-black">
+            <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse border border-black min-w-[600px]">
                 <thead>
                     <tr class="bg-gray-200 print:bg-gray-200">
-                        <th class="border border-black p-0.5 w-8 text-center">#</th>
-                        <th class="border border-black p-0.5 text-left">ნაწილის და სერვისის დასახელება</th>
-                        <th class="border border-black p-0.5 w-12 text-center">რაოდ.</th>
-                        <th class="border border-black p-0.5 w-20 text-right">ფასი ნაწილი</th>
-                        <th class="border border-black p-0.5 w-20 text-right">თანხა</th>
-                        <th class="border border-black p-0.5 w-20 text-right">ფასი სერვისი</th>
-                        <th class="border border-black p-0.5 w-20 text-right">თანხა</th>
-                        <th class="border border-black p-0.5 w-24 text-left">შემსრულებელი</th>
+                        <th class="border border-black p-0.5 w-6 sm:w-8 text-center">#</th>
+                        <th class="border border-black p-0.5 text-left min-w-[200px]">ნაწილის და სერვისის დასახელება</th>
+                        <th class="border border-black p-0.5 w-10 sm:w-12 text-center">რაოდ.</th>
+                        <th class="border border-black p-0.5 w-16 sm:w-20 text-right">ფასი ნაწილი</th>
+                        <th class="border border-black p-0.5 w-16 sm:w-20 text-right">თანხა</th>
+                        <th class="border border-black p-0.5 w-16 sm:w-20 text-right">ფასი სერვისი</th>
+                        <th class="border border-black p-0.5 w-16 sm:w-20 text-right">თანხა</th>
+                        <th class="border border-black p-0.5 w-20 sm:w-24 text-left">შემსრულებელი</th>
                     </tr>
                 </thead>
                 <tbody <?php echo $server ? '' : 'id="preview-table-body"'; ?>>
@@ -141,7 +141,7 @@ endif; ?>
                             $qty = isset($it['qty']) ? (float)$it['qty'] : 0;
                             $pPart = isset($it['price_part']) ? (float)$it['price_part'] : 0;
                             $pSvc = isset($it['price_svc']) ? (float)$it['price_svc'] : 0;
-                            $tech = $it['tech'] ?? ''; 
+                            $tech = $it['tech'] ?? '';
 
                             $displayQty = $qty;
                             $displayPPart = $pPart > 0 ? number_format($pPart,2) : '';
@@ -201,22 +201,22 @@ endif; ?>
 
             <!-- Grand Total -->
             <div class="flex justify-end mt-1">
-                <div class="border border-black px-4 py-2 bg-yellow-100 print:bg-yellow-100 text-lg font-bold">
+                <div class="border border-black px-2 sm:px-4 py-2 bg-yellow-100 print:bg-yellow-100 text-sm sm:text-lg font-bold">
                     სულ გადასახდელი: <span id="out_grand_total"><?php $total = $server ? (float)($computedGrand ?? ($invoice['grand_total'] ?? 0)) : 0; echo $total > 0 ? number_format($total, 2) . ' ₾' : ''; ?></span>
-                    <input type="text" class="border-b border-black bg-transparent text-lg font-bold w-24 ml-2 text-center" placeholder="____" />
+                    <input type="text" class="border-b border-black bg-transparent text-sm sm:text-lg font-bold w-16 sm:w-24 ml-2 text-center" placeholder="____" />
                 </div>
             </div>
         </div>
 
         <!-- Legal Text -->
-        <div class="text-[8px] text-gray-600 space-y-1 mb-4 text-justify leading-tight">
+        <div class="text-[8px] sm:text-[10px] lg:text-[12px] text-gray-600 space-y-1 mb-4 text-justify leading-tight">
             <p><strong>შენიშვნა:</strong> კლიენტის მიერ მოწოდებული ნაწილის ხარისხზე და გამართულობაზე კომპანია არ აგებს პასუხს. მანქანის შეკეთებისას თუ კლიენტი გადაწყვეტს ნაწილის მოწოდებას, ვალდებულია ნაწილი მოაწოდოს სერვისს არაუგვიანეს 2 სამუშაო დღისა, წინააღმდეგ შემთხვევაში машина გადაინაცვლებს კომპანიის ავტოსადგომზე, რა შემთხვევაშიც მანქანის დგომის დღიური საფასური იქნება 10 ლარი. თუ შენიშვნის ველში გარანტიის ვადა არ არის მითითებული გარანტია არ ვრცელდება. წინამდებარე დოკუმენტზე ხელმოწერით კლიენტი ადასტურებს რომ კომპანიის მიმართ პრეტენზია არ გააჩნია.</p>
             <p><strong>საგარანტიო პირობები:</strong> 1. აალების სანთლების საგარანტიო ვადა განისაზღვრება კილომეტრაჟით, რომელიც შეადგენს 1000 კმ-ს. 2. სამუხრუჭე ხუნდების საგარანტიო ვადა განისაზღვრება მონტაჟიდან 7 დღის ვადით.</p>
             <p class="italic mt-2">Oneclub: საიდან გაიგეთ ჩვენს შესახებ? ________________________</p>
         </div>
 
         <!-- Signatures -->
-        <div class="grid grid-cols-2 gap-20 mt-4 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-20 mt-4 text-xs sm:text-sm">
             <div class="border-t border-black pt-2 text-center">მენეჯერის ხელმოწერა</div>
             <div class="border-t border-black pt-2 text-center">კლიენტის ხელმოწერა</div>
         </div>
