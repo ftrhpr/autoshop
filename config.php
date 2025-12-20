@@ -9,6 +9,8 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    // Use native prepared statements so numeric LIMIT/OFFSET params are not quoted
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
@@ -17,20 +19,13 @@ try {
 session_start();
 
 // Permission helpers
-function roleHasPermission($pdo, $role, $permissionName) {
-    // Backwards-compatible: no strict type hints or return types
-    try {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role = ? AND p.name = ?");
-        $stmt->execute([$role, $permissionName]);
-        return (int)$stmt->fetchColumn() > 0;
-    } catch (Exception $e) {
-        // If permissions table doesn't exist yet, treat as false (pre-seed state)
-        error_log('Permission check failed: ' . $e->getMessage());
-        return false;
-    }
+function roleHasPermission(PDO $pdo, string $role, string $permissionName): bool {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role = ? AND p.name = ?");
+    $stmt->execute([$role, $permissionName]);
+    return (int)$stmt->fetchColumn() > 0;
 }
 
-function currentUserCan($permissionName) {
+function currentUserCan(string $permissionName): bool {
     global $pdo;
     if (!isset($_SESSION['role'])) return false;
     $role = $_SESSION['role'];

@@ -48,7 +48,11 @@ $offset = ($page - 1) * $perPage;
 
 if ($search !== '') {
     $stmt = $pdo->prepare("SELECT id, username, role, created_at FROM users WHERE username LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?");
-    $stmt->execute(["%$search%", $perPage, $offset]);
+    // Bind types explicitly to avoid numeric values being quoted
+    $stmt->bindValue(1, "%$search%", PDO::PARAM_STR);
+    $stmt->bindValue(2, (int)$perPage, PDO::PARAM_INT);
+    $stmt->bindValue(3, (int)$offset, PDO::PARAM_INT);
+    $stmt->execute();
     $users = $stmt->fetchAll();
 
     $countStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username LIKE ?");
@@ -56,7 +60,9 @@ if ($search !== '') {
     $totalMatched = (int)$countStmt->fetchColumn();
 } else {
     $stmt = $pdo->prepare("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?");
-    $stmt->execute([$perPage, $offset]);
+    $stmt->bindValue(1, (int)$perPage, PDO::PARAM_INT);
+    $stmt->bindValue(2, (int)$offset, PDO::PARAM_INT);
+    $stmt->execute();
     $users = $stmt->fetchAll();
 
     $totalMatched = $totalUsers;
