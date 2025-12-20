@@ -99,6 +99,7 @@ if (!isset($_SESSION['user_id'])) {
                                 <div>
                                     <label class="block text-sm font-medium text-gray-600 mb-1">Service Manager (სერვისის მენეჯერი)</label>
                                     <input type="text" id="input_service_manager" placeholder="Manager Name" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 p-3 border text-base">
+                                    <input type="hidden" id="input_service_manager_id" name="service_manager_id">
                                 </div>
                             </div>
                         </div>
@@ -113,6 +114,7 @@ if (!isset($_SESSION['user_id'])) {
                                 <div>
                                     <label class="block text-sm font-medium text-gray-600 mb-1">Customer Name (კლიენტი)</label>
                                     <input type="text" id="input_customer_name" placeholder="First Last Name" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border text-base">
+                                    <input type="hidden" id="input_customer_id" name="customer_id">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-600 mb-1">Phone Number (ტელეფონი)</label>
@@ -319,6 +321,16 @@ if (!isset($_SESSION['user_id'])) {
             for(let i=0; i<4; i++) addItemRow();
             calculateTotals();
 
+            // Prefill service manager with current logged in user
+            <?php if (isset($_SESSION['username'])): ?>
+                const smInput = document.getElementById('input_service_manager');
+                const smIdInput = document.getElementById('input_service_manager_id');
+                if (smInput) {
+                    smInput.value = <?php echo json_encode($_SESSION['username']); ?>;
+                    if (smIdInput) smIdInput.value = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
+                }
+            <?php endif; ?>
+
             // Auto-fill customer fields when plate number loses focus
             const plateInput = document.getElementById('input_plate_number');
             if (plateInput) {
@@ -332,9 +344,80 @@ if (!isset($_SESSION['user_id'])) {
                             document.getElementById('input_customer_name').value = data.full_name || '';
                             document.getElementById('input_phone_number').value = data.phone || '';
                             document.getElementById('input_car_mark').value = data.car_mark || '';
+                            const cid = document.getElementById('input_customer_id'); if (cid) cid.value = data.id || '';
                         }).catch(e => {
                             // ignore errors
                         });
+                });
+            }
+
+            // Typeahead for service manager and customers
+            function debounce(fn, wait=250) {
+                let t;
+                return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+            }
+
+            function attachTypeahead(input, endpoint, formatItem, onSelect) {
+                const box = document.createElement('div');
+                box.className = 'absolute bg-white border rounded mt-1 shadow z-50 w-full';
+                box.style.maxHeight = '220px';
+                box.style.overflow = 'auto';
+                input.parentElement.style.position = 'relative';
+                input.parentElement.appendChild(box);
+
+                input.addEventListener('input', debounce(async () => {
+                    const q = input.value.trim();
+                    if (!q) { box.innerHTML = ''; return; }
+                    try {
+                        const res = await fetch(endpoint + encodeURIComponent(q));
+                        const list = await res.json();
+                        box.innerHTML = list.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                        box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
+                            const item = JSON.parse(el.getAttribute('data-json'));
+                            onSelect(item);
+                            box.innerHTML = '';
+                        }));
+                    } catch (e) {
+                        box.innerHTML = '';
+                    }
+                }));
+
+                document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) box.innerHTML = ''; });
+            }
+
+            // Attach service manager typeahead
+            const sm = document.getElementById('input_service_manager');
+            if (sm) {
+                attachTypeahead(sm, 'admin/api_users.php?q=', u => u.username, (it) => {
+                    sm.value = it.username;
+                    const hid = document.getElementById('input_service_manager_id'); if (hid) hid.value = it.id;
+                });
+            }
+
+            // Attach customer name typeahead
+            const cn = document.getElementById('input_customer_name');
+            if (cn) {
+                attachTypeahead(cn, 'admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
+                    cn.value = it.full_name || '';
+                    document.getElementById('input_phone_number').value = it.phone || '';
+                    document.getElementById('input_plate_number').value = it.plate_number || '';
+                    const cid = document.getElementById('input_customer_id'); if (cid) cid.value = it.id;
+                });
+            }
+
+            // Attach phone lookup (exact match)
+            const ph = document.getElementById('input_phone_number');
+            if (ph) {
+                ph.addEventListener('blur', () => {
+                    const val = ph.value.trim(); if (!val) return;
+                    fetch('admin/api_customers.php?phone=' + encodeURIComponent(val))
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data) return;
+                            document.getElementById('input_customer_name').value = data.full_name || '';
+                            document.getElementById('input_plate_number').value = data.plate_number || '';
+                            const cid = document.getElementById('input_customer_id'); if (cid) cid.value = data.id;
+                        }).catch(e=>{});
                 });
             }
         });

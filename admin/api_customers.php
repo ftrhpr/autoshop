@@ -28,10 +28,18 @@ if ($plate) {
 }
 
 if ($q) {
-    $stmt = $pdo->prepare('SELECT id, full_name, plate_number FROM customers WHERE plate_number LIKE ? OR full_name LIKE ? LIMIT 20');
-    $stmt->execute(["%$q%","%$q%"]);
+    $stmt = $pdo->prepare('SELECT id, full_name, plate_number, phone FROM customers WHERE plate_number LIKE ? OR full_name LIKE ? OR phone LIKE ? LIMIT 20');
+    $stmt->execute(["%$q%","%$q%","%$q%"]);
     $rows = $stmt->fetchAll();
     echo json_encode($rows);
+    exit;
+}
+
+if ($phone) {
+    $stmt = $pdo->prepare('SELECT id, full_name, plate_number, phone FROM customers WHERE phone = ? LIMIT 1');
+    $stmt->execute([trim($phone)]);
+    $row = $stmt->fetch();
+    echo json_encode($row ?: null);
     exit;
 }
 
