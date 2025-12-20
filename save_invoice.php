@@ -81,6 +81,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $serviceManagerName = $_SESSION['username'];
     }
 
+    // Calculate totals from items if not provided or invalid
+    $partsTotal = 0.00;
+    $serviceTotal = 0.00;
+    $grandTotal = 0.00;
+
+    foreach ($items as $item) {
+        $qty = (float)($item['qty'] ?? 0);
+        $pricePart = (float)($item['price_part'] ?? 0);
+        $priceSvc = (float)($item['price_svc'] ?? 0);
+
+        $partsTotal += $qty * $pricePart;
+        $serviceTotal += $qty * $priceSvc;
+    }
+    $grandTotal = $partsTotal + $serviceTotal;
+
+    // Use calculated values if POST values are empty or invalid
+    $providedPartsTotal = isset($data['parts_total']) && is_numeric($data['parts_total']) ? (float)$data['parts_total'] : null;
+    $providedServiceTotal = isset($data['service_total']) && is_numeric($data['service_total']) ? (float)$data['service_total'] : null;
+    $providedGrandTotal = isset($data['grand_total']) && is_numeric($data['grand_total']) ? (float)$data['grand_total'] : null;
+
+    // Use provided values if they match calculations (within small tolerance), otherwise use calculated
+    $finalPartsTotal = ($providedPartsTotal !== null && abs($providedPartsTotal - $partsTotal) < 0.01) ? $providedPartsTotal : $partsTotal;
+    $finalServiceTotal = ($providedServiceTotal !== null && abs($providedServiceTotal - $serviceTotal) < 0.01) ? $providedServiceTotal : $serviceTotal;
+    $finalGrandTotal = ($providedGrandTotal !== null && abs($providedGrandTotal - $grandTotal) < 0.01) ? $providedGrandTotal : $grandTotal;
+
     $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $data['creation_date'],
@@ -93,9 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data['plate_number'],
         $data['mileage'],
         json_encode($items),
-        $data['parts_total'],
-        $data['service_total'],
-        $data['grand_total'],
+        $finalPartsTotal,
+        $finalServiceTotal,
+        $finalGrandTotal,
         $_SESSION['user_id']
     ]);
 

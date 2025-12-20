@@ -152,7 +152,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         
         <!-- ================= EDIT MODE ================= -->
         <div id="edit-mode" class="block print-hidden animate-fade-in">
-            <form id="invoice-form" action="save_invoice.php" method="post" onsubmit="return prepareData()" role="form" aria-label="Invoice form">
+            <form id="invoice-form" action="save_invoice.php" method="post" onsubmit="return handleSave()" role="form" aria-label="Invoice form">
                 <input type="hidden" name="creation_date" id="hidden_creation_date">
                 <input type="hidden" name="service_manager" id="hidden_service_manager">
                 <input type="hidden" name="customer_name" id="hidden_customer_name">
@@ -608,11 +608,16 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 svcTotal += (qty * pSvc);
             });
 
+            // Ensure totals are valid numbers
+            partTotal = isNaN(partTotal) ? 0 : partTotal;
+            svcTotal = isNaN(svcTotal) ? 0 : svcTotal;
+            const grandTotal = partTotal + svcTotal;
+
             document.getElementById('display_parts_total').innerText = partTotal.toFixed(2);
             document.getElementById('display_service_total').innerText = svcTotal.toFixed(2);
-            document.getElementById('display_grand_total').innerText = (partTotal + svcTotal).toFixed(2) + ' ₾';
+            document.getElementById('display_grand_total').innerText = grandTotal.toFixed(2) + ' ₾';
 
-            return { partTotal, svcTotal, grandTotal: partTotal + svcTotal };
+            return { partTotal, svcTotal, grandTotal };
         }
 
         function switchTab(tab) {
@@ -772,9 +777,15 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             document.getElementById('hidden_plate_number').value = document.getElementById('input_plate_number').value;
             document.getElementById('hidden_mileage').value = document.getElementById('input_mileage').value;
             const totals = calculateTotals();
-            document.getElementById('hidden_parts_total').value = totals.partTotal.toFixed(2);
-            document.getElementById('hidden_service_total').value = totals.svcTotal.toFixed(2);
-            document.getElementById('hidden_grand_total').value = totals.grandTotal.toFixed(2);
+
+            // Ensure totals are valid numbers, default to 0.00 if NaN
+            const partsTotal = isNaN(totals.partTotal) ? 0.00 : totals.partTotal;
+            const serviceTotal = isNaN(totals.svcTotal) ? 0.00 : totals.svcTotal;
+            const grandTotal = isNaN(totals.grandTotal) ? 0.00 : totals.grandTotal;
+
+            document.getElementById('hidden_parts_total').value = partsTotal.toFixed(2);
+            document.getElementById('hidden_service_total').value = serviceTotal.toFixed(2);
+            document.getElementById('hidden_grand_total').value = grandTotal.toFixed(2);
 
             // Ensure service manager is set (prevent empty)
             const smEl = document.getElementById('input_service_manager');
@@ -803,9 +814,39 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             return true;
         }
 
-        function handlePrint() {
-            document.getElementById('print_after_save').value = '1';
-            document.getElementById('invoice-form').submit();
+        function handleSave() {
+            // Basic validation before preparing data
+            const customerName = document.getElementById('input_customer_name').value.trim();
+            const serviceManager = document.getElementById('input_service_manager').value.trim();
+
+            if (!customerName) {
+                alert('Please enter a customer name.');
+                document.getElementById('input_customer_name').focus();
+                return false;
+            }
+
+            if (!serviceManager) {
+                alert('Please enter a service manager.');
+                document.getElementById('input_service_manager').focus();
+                return false;
+            }
+
+            // Check if there are any items
+            const itemRows = document.querySelectorAll('.item-row');
+            let hasValidItem = false;
+            itemRows.forEach(row => {
+                const name = row.querySelector('.item-name').value.trim();
+                if (name) {
+                    hasValidItem = true;
+                }
+            });
+
+            if (!hasValidItem) {
+                alert('Please add at least one service or part item.');
+                return false;
+            }
+
+            return prepareData();
         }
     </script>
 </body>
