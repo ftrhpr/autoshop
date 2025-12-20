@@ -51,6 +51,13 @@ $items = json_decode($invoice['items'], true);
                     <p><strong>Service Manager:</strong> <?php echo htmlspecialchars($invoice['service_manager']); ?><?php echo !empty($smu['username']) ? ' ('.$smu['username'].')' : ''; ?></p>
                     <p><strong>Customer:</strong> <?php echo htmlspecialchars($invoice['customer_name']); ?></p>
                     <p><strong>Phone:</strong> <?php echo htmlspecialchars($invoice['phone']); ?></p>
+                    <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                        <p><strong>FINA Status:</strong>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo !empty($invoice['opened_in_fina']) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                                <?php echo !empty($invoice['opened_in_fina']) ? 'Opened in FINA' : 'Not Opened'; ?>
+                            </span>
+                        </p>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <p><strong>Car:</strong> <?php echo htmlspecialchars($invoice['car_mark']); ?></p>

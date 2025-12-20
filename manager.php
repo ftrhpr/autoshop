@@ -66,6 +66,14 @@ if ($maxTotal !== '' && is_numeric($maxTotal)) {
     $filters[] = 'i.grand_total <= ?';
     $params[] = (float)$maxTotal;
 }
+$finaStatus = trim($_GET['fina_status'] ?? '');
+if ($finaStatus !== '') {
+    if ($finaStatus === 'opened') {
+        $filters[] = 'i.opened_in_fina = 1';
+    } elseif ($finaStatus === 'not_opened') {
+        $filters[] = 'i.opened_in_fina = 0';
+    }
+}
 
 // Compose SQL
 $sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
@@ -129,6 +137,14 @@ $resultsCount = count($invoices);
                 <label class="block text-xs font-medium text-gray-600">VIN</label>
                 <input type="text" name="vin" value="<?php echo htmlspecialchars($_GET['vin'] ?? ''); ?>" placeholder="VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
             </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600">FINA Status</label>
+                <select name="fina_status" class="mt-1 block w-full rounded border-gray-200 p-2">
+                    <option value="">All</option>
+                    <option value="opened" <?php echo ($_GET['fina_status'] ?? '') === 'opened' ? 'selected' : ''; ?>>Opened in FINA</option>
+                    <option value="not_opened" <?php echo ($_GET['fina_status'] ?? '') === 'not_opened' ? 'selected' : ''; ?>>Not Opened</option>
+                </select>
+            </div>
             <div class="flex gap-2">
                 <div class="flex-1">
                     <label class="block text-xs font-medium text-gray-600">Min Total</label>
@@ -159,6 +175,7 @@ $resultsCount = count($invoices);
                         <th class="px-2 md:px-4 py-2 text-left">Service Manager</th>
                         <th class="px-2 md:px-4 py-2 text-right">Total</th>
                         <th class="px-2 md:px-4 py-2 text-left">Created At</th>
+                        <th class="px-2 md:px-4 py-2 text-center">FINA</th>
                         <th class="px-2 md:px-4 py-2 text-center">Actions</th>
                     </tr>
                 </thead>
@@ -175,6 +192,12 @@ $resultsCount = count($invoices);
                         <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo htmlspecialchars($invoice['sm_username'] ?? ''); ?></td>
                         <td class="px-2 md:px-4 py-2 text-right"><?php echo $invoice['grand_total']; ?> ₾</td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo $invoice['created_at']; ?></td>
+                        <td class="px-2 md:px-4 py-2 text-center">
+                            <input type="checkbox"
+                                   class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+                                   data-invoice-id="<?php echo $invoice['id']; ?>"
+                                   <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
+                        </td>
                         <td class="px-2 md:px-4 py-2 text-center">
                             <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
                             <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
@@ -193,5 +216,55 @@ $resultsCount = count($invoices);
             <div class="mt-4 text-sm text-gray-500">No invoices match the current filters.</div>
         <?php endif; ?>
     </div>
+
+    <script>
+        // Handle FINA checkbox changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const finaCheckboxes = document.querySelectorAll('.fina-checkbox');
+
+            finaCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const invoiceId = this.dataset.invoiceId;
+                    const isChecked = this.checked;
+
+                    // Show loading state
+                    this.disabled = true;
+                    const originalOpacity = this.style.opacity;
+                    this.style.opacity = '0.5';
+
+                    // Send AJAX request
+                    fetch('update_fina_status.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            invoice_id: invoiceId,
+                            opened_in_fina: isChecked ? 1 : 0
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            // Revert checkbox on error
+                            this.checked = !isChecked;
+                            alert('Failed to update FINA status: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        // Revert checkbox on error
+                        this.checked = !isChecked;
+                        alert('Error updating FINA status: ' + error.message);
+                        console.error('FINA status update error:', error);
+                    })
+                    .finally(() => {
+                        // Restore original state
+                        this.disabled = false;
+                        this.style.opacity = originalOpacity;
+                    });
+                });
+            });
+        });
+    </script>
 </body>
 </html>
