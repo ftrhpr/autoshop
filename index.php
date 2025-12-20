@@ -217,25 +217,24 @@ if (!isset($_SESSION['user_id'])) {
         // Store items state
         let rowCount = 0;
 
+        // Global defaults for service manager (prefill with current logged in user)
+        let smDefault = <?php echo json_encode($_SESSION['username'] ?? ''); ?>;
+        let smDefaultId = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
+
         // Initialize with 4 rows
         document.addEventListener('DOMContentLoaded', () => {
             for(let i=0; i<4; i++) addItemRow();
             calculateTotals();
 
-            // Prefill service manager with current logged in user
-            <?php if (isset($_SESSION['username'])): ?>
+            // Prefill service manager with current logged in user (use globals)
+            (function() {
                 const smInput = document.getElementById('input_service_manager');
                 const smIdInput = document.getElementById('input_service_manager_id');
-                const smDefault = <?php echo json_encode($_SESSION['username']); ?>;
-                const smDefaultId = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
                 if (smInput) {
-                    if (!smInput.value || smInput.value.trim() === '') smInput.value = smDefault;
-                    if (smIdInput && (!smIdInput.value || smIdInput.value == 0)) smIdInput.value = smDefaultId;
+                    if (!smInput.value || smInput.value.trim() === '') smInput.value = smDefault || '';
+                    if (smIdInput && (!smIdInput.value || smIdInput.value == 0) && smDefaultId) smIdInput.value = smDefaultId;
                 }
-            <?php else: ?>
-                const smDefault = '';
-                const smDefaultId = 0;
-            <?php endif; ?>
+            })();
 
             // API base for AJAX endpoints (handles subfolder installs)
             const apiBase = '<?php $appRoot = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'); if (basename($appRoot) === 'admin') $appRoot = dirname($appRoot); echo $appRoot === '/' ? '' : $appRoot; ?>';
@@ -418,6 +417,16 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         function updatePreviewData() {
+            // Ensure service manager fallback is set if empty
+            const smInput = document.getElementById('input_service_manager');
+            const smIdInput = document.getElementById('input_service_manager_id');
+            if (smInput && (!smInput.value || smInput.value.trim() === '')) {
+                smInput.value = smDefault || '';
+            }
+            if (smIdInput && (!smIdInput.value || smIdInput.value == 0) && smDefaultId) {
+                smIdInput.value = smDefaultId;
+            }
+
             // Map Inputs
             const map = {
                 'input_creation_date': 'out_creation_date',
