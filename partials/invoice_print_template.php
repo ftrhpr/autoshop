@@ -186,6 +186,7 @@ endif; ?>
             <div class="flex justify-end mt-2">
                 <div class="border border-black px-4 py-2 bg-yellow-100 print:bg-yellow-100 text-lg font-bold">
                     სულ გადასახდელი: <span id="out_grand_total"><?php $total = $server ? (float)($computedGrand ?? ($invoice['grand_total'] ?? 0)) : 0; echo $total > 0 ? number_format($total, 2) . ' ₾' : ''; ?></span>
+                    <input type="text" class="border-b border-black bg-transparent text-lg font-bold w-24 ml-2 text-center" placeholder="____" />
                 </div>
             </div>
         </div>
