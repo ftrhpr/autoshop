@@ -1,13 +1,27 @@
 <?php
+// Enable error logging for debugging
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/php_errors.log');
+error_reporting(E_ALL);
+
 // Set default timezone to Tbilisi
 date_default_timezone_set('Asia/Tbilisi');
 // Get current date in format required for datetime-local input (YYYY-MM-DDTHH:MM)
 $currentDate = date('Y-m-d\TH:i');
 
-// Debug: Check if PHP is working
 require 'config.php';
 
 if (!isset($_SESSION['user_id'])) {
+    // For debugging, show a simple error instead of redirect
+    if (isset($_GET['debug'])) {
+        echo "<div style='padding: 20px; background: #fee; border: 1px solid red; margin: 20px;'>";
+        echo "<h2>Debug Information</h2>";
+        echo "<p>Session user_id not set</p>";
+        echo "<p>Session data: " . json_encode($_SESSION) . "</p>";
+        echo "<p>Server: " . $_SERVER['HTTP_HOST'] . "</p>";
+        echo "</div>";
+        exit;
+    }
     header('Location: login.php');
     exit;
 }
@@ -18,6 +32,9 @@ $invoiceNotFound = false;
 if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
     $pid = (int)$_GET['print_id'];
     try {
+        if (!isset($pdo)) {
+            throw new Exception("Database connection not available");
+        }
         $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ? LIMIT 1');
         $stmt->execute([$pid]);
         $inv = $stmt->fetch();
@@ -62,7 +79,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         error_log("Database error loading invoice $pid: " . $e->getMessage());
         $invoiceNotFound = true;
     }
-} else {
+}
 ?>
 <!DOCTYPE html>
 <html lang="ka">
@@ -73,6 +90,12 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
     <!-- Tailwind CSS -->
     <link href="./dist/output.css" rel="stylesheet">
+    <style>
+        /* Fallback styles in case CSS fails to load */
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .error { color: red; padding: 20px; border: 1px solid red; background: #fee; }
+    </style>
     <style>
         /* Print Styles */
         @media print {

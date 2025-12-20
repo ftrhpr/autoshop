@@ -1,9 +1,19 @@
 <?php
 // Database configuration
-$host = 'localhost'; // Usually localhost for cPanel
-$dbname = 'otoexpre_managers'; // Replace with your database name
-$username = 'otoexpre_managers'; // Replace with your database username
-$password = '5[VMnC@C8-!Stou6'; // Replace with your database password
+// Check if we're on live server or localhost
+if ($_SERVER['HTTP_HOST'] === 'new.otoexpress.ge' || strpos($_SERVER['HTTP_HOST'], 'otoexpress.ge') !== false) {
+    // Live server configuration
+    $host = 'localhost'; // Usually localhost even on live servers
+    $dbname = 'otoexpre_managers'; // Update this for live database
+    $username = 'otoexpre_managers'; // Update this for live database
+    $password = '5[VMnC@C8-!Stou6'; // Update this for live database
+} else {
+    // Local development configuration
+    $host = 'localhost';
+    $dbname = 'otoexpre_managers';
+    $username = 'otoexpre_managers';
+    $password = '5[VMnC@C8-!Stou6';
+}
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
