@@ -86,7 +86,7 @@ $invoices = $stmt->fetchAll();
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
 
 
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto p-6 ml-0 md:ml-64">
         <!-- Analytics cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">

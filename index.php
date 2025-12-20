@@ -59,7 +59,7 @@ if (!isset($_SESSION['user_id'])) {
 
 
 
-    <main class="max-w-7xl mx-auto p-4 md:p-8 print:p-0 print:max-w-none">
+    <main class="max-w-7xl mx-auto p-4 md:p-8 print:p-0 print:max-w-none ml-0 md:ml-64">
         <div class="mb-4 print-hidden flex justify-end gap-2">
             <button onclick="switchTab('edit')" id="btn-edit" class="px-4 py-2 rounded-md transition-colors tab-active">Edit Details</button>
             <button onclick="switchTab('preview')" id="btn-preview" class="px-4 py-2 rounded-md transition-colors tab-inactive">Preview Invoice</button>

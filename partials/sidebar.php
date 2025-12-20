@@ -1,19 +1,23 @@
 <?php
 // Usage: include 'partials/sidebar.php';
-// Determine base path for links
-$base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
-if ($base === '/') $base = '';
-$current = basename($_SERVER['SCRIPT_NAME']);
+// Determine script directory and app root (handles subfolders)
+$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+if ($scriptDir === '/' || $scriptDir === '\\') $scriptDir = '';
+$parts = array_values(array_filter(explode('/', $scriptDir), 'strlen'));
+if (end($parts) === 'admin') array_pop($parts); // move up if currently in admin folder
+$appRoot = '/' . implode('/', $parts);
+if ($appRoot === '/') $appRoot = '';
 
 $menu = [
-    ['label' => 'Dashboard', 'href' => $base.'/admin/index.php', 'icon' => 'home', 'permission' => null],
-    ['label' => 'Invoices', 'href' => $base.'/manager.php', 'icon' => 'file-text', 'permission' => null],
-    ['label' => 'Customers', 'href' => $base.'/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
-    ['label' => 'Export CSV', 'href' => $base.'/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_csv'],
-    ['label' => 'Users', 'href' => $base.'/admin/index.php', 'icon' => 'user', 'permission' => 'manage_users'],
-    ['label' => 'Roles & Permissions', 'href' => $base.'/admin/permissions.php', 'icon' => 'shield', 'permission' => null],
-    ['label' => 'Audit Logs', 'href' => $base.'/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
+    ['label' => 'Dashboard', 'href' => $appRoot.'/admin/index.php', 'icon' => 'home', 'permission' => null],
+    ['label' => 'Invoices', 'href' => $appRoot.'/manager.php', 'icon' => 'file-text', 'permission' => null],
+    ['label' => 'Customers', 'href' => $appRoot.'/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
+    ['label' => 'Export CSV', 'href' => $appRoot.'/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_csv'],
+    ['label' => 'Users', 'href' => $appRoot.'/admin/index.php', 'icon' => 'user', 'permission' => 'manage_users'],
+    ['label' => 'Roles & Permissions', 'href' => $appRoot.'/admin/permissions.php', 'icon' => 'shield', 'permission' => null],
+    ['label' => 'Audit Logs', 'href' => $appRoot.'/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
 ];
+$logoutHref = $appRoot.'/logout.php';
 
 function svgIcon($name){
     $icons = [
@@ -41,11 +45,11 @@ function svgIcon($name){
                 if ($item['permission'] && !function_exists('currentUserCan')) continue;
                 if ($item['permission'] && !currentUserCan($item['permission'])) continue;
 
-                // Normalize href and collapse duplicate segments (fixes /admin/admin)
                 $raw = $item['href'];
                 if (preg_match('#^https?://#i', $raw)) {
                     $href = $raw;
                 } else {
+                    // Collapse duplicate segments and ensure leading slash
                     $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
                     $clean = [];
                     foreach ($parts as $p) {
@@ -64,7 +68,7 @@ function svgIcon($name){
         </nav>
 
         <div class="p-4 border-t border-slate-700">
-            <a href="<?php echo $base; ?>/logout.php" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
+            <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
         </div>
     </div>
 </div>
@@ -81,8 +85,8 @@ function svgIcon($name){
 </script>
 
 <style>
-    /* Ensure main content has left padding on md+ screens */
+    /* Ensure main content has left margin on md+ screens so sidebar doesn't overlap */
     @media (min-width: 768px) {
-        body { padding-left: 16rem; }
+        main, .container, .max-w-7xl { margin-left: 16rem; }
     }
 </style>

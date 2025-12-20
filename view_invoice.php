@@ -32,7 +32,7 @@ $items = json_decode($invoice['items'], true);
 </head>
 <body class="bg-gray-100 p-6">
     <?php include 'partials/sidebar.php'; ?>
-    <div class="container mx-auto">
+    <div class="container mx-auto ml-0 md:ml-64">
         <a href="manager.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back to Manager Panel</a>
 
         <div class="bg-white p-6 rounded-lg shadow-md">

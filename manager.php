@@ -21,7 +21,7 @@ $invoices = $stmt->fetchAll();
 <body class="bg-gray-100">
     <?php include 'partials/sidebar.php'; ?>
 
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto p-6 ml-0 md:ml-64">
         <h2 class="text-2xl font-bold mb-6">Invoice Management</h2>
 
         <table class="bg-white rounded-lg shadow-md w-full">

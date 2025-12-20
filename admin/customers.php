@@ -107,7 +107,7 @@ $totalPages = (int)ceil($total / $perPage);
 </head>
 <body class="bg-gray-100 p-6">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
-    <div class="container mx-auto">
+    <div class="container mx-auto ml-0 md:ml-64">
         <a href="index.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back</a>
 
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
