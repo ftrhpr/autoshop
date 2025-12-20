@@ -334,31 +334,65 @@ foreach ($invoices as $invoice) {
             let inFlight = false;
             let newInvoiceIds = new Set(); // Track new invoices that haven't been viewed
 
+        function initializeLiveUpdates() {
+            console.log('Initializing live updates...');
+            let lastTimestamp = null;
+            let pollingInterval = 10000; // 10 seconds for manager panel
+            let pollingTimer = null;
+            let inFlight = false;
+            let newInvoiceIds = new Set(); // Track new invoices that haven't been viewed
+
             function fetchLatestTimestamp() {
+                console.log('Fetching latest timestamp...');
                 return fetch('api_live_invoices.php', { cache: 'no-store' })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('fetchLatestTimestamp response:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('fetchLatestTimestamp data:', data);
                         if (data && data.success) {
                             lastTimestamp = data.latest_timestamp || null;
+                            console.log('Set lastTimestamp to:', lastTimestamp);
                         }
+                        return data;
                     })
-                    .catch(e => console.warn('fetchLatestTimestamp error', e));
+                    .catch(e => {
+                        console.warn('fetchLatestTimestamp error:', e);
+                        throw e;
+                    });
             }
 
             function pollForUpdates() {
-                if (inFlight) return;
+                if (inFlight) {
+                    console.log('Poll already in flight, skipping');
+                    return;
+                }
+                console.log('Polling for updates, lastTimestamp:', lastTimestamp);
                 inFlight = true;
 
                 const url = 'api_live_invoices.php' + (lastTimestamp ? ('?last_timestamp=' + encodeURIComponent(lastTimestamp)) : '');
+                console.log('Polling URL:', url);
+
                 fetch(url, { cache: 'no-store' })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('pollForUpdates response:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('pollForUpdates data:', data);
                         if (data && data.success && data.new_count > 0) {
+                            console.log('Found', data.new_count, 'new invoices');
                             handleNewInvoices(data.invoices);
                             lastTimestamp = data.latest_timestamp;
+                        } else {
+                            console.log('No new invoices found');
                         }
                     })
-                    .catch(e => console.warn('pollForUpdates error', e))
+                    .catch(e => {
+                        console.warn('pollForUpdates error:', e);
+                        // Don't rethrow - continue polling
+                    })
                     .finally(() => {
                         inFlight = false;
                     });
@@ -624,11 +658,16 @@ foreach ($invoices as $invoice) {
             }
 
             // Initialize
+            console.log('Starting live updates initialization...');
             initializeRecentInvoices(); // Mark recent invoices as new
             setupExistingRowEventListeners(); // Add event listeners to existing rows
             fetchLatestTimestamp().then(() => {
+                console.log('Initial timestamp fetched, starting polling...');
                 pollForUpdates();
                 pollingTimer = setInterval(pollForUpdates, pollingInterval);
+                console.log('Polling started with interval:', pollingInterval);
+            }).catch(e => {
+                console.error('Failed to initialize live updates:', e);
             });
 
             // Expose for debugging

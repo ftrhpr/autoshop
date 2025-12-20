@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Updates Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; word-wrap: break-word; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; }
+        .start { background: #28a745; color: white; }
+        .stop { background: #dc3545; color: white; }
+        .test { background: #007bff; color: white; }
+        .clear { background: #6c757d; color: white; }
+        .status { font-weight: bold; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .running { background: #d4edda; color: #155724; }
+        .stopped { background: #f8d7da; color: #721c24; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .log-entry { font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Live Updates Debug Tool</h1>
+
+    <div id="status" class="status stopped">Status: Stopped</div>
+
+    <div>
+        <button class="start" onclick="startPolling()">Start Polling</button>
+        <button class="stop" onclick="stopPolling()">Stop Polling</button>
+        <button class="test" onclick="testAPIConnection()">Test API</button>
+        <button class="test" onclick="testAuthentication()">Test Auth</button>
+        <button class="test" onclick="manualPoll()">Manual Poll</button>
+        <button class="clear" onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div id="results"></div>
+
+    <h2>Polling Configuration</h2>
+    <p>Interval: <span id="interval">10000</span>ms | Last Timestamp: <span id="lastTimestamp">null</span> | In Flight: <span id="inFlight">false</span></p>
+
+    <h2>API Test</h2>
+    <input type="text" id="apiUrl" value="api_live_invoices.php" style="width: 300px; padding: 5px;">
+    <button onclick="testCustomAPI()">Test Custom URL</button>
+
+    <script>
+        let pollingTimer = null;
+        let lastTimestamp = null;
+        let pollingInterval = 10000;
+        let inFlight = false;
+        let isPolling = false;
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(message, type = 'info', data = null) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+
+            let content = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+
+            if (data) {
+                content += `<br><pre class="log-entry">${JSON.stringify(data, null, 2)}</pre>`;
+            }
+
+            div.innerHTML = content;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+
+            // Limit log entries to prevent memory issues
+            while (resultsDiv.children.length > 50) {
+                resultsDiv.removeChild(resultsDiv.firstChild);
+            }
+        }
+
+        function updateStatus() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${isPolling ? 'running' : 'stopped'}`;
+            statusDiv.textContent = `Status: ${isPolling ? 'Running' : 'Stopped'}`;
+
+            document.getElementById('interval').textContent = pollingInterval;
+            document.getElementById('lastTimestamp').textContent = lastTimestamp || 'null';
+            document.getElementById('inFlight').textContent = inFlight;
+        }
+
+        async function fetchLatestTimestamp() {
+            addResult('Fetching latest timestamp...', 'info');
+            inFlight = true;
+            updateStatus();
+
+            try {
+                const response = await fetch('api_live_invoices.php', {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                addResult(`API Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    addResult(`API Error Response: ${text}`, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                addResult('API Response Data:', 'info', data);
+
+                if (data.success) {
+                    lastTimestamp = data.latest_timestamp || null;
+                    addResult(`Updated lastTimestamp to: ${lastTimestamp}`, 'success');
+                } else {
+                    addResult(`API returned error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Network error: ${error.message}`, 'error');
+            } finally {
+                inFlight = false;
+                updateStatus();
+            }
+        }
+
+        async function pollForUpdates() {
+            if (inFlight || !isPolling) return;
+
+            addResult('Polling for updates...', 'info');
+            inFlight = true;
+            updateStatus();
+
+            try {
+                const url = 'api_live_invoices.php' + (lastTimestamp ? ('?last_timestamp=' + encodeURIComponent(lastTimestamp)) : '');
+                addResult(`Polling URL: ${url}`, 'info');
+
+                const response = await fetch(url, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                addResult(`Poll Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    addResult(`Poll Error Response: ${text}`, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                addResult('Poll Response Data:', 'info', data);
+
+                if (data.success && data.new_count > 0) {
+                    addResult(`Found ${data.new_count} new invoices!`, 'success');
+                    data.invoices.forEach(invoice => {
+                        addResult(`New invoice: ${invoice.id} - ${invoice.customer_name}`, 'success');
+                    });
+                    lastTimestamp = data.latest_timestamp;
+                    addResult(`Updated lastTimestamp to: ${lastTimestamp}`, 'success');
+                } else if (data.success) {
+                    addResult('No new invoices found', 'info');
+                } else {
+                    addResult(`Poll returned error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Poll network error: ${error.message}`, 'error');
+            } finally {
+                inFlight = false;
+                updateStatus();
+            }
+        }
+
+        function startPolling() {
+            if (isPolling) {
+                addResult('Polling already running', 'warning');
+                return;
+            }
+
+            addResult('Starting polling...', 'info');
+            isPolling = true;
+            updateStatus();
+
+            // Initial fetch
+            fetchLatestTimestamp().then(() => {
+                // Start polling
+                pollingTimer = setInterval(pollForUpdates, pollingInterval);
+                addResult(`Polling started with ${pollingInterval}ms interval`, 'success');
+            });
+        }
+
+        function stopPolling() {
+            if (!isPolling) {
+                addResult('Polling not running', 'warning');
+                return;
+            }
+
+            addResult('Stopping polling...', 'info');
+            isPolling = false;
+            if (pollingTimer) {
+                clearInterval(pollingTimer);
+                pollingTimer = null;
+            }
+            updateStatus();
+        }
+
+        async function testAPIConnection() {
+            addResult('Testing basic API connection...', 'info');
+            try {
+                const response = await fetch('api_live_invoices.php', { cache: 'no-store' });
+                addResult(`Basic API test - Status: ${response.status}`, response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('Basic API test - Response:', 'info', data);
+                } else {
+                    const text = await response.text();
+                    addResult(`Basic API test - Error: ${text}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Basic API test - Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuthentication() {
+            addResult('Testing authentication...', 'info');
+            try {
+                const response = await fetch('api_live_invoices.php', { cache: 'no-store' });
+                const data = await response.json();
+
+                if (response.status === 403) {
+                    addResult('Authentication failed - not logged in as manager/admin', 'error');
+                } else if (data.success) {
+                    addResult('Authentication successful', 'success');
+                } else {
+                    addResult(`Authentication check failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Authentication test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function manualPoll() {
+            addResult('Manual poll triggered', 'info');
+            await pollForUpdates();
+        }
+
+        async function testCustomAPI() {
+            const url = document.getElementById('apiUrl').value;
+            addResult(`Testing custom API: ${url}`, 'info');
+
+            try {
+                const response = await fetch(url, { cache: 'no-store' });
+                addResult(`Custom API Status: ${response.status}`, response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        addResult('Custom API Response:', 'info', data);
+                    } else {
+                        const text = await response.text();
+                        addResult(`Custom API Response (text): ${text}`, 'info');
+                    }
+                } else {
+                    const text = await response.text();
+                    addResult(`Custom API Error: ${text}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Custom API test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLogs() {
+            resultsDiv.innerHTML = '';
+            addResult('Logs cleared', 'info');
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            addResult('Live Updates Debug Tool loaded', 'info');
+            updateStatus();
+        });
+
+        // Expose functions globally for console testing
+        window.debugLiveUpdates = {
+            startPolling,
+            stopPolling,
+            pollForUpdates,
+            fetchLatestTimestamp,
+            testAPIConnection,
+            testAuthentication
+        };
+    </script>
+</body>
+</html>
