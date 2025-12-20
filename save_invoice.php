@@ -31,18 +31,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, car_mark = ?, plate_number = ? WHERE id = ?');
         $stmt->execute([$data['customer_name'], $data['phone_number'], $data['car_mark'], strtoupper(trim($data['plate_number'] ?? '')), $customer_id]);
     } else {
-        // No existing customer selected - always create a new customer
-        if (trim($data['customer_name']) !== '') {
-            $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
-            $stmt->execute([
-                $data['customer_name'],
-                $data['phone_number'],
-                strtoupper(trim($data['plate_number'] ?? '')),
-                $data['car_mark'],
-                $_SESSION['user_id']
-            ]);
-            $customer_id = $pdo->lastInsertId();
+        // No existing customer selected - create or find customer
+        $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
+        if (trim($data['customer_name']) !== '' && !empty($plateNumber)) {
+            // Check if customer with this plate number already exists
+            $stmt = $pdo->prepare('SELECT id, full_name FROM customers WHERE plate_number = ? LIMIT 1');
+            $stmt->execute([$plateNumber]);
+            $existingCustomer = $stmt->fetch();
+
+            if ($existingCustomer) {
+                // Use existing customer - update with new data
+                $customer_id = $existingCustomer['id'];
+                $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, car_mark = ? WHERE id = ?');
+                $stmt->execute([$data['customer_name'], $data['phone_number'], $data['car_mark'], $customer_id]);
+                error_log("Updated existing customer ID $customer_id with plate number $plateNumber");
+            } else {
+                // Create new customer
+                $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
+                $stmt->execute([
+                    $data['customer_name'],
+                    $data['phone_number'],
+                    $plateNumber,
+                    $data['car_mark'],
+                    $_SESSION['user_id']
+                ]);
+                $customer_id = $pdo->lastInsertId();
+                error_log("Created new customer ID $customer_id with plate number $plateNumber");
+            }
+        } elseif (trim($data['customer_name']) !== '') {
+            // Customer name provided but no plate number - this should not happen due to frontend validation
+            error_log("Attempted to save customer without plate number: " . json_encode($data));
+            throw new Exception('Plate number is required when creating a new customer. Please refresh the page and try again.');
         }
+        // If no customer name, customer_id remains null (invoice without customer)
     }
     // Resolve service manager display name when a user id is provided
     $serviceManagerName = $data['service_manager'] ?? '';

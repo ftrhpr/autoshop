@@ -1017,6 +1017,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             // Basic validation before preparing data
             const customerName = document.getElementById('input_customer_name').value.trim();
             const serviceManager = document.getElementById('input_service_manager').value.trim();
+            const customerId = document.getElementById('input_customer_id').value.trim();
+            const plateNumber = document.getElementById('input_plate_number').value.trim();
 
             if (!customerName) {
                 alert('Please enter a customer name.');
@@ -1027,6 +1029,13 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             if (!serviceManager) {
                 alert('Please enter a service manager.');
                 document.getElementById('input_service_manager').focus();
+                return false;
+            }
+
+            // If no customer is selected, plate number is required
+            if (!customerId && customerName && !plateNumber) {
+                alert('Please enter a plate number when creating a new customer.');
+                document.getElementById('input_plate_number').focus();
                 return false;
             }
 
