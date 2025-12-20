@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = $_POST;
 
-    // Process items
+    // Process itemss
     $items = [];
     for ($i = 0; isset($data["item_name_$i"]); $i++) {
         if (!empty($data["item_name_$i"])) {
