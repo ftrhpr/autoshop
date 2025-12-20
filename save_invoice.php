@@ -28,17 +28,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!empty($data['customer_id'])) {
         $customer_id = (int)$data['customer_id'];
         // Verify the customer still exists
-        $stmt = $pdo->prepare('SELECT plate_number FROM customers WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT full_name, phone, plate_number, car_mark FROM customers WHERE id = ? LIMIT 1');
         $stmt->execute([$customer_id]);
         $existing = $stmt->fetch();
         if (!$existing) {
             error_log("Selected customer ID $customer_id no longer exists");
             throw new Exception('The selected customer no longer exists. Please select a different customer or create a new one.');
         }
-        // If plate changed, treat as new customer
+        // If any info changed, treat as new customer
+        $currentName = trim($existing['full_name']);
+        $newName = trim($data['customer_name']);
+        $currentPhone = trim($existing['phone']);
+        $newPhone = trim($data['phone_number']);
         $currentPlate = strtoupper(trim($existing['plate_number']));
         $newPlate = strtoupper(trim($data['plate_number'] ?? ''));
-        if ($currentPlate !== $newPlate) {
+        $currentCar = trim($existing['car_mark']);
+        $newCar = trim($data['car_mark']);
+        if ($currentName !== $newName || $currentPhone !== $newPhone || $currentPlate !== $newPlate || $currentCar !== $newCar) {
             $customer_id = null; // Will create new below
         }
         // No update for existing customer
