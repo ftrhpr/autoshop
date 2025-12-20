@@ -109,6 +109,12 @@ $totalPages = (int)ceil($total / $perPage);
 <body class="bg-gray-100 p-6 overflow-x-hidden">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="w-full ml-0 md:ml-64 p-4 md:p-6">
+        <!-- Mobile menu button -->
+        <button id="openSidebar" class="md:hidden fixed top-4 left-4 z-50 bg-slate-800 text-white p-2 rounded-md shadow-lg">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
         <a href="index.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back</a>
 
         <div class="bg-white p-8 rounded-xl shadow-xl mb-6">
@@ -361,6 +367,14 @@ $totalPages = (int)ceil($total / $perPage);
                             `;
                         });
                 }
+
+                // Sidebar toggle
+                document.getElementById('openSidebar').addEventListener('click', function() {
+                    document.getElementById('site-sidebar').classList.remove('-translate-x-full');
+                });
+                document.getElementById('closeSidebar').addEventListener('click', function() {
+                    document.getElementById('site-sidebar').classList.add('-translate-x-full');
+                });
             </script>
         </div>
     </div>
