@@ -54,9 +54,9 @@ try {
 
         if (empty($phone)) continue; // Skip if no phone
 
-        // Ensure UTF-8
-        $full = mb_convert_encoding($full, 'UTF-8', mb_detect_encoding($full, ['UTF-8', 'Windows-1251', 'ISO-8859-1'], true) ?: 'UTF-8');
-        $phone = mb_convert_encoding($phone, 'UTF-8', mb_detect_encoding($phone, ['UTF-8', 'Windows-1251', 'ISO-8859-1'], true) ?: 'UTF-8');
+        // Assume input is UTF-8 (no conversion needed)
+        $full = trim($full);
+        $phone = trim($phone);
 
         // Check if exists by phone
         $select->execute([$phone]);
