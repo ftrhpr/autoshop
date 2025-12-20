@@ -79,6 +79,13 @@ try {
             continue;
         }
 
+        // Ensure UTF-8 encoding for Georgian support
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $data[$key] = mb_convert_encoding($value, 'UTF-8', mb_detect_encoding($value, ['UTF-8', 'Windows-1251', 'ISO-8859-1'], true) ?: 'UTF-8');
+            }
+        }
+
         $plate = strtoupper(trim($data['plate_number'] ?? ''));
         $phone = trim($data['phone'] ?? '');
         if ($phone === '') {

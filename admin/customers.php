@@ -155,7 +155,7 @@ $totalPages = (int)ceil($total / $perPage);
 
                     <form method="post" action="import_customers.php" enctype="multipart/form-data" class="bg-white p-4 rounded border mt-4">
                         <h4 class="font-semibold mb-2">Import Customers (CSV)</h4>
-                        <p class="text-xs text-gray-500 mb-2">Download the template and fill it. Required: full_name, phone. Optional: plate_number, email, car_mark, notes, last_service_at. Import will insert new customers or update existing ones by plate number or phone.</p>
+                        <p class="text-xs text-gray-500 mb-2">Download the template and fill it. Required: full_name, phone. Optional: plate_number, email, car_mark, notes, last_service_at. Import will insert new customers or update existing ones by plate number or phone. <strong>Ensure the CSV file is saved in UTF-8 encoding to support Georgian characters.</strong></p>
                         <a href="customers_import_template.csv" class="inline-block mb-2 text-blue-500 hover:underline">Download CSV template</a>
                         <input type="file" name="csv_file" accept=".csv" class="block mb-2">
                         <button type="submit" class="mt-1 bg-green-600 text-white px-4 py-2 rounded">Upload & Import</button>
