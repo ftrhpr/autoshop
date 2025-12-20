@@ -15,18 +15,35 @@ try {
 
     if (count($emptyPlateCustomers) > 1) {
         echo "\nMultiple customers with empty plate numbers found.\n";
-        echo "Keeping the first one (ID: {$emptyPlateCustomers[0]['id']}) and deleting the rest...\n";
+        echo "Checking which ones are referenced by invoices...\n";
 
-        // Keep the first customer, delete the rest
-        for ($i = 1; $i < count($emptyPlateCustomers); $i++) {
-            $id = $emptyPlateCustomers[$i]['id'];
-            echo "Deleting customer ID: $id\n";
+        // Check which customers are referenced by invoices
+        $referencedCustomers = [];
+        foreach ($emptyPlateCustomers as $customer) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM invoices WHERE customer_id = ?");
+            $stmt->execute([$customer['id']]);
+            $result = $stmt->fetch();
+            if ($result['count'] > 0) {
+                $referencedCustomers[] = $customer['id'];
+                echo "Customer ID {$customer['id']} is referenced by {$result['count']} invoices - keeping it\n";
+            } else {
+                echo "Customer ID {$customer['id']} is not referenced - can be deleted\n";
+            }
+        }
 
-            // Update any invoices that reference this customer to use the first customer
-            $stmt = $pdo->prepare("UPDATE invoices SET customer_id = ? WHERE customer_id = ?");
-            $stmt->execute([$emptyPlateCustomers[0]['id'], $id]);
+        if (count($referencedCustomers) > 0) {
+            echo "\nKeeping all referenced customers. Only deleting unreferenced ones...\n";
+            $customersToDelete = array_filter($emptyPlateCustomers, function($customer) use ($referencedCustomers) {
+                return !in_array($customer['id'], $referencedCustomers);
+            });
+        } else {
+            echo "\nNo customers are referenced. Keeping the first one and deleting the rest...\n";
+            $customersToDelete = array_slice($emptyPlateCustomers, 1);
+        }
 
-            // Delete the duplicate customer
+        foreach ($customersToDelete as $customer) {
+            $id = $customer['id'];
+            echo "Deleting unreferenced customer ID: $id\n";
             $stmt = $pdo->prepare("DELETE FROM customers WHERE id = ?");
             $stmt->execute([$id]);
         }

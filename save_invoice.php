@@ -27,9 +27,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $customer_id = null;
     if (!empty($data['customer_id'])) {
         $customer_id = (int)$data['customer_id'];
-        // Update existing customer with provided invoice data
-        $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, car_mark = ?, plate_number = ? WHERE id = ?');
-        $stmt->execute([$data['customer_name'], $data['phone_number'], $data['car_mark'], strtoupper(trim($data['plate_number'] ?? '')), $customer_id]);
+        // Verify the customer still exists
+        $stmt = $pdo->prepare('SELECT id FROM customers WHERE id = ? LIMIT 1');
+        $stmt->execute([$customer_id]);
+        if (!$stmt->fetch()) {
+            error_log("Selected customer ID $customer_id no longer exists");
+            throw new Exception('The selected customer no longer exists. Please select a different customer or create a new one.');
+        }
+        // Update existing customer with provided invoice data (don't update plate_number to avoid conflicts)
+        $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, car_mark = ? WHERE id = ?');
+        $stmt->execute([$data['customer_name'], $data['phone_number'], $data['car_mark'], $customer_id]);
     } else {
         // No existing customer selected - create or find customer
         $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
@@ -57,6 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 ]);
                 $customer_id = $pdo->lastInsertId();
                 error_log("Created new customer ID $customer_id with plate number $plateNumber");
+
+                // Verify the customer was actually created
+                if (!$customer_id) {
+                    throw new Exception('Failed to create new customer');
+                }
             }
         } elseif (trim($data['customer_name']) !== '') {
             // Customer name provided but no plate number - this should not happen due to frontend validation
@@ -103,6 +115,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $finalPartsTotal = ($providedPartsTotal !== null && abs($providedPartsTotal - $partsTotal) < 0.01) ? $providedPartsTotal : $partsTotal;
     $finalServiceTotal = ($providedServiceTotal !== null && abs($providedServiceTotal - $serviceTotal) < 0.01) ? $providedServiceTotal : $serviceTotal;
     $finalGrandTotal = ($providedGrandTotal !== null && abs($providedGrandTotal - $grandTotal) < 0.01) ? $providedGrandTotal : $grandTotal;
+
+    // Validate customer_id exists if provided
+    if ($customer_id !== null) {
+        $stmt = $pdo->prepare('SELECT id FROM customers WHERE id = ? LIMIT 1');
+        $stmt->execute([$customer_id]);
+        if (!$stmt->fetch()) {
+            error_log("Customer ID $customer_id does not exist in database");
+            throw new Exception('Invalid customer reference. Please try again.');
+        }
+    }
 
     $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
