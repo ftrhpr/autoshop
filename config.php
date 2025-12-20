@@ -25,19 +25,6 @@ try {
     die("Database connection failed: " . $e->getMessage());
 }
 
-// SQL Server Connection (for Windows Authentication)
-$sql_server_connection_info = [
-    "Database" => "autoshop_db",
-    "Uid" => "", // No username needed for Windows Authentication
-    "PWD" => ""  // No password needed for Windows Authentication
-];
-$sql_server_conn = sqlsrv_connect("localhost", $sql_server_connection_info);
-
-if ($sql_server_conn === false) {
-    // Log the error instead of dying, to not break the main app
-    error_log("SQL Server connection failed: " . print_r(sqlsrv_errors(), true));
-}
-
 // Start session
 session_start();
 

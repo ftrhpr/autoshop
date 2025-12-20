@@ -199,18 +199,12 @@ $resultsCount = count($invoices);
                                    <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline">View</a>
-                                <a href="index.php?edit_id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline">Edit</a>
-                                <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline" target="_blank">Print</a>
-                                <a href="transfer_invoice.php?invoice_id=<?php echo $invoice['id']; ?>" class="text-green-500 hover:underline" onclick="return confirm('Are you sure you want to transfer this invoice to SQL Server?')">Transfer</a>
-                                <?php if (currentUserCan('delete_invoice')): ?>
-                                <form method="post" onsubmit="return confirm('Are you sure?');">
-                                    <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>" />
-                                    <button type="submit" name="delete_invoice" class="text-red-500 hover:underline">Delete</button>
-                                </form>
-                                <?php endif; ?>
-                            </div>
+                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
+                            <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
+                            <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
+                                <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
+                                <button type="submit" name="delete_invoice" class="text-red-600 hover:underline text-xs md:text-sm">Delete</button>
+                            </form>
                         </td>
                     </tr>
                     <?php endforeach; ?>
