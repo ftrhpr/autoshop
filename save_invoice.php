@@ -192,28 +192,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['user_id']
         ]);
         $invoice_id = $pdo->lastInsertId();
-
-        // Create notifications for admins and managers
-        if ($invoice_id) {
-            try {
-                $stmt = $pdo->prepare("SELECT id FROM users WHERE role IN ('admin', 'manager')");
-                $stmt->execute();
-                $userIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-                if ($userIds) {
-                    $message = "New invoice #{$invoice_id} created by {$_SESSION['username']}.";
-                    $notificationStmt = $pdo->prepare("INSERT INTO notifications (user_id, invoice_id, message) VALUES (?, ?, ?)");
-                    foreach ($userIds as $userId) {
-                        // Don't notify the user who created the invoice
-                        if ($userId != $_SESSION['user_id']) {
-                            $notificationStmt->execute([$userId, $invoice_id, $message]);
-                        }
-                    }
-                }
-            } catch (PDOException $e) {
-                error_log('Failed to create notifications for new invoice ' . $invoice_id . ': ' . $e->getMessage());
-            }
-        }
     }
 
     // Handle deleted existing images

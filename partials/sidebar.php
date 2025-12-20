@@ -46,7 +46,17 @@ function svgIcon($name){
 <div class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform -translate-x-full md:translate-x-0 transition-transform duration-200" id="site-sidebar">
     <div class="h-full flex flex-col">
         <div class="p-4 border-b border-slate-700 flex items-center justify-between">
-            <div class="font-bold text-lg">AutoShop</div>
+            <div class="flex items-center gap-3">
+                <div class="font-bold text-lg">AutoShop</div>
+                <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                <div id="notif-root" class="relative">
+                    <button id="notifButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    </button>
+                    <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
+                </div>
+                <?php endif; ?>
+            </div>
             <button id="closeSidebar" class="md:hidden text-slate-300">✕</button>
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-1">
@@ -77,28 +87,6 @@ function svgIcon($name){
         </nav>
 
         <div class="p-4 border-t border-slate-700">
-            <?php if (isset($_SESSION['username'])): ?>
-            <div class="flex items-center justify-between mb-4">
-                <div class="text-sm text-slate-300">
-                    Logged in as: <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
-                </div>
-                <!-- Notification Bell -->
-                <div class="relative" id="notification-bell">
-                    <button onclick="toggleNotifications()" class="text-slate-300 hover:text-white">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                        <span id="notification-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-                    </button>
-                    <div id="notification-dropdown" class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-50 hidden">
-                        <div class="py-2 text-gray-700">
-                            <div class="px-4 py-2 font-semibold">Notifications</div>
-                            <div id="notification-list" class="max-h-64 overflow-y-auto">
-                                <!-- Notifications will be injected here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
             <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
         </div>
     </div>
@@ -107,8 +95,6 @@ function svgIcon($name){
 <!-- Mobile overlay and toggle -->
 <button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>
 
-<audio id="notification-sound" src="<?php echo $appRoot; ?>/assets/notification.mp3" preload="auto"></audio>
-
 <script>
     const sidebar = document.getElementById('site-sidebar');
     const toggle = document.getElementById('sidebarToggle');
@@ -116,69 +102,125 @@ function svgIcon($name){
     if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
     if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
 
-    function toggleNotifications() {
-        document.getElementById('notification-dropdown').classList.toggle('hidden');
-    }
+    // Notification system: polls server for new invoices and shows badge/toasts/sound
+    (function(){
+        const notifButton = document.getElementById('notifButton');
+        const notifBadge = document.getElementById('notifBadge');
+        let lastId = null;
+        let pollingInterval = 8000; // 8 seconds
+        let pollingTimer = null;
+        let inFlight = false;
 
-    function fetchNotifications() {
-        fetch('<?php echo $appRoot; ?>/admin/api_notifications.php?action=get_unread')
-            .then(response => response.json())
-            .then(data => {
-                const countEl = document.getElementById('notification-count');
-                const listEl = document.getElementById('notification-list');
-                const sound = document.getElementById('notification-sound');
-                
-                if (data.length > 0) {
-                    const currentCount = parseInt(countEl.textContent, 10);
-                    if (data.length > currentCount) {
-                        sound.play().catch(e => console.error("Audio play failed:", e));
-                    }
-
-                    countEl.textContent = data.length;
-                    countEl.classList.remove('hidden');
-                    listEl.innerHTML = '';
-
-                    data.forEach(notification => {
-                        const item = document.createElement('a');
-                        item.href = `<?php echo $appRoot; ?>/view_invoice.php?id=${notification.invoice_id}`;
-                        item.className = 'block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100';
-                        item.textContent = notification.message;
-                        item.onclick = (e) => {
-                            e.preventDefault();
-                            markAsRead(notification.id, item.href);
-                        };
-                        listEl.appendChild(item);
-                    });
-                } else {
-                    countEl.classList.add('hidden');
-                    listEl.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">No new notifications</div>';
-                }
-            })
-            .catch(error => console.error('Error fetching notifications:', error));
-    }
-
-    function markAsRead(id, redirectUrl) {
-        const formData = new FormData();
-        formData.append('id', id);
-
-        fetch('<?php echo $appRoot; ?>/admin/api_notifications.php?action=mark_as_read', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = redirectUrl;
+        function playBeep(){
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine';
+                o.frequency.value = 520;
+                o.connect(g);
+                g.connect(ctx.destination);
+                g.gain.value = 0.0001;
+                o.start();
+                // ramp up then down for a short click
+                g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+                setTimeout(()=>{
+                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.02);
+                    o.stop(ctx.currentTime + 0.03);
+                }, 150);
+            } catch (e) {
+                // fallback: silent
+                console.warn('Audio context failed', e);
             }
-        })
-        .catch(error => console.error('Error marking notification as read:', error));
-    }
+        }
 
-    // Fetch notifications every 30 seconds
-    setInterval(fetchNotifications, 30000);
-    // Initial fetch
-    fetchNotifications();
+        function showToast(text, invoiceId){
+            const container = document.createElement('div');
+            container.className = 'fixed top-20 right-6 z-50 max-w-sm bg-white border border-gray-200 rounded shadow-md p-3 text-sm cursor-pointer transition-opacity opacity-0';
+            container.style.transition = 'opacity 200ms ease';
+            container.innerHTML = `<div class="font-medium">${text}</div><div class="text-xs text-gray-500 mt-1">Click to open</div>`;
+            container.onclick = () => { window.open('view_invoice.php?id='+invoiceId, '_blank'); };
+            document.body.appendChild(container);
+            // small fade in
+            setTimeout(()=>{ container.classList.add('!opacity-100'); container.style.opacity = 1; }, 10);
+            setTimeout(()=>{ container.style.opacity = 0; setTimeout(()=>container.remove(), 400); }, 6000);
+        }
 
+        function showBrowserNotification(title, body, invoiceId){
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'granted'){
+                const n = new Notification(title, { body });
+                n.onclick = () => { window.focus(); window.open('view_invoice.php?id='+invoiceId, '_blank'); };
+            }
+        }
+
+        function updateBadge(count){
+            if (!notifBadge) return;
+            if (count <= 0){ notifBadge.classList.add('hidden'); notifBadge.textContent = '0'; }
+            else { notifBadge.classList.remove('hidden'); notifBadge.textContent = count > 99 ? '99+' : ''+count; }
+        }
+
+        async function fetchLatestId(){
+            try {
+                const res = await fetch('api_new_invoices.php', { cache: 'no-store' });
+                if (!res.ok) throw new Error('Network');
+                const data = await res.json();
+                if (data && data.success){
+                    lastId = data.latest_id || 0;
+                }
+            } catch (e) { console.warn('fetchLatestId error', e); }
+        }
+
+        async function poll(){
+            if (inFlight) return;
+            inFlight = true;
+            try {
+                const url = 'api_new_invoices.php' + (lastId ? ('?last_id=' + encodeURIComponent(lastId)) : '');
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Network');
+                const data = await res.json();
+                if (data && data.success){
+                    if (data.new_count && data.new_count > 0){
+                        // Update badge and show toasts
+                        updateBadge(parseInt(notifBadge.textContent || '0') + data.new_count);
+                        // Play sound once
+                        playBeep();
+                        // show browser notification for the most recent invoice
+                        const latestInvoice = data.invoices[data.invoices.length - 1];
+                        if (latestInvoice){
+                            const title = `New Invoice #${latestInvoice.id}`;
+                            const body = `${latestInvoice.customer_name || 'Unknown'} — ${latestInvoice.plate_number || ''} — ${latestInvoice.grand_total ? '$'+latestInvoice.grand_total : ''}`;
+                            showBrowserNotification(title, body, latestInvoice.id);
+                            // show a toast for latest invoice
+                            showToast(`${title}: ${latestInvoice.customer_name || ''}`, latestInvoice.id);
+                        }
+                        // keep lastId advanced
+                        lastId = data.latest_id || lastId;
+                    }
+                }
+            } catch (e) {
+                console.warn('poll error', e);
+            } finally {
+                inFlight = false;
+            }
+        }
+
+        // Initial setup
+        (function init(){
+            // Request Notification permission if not denied
+            if (window.Notification && Notification.permission === 'default'){
+                try { Notification.requestPermission(); } catch(e) {}
+            }
+            // fetch start id then start polling
+            fetchLatestId().then(()=>{ poll(); pollingTimer = setInterval(poll, pollingInterval); });
+        })();
+
+        // clicking bell opens manager panel
+        if (notifButton){ notifButton.addEventListener('click', ()=>{ window.location.href = 'manager.php'; }); }
+
+        // Expose for console debugging
+        window.__invoiceNotifications = { poll, fetchLatestId };
+    })();
 </script>
 
 <style>

@@ -92,6 +92,22 @@ For production deployment:
 3. Test thoroughly before committing
 4. Follow PHP and CSS best practices
 
+## Realtime Notifications (New)
+
+- Admins and managers will receive near-real-time notifications when a new invoice is created.
+- The system polls `api_new_invoices.php` every 8 seconds by default.
+- Notifications include a badge in the sidebar, a toast popup, an optional browser notification (requires permission), and a short beep sound generated via the Web Audio API.
+
+How to test:
+
+1. Open the app as a manager or admin (so the notification bell is visible).
+2. Create a new invoice in a separate browser window/tab using the New Invoice form.
+3. Within ~8 seconds the manager/admin view should show the badge and a toast and play the notification sound. A browser notification will appear if allowed.
+
+Developer shortcut: admins can trigger a test invoice via `admin/test_create_invoice.php` (POST/GET) which inserts a dummy invoice — this helps verifying notifications quickly.
+
+To customize polling interval or behavior, edit `partials/sidebar.php` and adjust `pollingInterval` inside the notification script.
+
 ## License
 
 ISC
