@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Debug session
+echo '<pre>'; var_dump($_SESSION); echo '</pre>'; die;
+
 // Support loading a saved invoice into the editor/preview for printing (index.php?print_id=123)
 $serverInvoice = null;
 if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
