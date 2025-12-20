@@ -68,7 +68,7 @@ if (!isset($_SESSION['user_id'])) {
                 </svg>
                 <span class="text-xl font-bold">AutoShop PHP</span>
                 <?php if ($_SESSION['role'] === 'admin'): ?>
-                    <a href="admin.php" class="text-yellow-400 hover:text-yellow-300 ml-4">Admin</a>
+                    <a href="admin/index.php" class="text-yellow-400 hover:text-yellow-300 ml-4">Admin</a>
                 <?php elseif ($_SESSION['role'] === 'manager'): ?>
                     <a href="manager.php" class="text-green-400 hover:text-green-300 ml-4">Manager</a>
                 <?php endif; ?>
