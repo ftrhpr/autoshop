@@ -51,71 +51,38 @@ $grandTotal = number_format((float)$invoice['grand_total'], 2);
     <style>
         /* Print Styles - Force A4 layout regardless of screen size */
         @media print {
-            @page {
-                margin: 3mm;
-                size: A4;
-            }
-            html, body {
-                height: 100%;
-                margin: 0 !important;
-                padding: 0 !important;
-                overflow: visible;
-                -webkit-print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
+            @page { margin: 5mm; size: A4; }
+            html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: visible; }
             .print-hidden { display: none !important; }
             .print-visible { display: block !important; }
             .print-no-shadow { box-shadow: none !important; }
 
-            /* Prevent page breaks */
-            .invoice-container,
-            .a4-container,
-            table,
-            tr,
-            td,
-            th {
-                page-break-inside: avoid !important;
-                page-break-before: avoid !important;
-                page-break-after: avoid !important;
-            }
-
-            /* Force single page */
-            @page {
-                size: A4;
-                margin: 3mm;
-            }
-
-            /* Force A4 container dimensions - optimized for single page */
+            /* Force A4 container dimensions */
             .a4-container {
-                width: 204mm !important; /* 210mm - 2*3mm margins */
-                min-width: 204mm !important;
-                max-width: 204mm !important;
-                min-height: 291mm !important; /* 297mm - 2*3mm margins */
-                max-height: 291mm !important;
-                padding: 6mm !important; /* Reduced padding for more content space */
+                width: 210mm !important;
+                min-width: 210mm !important;
+                max-width: 210mm !important;
+                min-height: 297mm !important;
+                padding: 8mm !important;
                 margin: 0 !important;
                 box-sizing: border-box !important;
-                overflow: visible !important;
             }
 
-            /* Compact padding for more content */
+            /* Override all responsive padding */
             .invoice-container {
-                padding: 0 !important;
-                margin: 0 !important;
+                padding: 8mm !important;
             }
 
-            /* Force desktop header layout - more compact */
+            /* Force desktop header layout */
             .invoice-container > div:first-child {
                 grid-template-columns: repeat(2, 1fr) !important;
-                gap: 1.5rem !important;
-                margin-bottom: 0.5rem !important;
+                gap: 2rem !important;
             }
 
-            /* Force desktop info grid layout - more compact */
+            /* Force desktop info grid layout */
             .info-grid {
                 grid-template-columns: 1fr 1fr !important;
-                gap: 2rem 1.5rem !important;
-                margin-bottom: 0.5rem !important;
+                gap: 3rem 2rem !important;
             }
 
             /* Force desktop info section layout */
@@ -126,95 +93,50 @@ $grandTotal = number_format((float)$invoice['grand_total'], 2);
                 grid-template-columns: 160px 1fr !important;
             }
 
-            /* Compact info fields */
-            .info-section .border-b {
-                height: 20px !important;
-                padding: 0 4px !important;
-                margin-bottom: 2px !important;
-            }
-
-            /* Force desktop text sizes - slightly smaller for compactness */
+            /* Force desktop text sizes */
             .invoice-container {
-                font-size: 12px !important;
+                font-size: 14px !important;
             }
-            .invoice-container .text-xs { font-size: 10px !important; }
-            .invoice-container .text-sm { font-size: 12px !important; }
-            .invoice-container .text-base { font-size: 14px !important; }
-            .invoice-container .text-lg { font-size: 16px !important; }
+            .invoice-container .text-xs { font-size: 12px !important; }
+            .invoice-container .text-sm { font-size: 14px !important; }
+            .invoice-container .text-base { font-size: 16px !important; }
+            .invoice-container .text-lg { font-size: 18px !important; }
             .invoice-container .text-\[8px\] { font-size: 8px !important; }
             .invoice-container .text-\[10px\] { font-size: 10px !important; }
             .invoice-container .text-\[12px\] { font-size: 12px !important; }
 
             /* Force desktop logo size */
             .invoice-container img {
-                width: 45% !important;
-                height: auto !important;
+                width: 50% !important;
             }
 
-            /* Compact HR */
-            .invoice-container hr {
-                margin: 0.25rem 0 !important;
-            }
-
-            /* Exact A4 Table Styling - ultra compact */
+            /* Exact A4 Table Styling */
             table {
                 border-collapse: collapse !important;
                 border-color: #000 !important;
                 width: 100% !important;
-                font-size: 7px !important; /* Even smaller for more rows */
+                font-size: 8px !important;
                 min-width: auto !important;
-                margin-bottom: 0.25rem !important;
             }
             td, th {
                 border: 1px solid #000 !important;
                 color: #000 !important;
                 padding: 1px 2px !important;
-                line-height: 1 !important;
             }
 
             /* Force desktop table layout */
-            .invoice-container table th:nth-child(1) { width: 6% !important; }
-            .invoice-container table th:nth-child(2) { width: auto !important; min-width: 120px !important; }
-            .invoice-container table th:nth-child(3) { width: 10% !important; }
-            .invoice-container table th:nth-child(4) { width: 15% !important; }
-            .invoice-container table th:nth-child(5) { width: 15% !important; }
-            .invoice-container table th:nth-child(6) { width: 15% !important; }
-            .invoice-container table th:nth-child(7) { width: 15% !important; }
-            .invoice-container table th:nth-child(8) { width: 20% !important; }
+            .invoice-container table th:nth-child(1) { width: 8% !important; }
+            .invoice-container table th:nth-child(2) { width: auto !important; }
+            .invoice-container table th:nth-child(3) { width: 12% !important; }
+            .invoice-container table th:nth-child(4) { width: 20% !important; }
+            .invoice-container table th:nth-child(5) { width: 20% !important; }
+            .invoice-container table th:nth-child(6) { width: 20% !important; }
+            .invoice-container table th:nth-child(7) { width: 20% !important; }
+            .invoice-container table th:nth-child(8) { width: 24% !important; }
 
-            /* Compact table rows */
-            .invoice-container table tr {
-                height: 16px !important;
-            }
-
-            /* Compact grand total */
-            .invoice-container table + div {
-                margin-top: 0 !important;
-                margin-bottom: 0.25rem !important;
-            }
-            .invoice-container table + div > div {
-                padding: 2px 6px !important;
-                margin: 0 !important;
-            }
-
-            /* Compact legal text */
-            .invoice-container .text-\[8px\],
-            .invoice-container .text-\[10px\],
-            .invoice-container .text-\[12px\] {
-                font-size: 6px !important;
-                line-height: 1.2 !important;
-                margin-bottom: 0.25rem !important;
-            }
-
-            /* Compact signatures */
+            /* Force desktop signatures layout */
             .invoice-container .grid-cols-1 {
                 grid-template-columns: repeat(2, 1fr) !important;
-                gap: 1rem !important;
-                margin-top: 0.25rem !important;
-            }
-            .invoice-container .border-t {
-                padding-top: 1px !important;
-                margin-top: 0.25rem !important;
             }
 
             /* Remove responsive overflow */
@@ -225,12 +147,6 @@ $grandTotal = number_format((float)$invoice['grand_total'], 2);
             /* Ensure background is white for printing */
             .bg-gray-200\/50 { background: white !important; }
             .bg-white { background: white !important; }
-
-            /* Final single-page enforcement */
-            .invoice-container {
-                max-height: 279mm !important; /* Available height after margins */
-                overflow: visible !important;
-            }
         }
 
         /* Responsive adjustments for mobile - screen only */
