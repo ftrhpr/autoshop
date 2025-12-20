@@ -31,7 +31,7 @@ if ($plate) {
 }
 
 if ($q) {
-    $stmt = $pdo->prepare('SELECT id, full_name, plate_number, phone FROM customers WHERE plate_number LIKE ? OR full_name LIKE ? OR phone LIKE ? LIMIT 20');
+    $stmt = $pdo->prepare('SELECT id, full_name, plate_number, phone, email FROM customers WHERE plate_number LIKE ? OR full_name LIKE ? OR phone LIKE ? LIMIT 20');
     $stmt->execute(["%$q%","%$q%","%$q%"]);
     $rows = $stmt->fetchAll();
     echo json_encode($rows);

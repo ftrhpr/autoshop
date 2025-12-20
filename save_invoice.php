@@ -35,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             throw new Exception('The selected customer no longer exists. Please select a different customer or create a new one.');
         }
         // Update existing customer with provided invoice data (don't update plate_number to avoid conflicts)
-        $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, car_mark = ? WHERE id = ?');
-        $stmt->execute([$data['customer_name'], $data['phone_number'], $data['car_mark'], $customer_id]);
+        $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, email = ?, car_mark = ? WHERE id = ?');
+        $stmt->execute([$data['customer_name'], $data['phone_number'], $data['email'], $data['car_mark'], $customer_id]);
     } else {
         // No existing customer selected - create or find customer
         $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
@@ -49,15 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($existingCustomer) {
                 // Use existing customer - update with new data
                 $customer_id = $existingCustomer['id'];
-                $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, car_mark = ? WHERE id = ?');
-                $stmt->execute([$data['customer_name'], $data['phone_number'], $data['car_mark'], $customer_id]);
+                $stmt = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ?, email = ?, car_mark = ? WHERE id = ?');
+                $stmt->execute([$data['customer_name'], $data['phone_number'], $data['email'], $data['car_mark'], $customer_id]);
                 error_log("Updated existing customer ID $customer_id with plate number $plateNumber");
             } else {
                 // Create new customer
-                $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
+                $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, email, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?, ?)');
                 $stmt->execute([
                     $data['customer_name'],
                     $data['phone_number'],
+                    $data['email'],
                     $plateNumber,
                     $data['car_mark'],
                     $_SESSION['user_id']
