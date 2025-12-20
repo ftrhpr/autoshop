@@ -333,8 +333,8 @@ function svgIcon($name){
         if (notifTestButton) notifTestButton.addEventListener('click', testAudio);
         if (notifMuteButton) notifMuteButton.addEventListener('click', ()=>{ setMuted(!isMuted()); });
 
-        // Expose for console debugging
-        window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
+        // Expose for console debugging and to allow other pages to trigger sounds/notifications
+        window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted, playSound: playBeep, notify: showAnimatedNotification };
     })();
 </script>
 
