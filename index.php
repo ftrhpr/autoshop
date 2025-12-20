@@ -230,7 +230,7 @@ $currentDate = date('Y-m-d\TH:i');
                     <!-- Info Grid -->
                     <div class="grid grid-cols-2 gap-x-12 gap-y-2 mb-6 text-sm">
                         <!-- Left -->
-                        <div class="grid grid-cols-[110px_1fr] gap-2 items-center">
+                        <div class="grid grid-cols-[150px_1fr] gap-2 items-center">
                             <div class="font-bold whitespace-nowrap">შემოსვლის დრო:</div>
                             <div class="border-b border-black px-2 h-6 flex items-center" id="out_creation_date"></div>
 
@@ -245,7 +245,7 @@ $currentDate = date('Y-m-d\TH:i');
                         </div>
 
                         <!-- Right -->
-                        <div class="grid grid-cols-[140px_1fr] gap-2 items-center">
+                        <div class="grid grid-cols-[200px_1fr] gap-2 items-center">
                             <div class="font-bold whitespace-nowrap">სერვისის დაწყების დრო:</div>
                             <div class="border-b border-black px-2 h-6 flex items-center"></div>
 
