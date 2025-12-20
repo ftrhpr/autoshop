@@ -181,26 +181,26 @@ $totalPages = (int)ceil($total / $perPage);
 
                 <div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm min-w-full">
+                        <table class="w-full text-xs sm:text-sm min-w-full">
                             <thead class="bg-gray-100">
                                 <tr>
-                                    <th class="px-2 py-2 text-left">Plate</th>
-                                    <th class="px-2 py-2 text-left">Name</th>
-                                    <th class="px-2 py-2 text-left">Phone</th>
-                                    <th class="px-2 py-2">Actions</th>
+                                    <th class="px-1 py-1 sm:px-2 sm:py-2 text-left">Plate</th>
+                                    <th class="px-1 py-1 sm:px-2 sm:py-2 text-left">Name</th>
+                                    <th class="px-1 py-1 sm:px-2 sm:py-2 text-left">Phone</th>
+                                    <th class="px-1 py-1 sm:px-2 sm:py-2">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($customers as $c): ?>
                                 <tr class="border-t">
-                                    <td class="px-2 py-2"><?php echo htmlspecialchars($c['plate_number']); ?></td>
-                                    <td class="px-2 py-2"><?php echo htmlspecialchars($c['full_name']); ?></td>
-                                    <td class="px-2 py-2"><?php echo htmlspecialchars($c['phone']); ?></td>
-                                    <td class="px-2 py-2">
-                                        <button onclick="prefill(<?php echo $c['id']; ?>)" class="px-2 py-1 bg-gray-200 rounded text-xs">Edit</button>
+                                    <td class="px-1 py-1 sm:px-2 sm:py-2"><?php echo htmlspecialchars($c['plate_number']); ?></td>
+                                    <td class="px-1 py-1 sm:px-2 sm:py-2"><?php echo htmlspecialchars($c['full_name']); ?></td>
+                                    <td class="px-1 py-1 sm:px-2 sm:py-2"><?php echo htmlspecialchars($c['phone']); ?></td>
+                                    <td class="px-1 py-1 sm:px-2 sm:py-2">
+                                        <button onclick="prefill(<?php echo $c['id']; ?>)" class="px-1 py-1 sm:px-2 sm:py-1 bg-gray-200 rounded text-xs">Edit</button>
                                         <form method="post" style="display:inline-block" onsubmit="return confirm('Delete?');">
                                             <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
-                                            <button type="submit" name="delete_customer" class="px-2 py-1 bg-red-200 rounded text-xs">Delete</button>
+                                            <button type="submit" name="delete_customer" class="px-1 py-1 sm:px-2 sm:py-1 bg-red-200 rounded text-xs">Delete</button>
                                         </form>
                                     </td>
                                 </tr>
