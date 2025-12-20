@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // If any info changed, treat as new customer
         $currentName = trim($existing['full_name']);
         $newName = trim($data['customer_name']);
-        $currentPhone = trim($existing['phone']);
-        $newPhone = trim($data['phone_number']);
+        $currentPhone = preg_replace('/\s+/', '', trim($existing['phone']));
+        $newPhone = preg_replace('/\s+/', '', trim($data['phone_number']));
         $currentPlate = strtoupper(trim($existing['plate_number']));
         $newPlate = strtoupper(trim($data['plate_number'] ?? ''));
         $currentCar = trim($existing['car_mark']);
