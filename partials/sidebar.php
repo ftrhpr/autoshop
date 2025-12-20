@@ -53,7 +53,12 @@ function svgIcon($name){
                     <button id="notifButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </button>
-                    <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+                    <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
+                        <source src="assets/sounds/notify.mp3" type="audio/mpeg">
+                        <source src="assets/sounds/notify.ogg" type="audio/ogg">
+                        <!-- Fallback to server-served WAV if mp3/ogg not present -->
+                        <source src="assets/sounds/notify.php" type="audio/wav">
+                    </audio>
                     <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
                 </div>
                 <?php endif; ?>

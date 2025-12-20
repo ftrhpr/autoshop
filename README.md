@@ -108,6 +108,12 @@ Developer shortcut: admins can trigger a test invoice via `admin/test_create_inv
 
 To customize polling interval or behavior, edit `partials/sidebar.php` and adjust `pollingInterval` inside the notification script.
 
+Sound file:
+- By default the app serves a small built-in WAV from `assets/sounds/notify.php`.
+- For better quality, place `notify.mp3` and/or `notify.ogg` in `assets/sounds/` — the app will prefer those files automatically.
+- To use a custom WAV file instead of the server endpoint, add `notify.wav` to the same folder and update `assets/sounds/notify.php` or remove it.
+
+
 ## License
 
 ISC
