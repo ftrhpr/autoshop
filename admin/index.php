@@ -83,6 +83,7 @@ $invoices = $stmt->fetchAll();
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
+    <?php include __DIR__ . '/../partials/sidebar.php'; ?>
     <nav class="bg-blue-600 text-white p-4">
         <div class="container mx-auto flex justify-between">
             <h1 class="text-xl font-bold">Admin Panel</h1>

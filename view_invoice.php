@@ -31,6 +31,7 @@ $items = json_decode($invoice['items'], true);
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-6">
+    <?php include 'partials/sidebar.php'; ?>
     <div class="container mx-auto">
         <a href="manager.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back to Manager Panel</a>
 

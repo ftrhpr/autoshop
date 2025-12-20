@@ -55,6 +55,7 @@ if (!isset($_SESSION['user_id'])) {
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800 pb-20 md:pb-0">
+    <?php include 'partials/sidebar.php'; ?>
 
     <!-- NAVIGATION -->
     <nav class="bg-slate-800 text-white p-4 shadow-md print-hidden sticky top-0 z-50">
