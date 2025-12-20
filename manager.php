@@ -75,18 +75,8 @@ if ($finaStatus !== '') {
     }
 }
 
-// Compose SQL with graceful fallback if invoice_notifications table missing
-$hasNotifications = (bool)$pdo->query("SHOW TABLES LIKE 'invoice_notifications'")->fetch();
-if ($hasNotifications) {
-    // include unread flag for current user
-    $sql = 'SELECT i.*, u.username AS sm_username, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?)';
-    // Add current user id at start of params for the notification join
-    array_unshift($params, $_SESSION['user_id']);
-} else {
-    // fallback: no unread flag
-    $sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
-}
-
+// Compose SQL
+$sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
 if (!empty($filters)) {
     $sql .= ' WHERE ' . implode(' AND ', $filters);
 }
@@ -104,6 +94,29 @@ $resultsCount = count($invoices);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manager Panel - Auto Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Live update styles for new invoices */
+        @keyframes invoice-blink {
+            0%, 50% { background-color: #fef3c7; border-left: 4px solid #f59e0b; }
+            51%, 100% { background-color: #fffbeb; border-left: 4px solid #fbbf24; }
+        }
+        .invoice-new {
+            animation: invoice-blink 1.5s infinite;
+            border-left: 4px solid #fbbf24;
+            background-color: #fffbeb;
+        }
+        .invoice-new:hover {
+            background-color: #fef3c7 !important;
+        }
+        .invoice-highlight {
+            background-color: #fef3c7;
+            border-left: 4px solid #fbbf24;
+            transition: background-color 0.3s ease;
+        }
+        .invoice-highlight:hover {
+            background-color: #fde68a !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen overflow-x-hidden font-sans antialiased">
     <?php include 'partials/sidebar.php'; ?>
@@ -120,7 +133,13 @@ $resultsCount = count($invoices);
         
         <!-- Filters -->
         <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-            <div id="results_count" class="md:col-span-3 text-sm text-gray-600 mb-1">Showing <?php echo $resultsCount; ?> result(s)</div>
+            <div class="md:col-span-3 flex items-center justify-between">
+                <div class="text-sm text-gray-600">Showing <span class="results-count"><?php echo $resultsCount; ?> result(s)</span></div>
+                <div class="text-sm text-green-600 flex items-center">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    Live updates active
+                </div>
+            </div>
             <div>
                 <label class="block text-xs font-medium text-gray-600">Search</label>
                 <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="Customer, plate, VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
@@ -191,10 +210,9 @@ $resultsCount = count($invoices);
                 </thead>
                 <tbody>
                     <?php foreach ($invoices as $invoice): ?>
-                    <?php $isUnread = !empty($invoice['unread']); ?>
-                    <tr class="hover:bg-gray-50 <?php echo $isUnread ? 'bg-yellow-50 unread-row' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-unread="<?php echo $isUnread ? '1' : '0'; ?>">
+                    <tr class="hover:bg-gray-50">
                         <td class="px-2 md:px-4 py-2"><?php echo $invoice['id']; ?></td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?><?php if ($isUnread): ?> <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-200 text-yellow-800">NEW</span><?php endif; ?></td>
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['car_mark']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['plate_number']); ?></td>
@@ -210,7 +228,7 @@ $resultsCount = count($invoices);
                                    <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
-                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="view-link text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
+                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
                             <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
                             <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
                                 <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
@@ -276,206 +294,240 @@ $resultsCount = count($invoices);
                 });
             });
 
-            // Helper: mark notification seen (used by view handlers and clicking rows)
-            function markNotificationSeen(invoiceId, row){
-                if (!invoiceId) return;
-                fetch('mark_notification_seen.php', {
-                    method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ invoice_id: invoiceId })
-                }).then(r=>r.json()).then(data=>{
-                    if (data && data.success){
-                        if (row){ row.classList.remove('bg-yellow-50'); row.classList.remove('unread-row'); row.setAttribute('data-unread','0'); const badge = row.querySelector('span.inline-flex'); if (badge) badge.remove(); }
-                        // Update sidebar badge count if available
-                        try {
-                            const nb = document.getElementById('notifBadge');
-                            if (nb && !nb.classList.contains('hidden')){
-                                let v = parseInt(nb.textContent) || 0; if (v > 0) v = v - 1; if (v <= 0){ nb.classList.add('hidden'); nb.textContent = '0'; } else { nb.textContent = ''+v; }
-                            }
-                        } catch(e){}
-                    }
-                }).catch(e=>{ console.warn('markNotificationSeen error', e); });
+            // Live invoice updates
+            initializeLiveUpdates();
+        });
+
+        function initializeLiveUpdates() {
+            let lastTimestamp = null;
+            let pollingInterval = 10000; // 10 seconds for manager panel
+            let pollingTimer = null;
+            let inFlight = false;
+            let newInvoiceIds = new Set(); // Track new invoices that haven't been viewed
+
+            function fetchLatestTimestamp() {
+                return fetch('api_live_invoices.php', { cache: 'no-store' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.success) {
+                            lastTimestamp = data.latest_timestamp || null;
+                        }
+                    })
+                    .catch(e => console.warn('fetchLatestTimestamp error', e));
             }
 
-            // Attach view handlers for existing rows so clicking View marks notification seen
-            function attachViewHandler(link){
-                link.addEventListener('click', function(e){
-                    const url = this.getAttribute('href');
-                    const row = this.closest('tr');
-                    const invoiceId = row ? row.dataset.invoiceId : null;
-                    if (invoiceId){
-                        // mark seen in background; view_invoice.php will also mark server-side
-                        markNotificationSeen(invoiceId, row);
-                    }
-                    // allow navigation to proceed (no preventDefault)
-                });
+            function pollForUpdates() {
+                if (inFlight) return;
+                inFlight = true;
+
+                const url = 'api_live_invoices.php' + (lastTimestamp ? ('?last_timestamp=' + encodeURIComponent(lastTimestamp)) : '');
+                fetch(url, { cache: 'no-store' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.success && data.new_count > 0) {
+                            handleNewInvoices(data.invoices);
+                            lastTimestamp = data.latest_timestamp;
+                        }
+                    })
+                    .catch(e => console.warn('pollForUpdates error', e))
+                    .finally(() => {
+                        inFlight = false;
+                    });
             }
 
-            const viewLinks = document.querySelectorAll('.view-link');
-            viewLinks.forEach(link => { attachViewHandler(link); });
+            function handleNewInvoices(newInvoices) {
+                const tableBody = document.querySelector('tbody');
+                if (!tableBody) return;
 
-            // Optionally allow clicking the row to mark as seen (but not on action cells)
-            document.querySelectorAll('tbody tr[data-unread="1"]').forEach(r=>{
-                r.addEventListener('click', function(e){
-                    // don't mark if clicking on an action button/link
-                    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('input')) return;
-                    const iid = this.dataset.invoiceId;
-                    markNotificationSeen(iid, this);
+                // Add new invoices to the top of the table
+                newInvoices.forEach(invoice => {
+                    const newRow = createInvoiceRow(invoice);
+                    newRow.classList.add('invoice-new'); // Start with blinking
+                    newInvoiceIds.add(invoice.id);
+
+                    // Insert at the top
+                    if (tableBody.firstChild) {
+                        tableBody.insertBefore(newRow, tableBody.firstChild);
+                    } else {
+                        tableBody.appendChild(newRow);
+                    }
                 });
-            });
 
-            // --- Live updates: poll for new invoices and insert them into the table ---
-            (function(){
-                const tbody = document.querySelector('table tbody');
-                const resultsCountEl = document.getElementById('results_count');
-                let lastId = 0;
-                const pollingInterval = 8000; // 8s
-                let isPolling = false;
+                // Update results count display
+                updateResultsCount();
 
-                function findInitialLastId(){
-                    const rows = tbody.querySelectorAll('tr');
-                    let max = 0;
-                    rows.forEach(r=>{
-                        const idCell = r.querySelector('td');
-                        if (!idCell) return;
-                        const val = parseInt(idCell.textContent.trim());
-                        if (!isNaN(val) && val > max) max = val;
+                // Auto-scroll to top if there are new invoices
+                if (newInvoices.length > 0) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+
+            function createInvoiceRow(invoice) {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.setAttribute('data-invoice-id', invoice.id);
+
+                row.innerHTML = `
+                    <td class="px-2 md:px-4 py-2">${invoice.id}</td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[150px]">${escapeHtml(invoice.customer_name || '')}</td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"></td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"></td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.plate_number || '')}</td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"></td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"></td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"></td>
+                    <td class="px-2 md:px-4 py-2 text-right">${invoice.grand_total || 0} ₾</td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${invoice.created_at}</td>
+                    <td class="px-2 md:px-4 py-2 text-center">
+                        <input type="checkbox" class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500" data-invoice-id="${invoice.id}">
+                    </td>
+                    <td class="px-2 md:px-4 py-2 text-center">
+                        <a href="view_invoice.php?id=${invoice.id}" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">View</a>
+                        <a href="print_invoice.php?id=${invoice.id}" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
+                        <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
+                            <input type="hidden" name="id" value="${invoice.id}">
+                            <button type="submit" name="delete_invoice" class="text-red-600 hover:underline text-xs md:text-sm">Delete</button>
+                        </form>
+                    </td>
+                `;
+
+                // Add event listeners for the new row
+                setupRowEventListeners(row);
+
+                return row;
+            }
+
+            function setupRowEventListeners(row) {
+                // Stop blinking and mark as seen when View link is clicked
+                const viewLink = row.querySelector('.view-link');
+                if (viewLink) {
+                    viewLink.addEventListener('click', function() {
+                        const invoiceId = parseInt(row.getAttribute('data-invoice-id'));
+                        markInvoiceAsSeen(invoiceId, row);
                     });
-                    lastId = max;
                 }
 
-                function getFiltersAsParams(){
-                    const params = new URLSearchParams();
-                    ['q','plate','vin','sm','date_from','date_to','min_total','max_total','fina_status'].forEach(k=>{
-                        const el = document.querySelector(`[name="${k}"]`);
-                        if (el && el.value) params.set(k, el.value);
-                    });
-                    return params.toString();
-                }
+                // Also stop blinking on row click
+                row.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on links/buttons
+                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.type === 'checkbox') {
+                        return;
+                    }
+                    const invoiceId = parseInt(row.getAttribute('data-invoice-id'));
+                    markInvoiceAsSeen(invoiceId, row);
+                });
 
-                function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":"&#39;" }[c]; }); }
-
-                function attachFinaHandler(checkbox){
-                    checkbox.addEventListener('change', function(){
+                // Setup FINA checkbox for new rows
+                const finaCheckbox = row.querySelector('.fina-checkbox');
+                if (finaCheckbox) {
+                    finaCheckbox.addEventListener('change', function() {
                         const invoiceId = this.dataset.invoiceId;
                         const isChecked = this.checked;
-                        this.disabled = true; const originalOpacity = this.style.opacity; this.style.opacity = '0.5';
+
+                        this.disabled = true;
+                        this.style.opacity = '0.5';
+
                         fetch('update_fina_status.php', {
-                            method: 'POST', headers: {'Content-Type':'application/json'},
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ invoice_id: invoiceId, opened_in_fina: isChecked ? 1 : 0 })
-                        }).then(r=>r.json()).then(data=>{ if (!data.success){ this.checked = !isChecked; alert('Failed to update FINA status'); } }).catch(e=>{ this.checked = !isChecked; }).finally(()=>{ this.disabled=false; this.style.opacity = originalOpacity; });
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.success) {
+                                this.checked = !isChecked;
+                                alert('Failed to update FINA status: ' + (data.error || 'Unknown error'));
+                            }
+                        })
+                        .catch(error => {
+                            this.checked = !isChecked;
+                            alert('Error updating FINA status: ' + error.message);
+                        })
+                        .finally(() => {
+                            this.disabled = false;
+                            this.style.opacity = '';
+                        });
                     });
                 }
+            }
 
-                // markNotificationSeen and attachViewHandler moved earlier to ensure availability before use.
-
-                function buildRow(invoice){
-                    const tr = document.createElement('tr'); tr.className = 'hover:bg-gray-50';
-                    tr.innerHTML = `
-                        <td class="px-2 md:px-4 py-2">${escapeHtml(invoice.id)}</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[150px]">${escapeHtml(invoice.customer_name || '')}</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.phone || '')}</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.car_mark || '')}</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.plate_number || '')}</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${escapeHtml(invoice.vin || '')}</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.mileage || '')}</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${escapeHtml(invoice.sm_username || '')}</td>
-                        <td class="px-2 md:px-4 py-2 text-right">${escapeHtml(invoice.grand_total || '0')} ₾</td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${escapeHtml(invoice.created_at || '')}</td>
-                        <td class="px-2 md:px-4 py-2 text-center">
-                            <input type="checkbox" class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500" data-invoice-id="${escapeHtml(invoice.id)}" ${invoice.opened_in_fina ? 'checked' : ''}>
-                        </td>
-                        <td class="px-2 md:px-4 py-2 text-center">
-                            <a href="view_invoice.php?id=${escapeHtml(invoice.id)}" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
-                            <a href="print_invoice.php?id=${escapeHtml(invoice.id)}" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
-                            <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
-                                <input type="hidden" name="id" value="${escapeHtml(invoice.id)}">
-                                <button type="submit" name="delete_invoice" class="text-red-600 hover:underline text-xs md:text-sm">Delete</button>
-                            </form>
-                        </td>`;
-                    return tr;
+            function markInvoiceAsSeen(invoiceId, row) {
+                if (newInvoiceIds.has(invoiceId)) {
+                    newInvoiceIds.delete(invoiceId);
+                    row.classList.remove('invoice-new');
+                    row.classList.add('invoice-highlight');
+                    // Remove highlight after 30 seconds
+                    setTimeout(() => {
+                        row.classList.remove('invoice-highlight');
+                    }, 30000);
                 }
+            }
 
-                function highlightRow(row){
-                    row.classList.add('bg-yellow-50');
-                    setTimeout(()=>{ row.classList.remove('bg-yellow-50'); }, 5000);
+            // Listen for cross-tab communication (when invoice is viewed in another tab)
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'seen_invoices' && e.newValue) {
+                    try {
+                        const seenInvoices = JSON.parse(e.newValue);
+                        seenInvoices.forEach(invoiceId => {
+                            const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                            if (row) {
+                                markInvoiceAsSeen(invoiceId, row);
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('Error parsing seen_invoices from storage', e);
+                    }
                 }
+            });
 
-                async function pollNew(){
-                    if (isPolling) return; isPolling = true;
-                    try{
-                        const params = getFiltersAsParams();
-                        const url = 'api_invoices_since.php?last_id=' + encodeURIComponent(lastId) + (params ? '&' + params : '');
-                        const res = await fetch(url, { cache: 'no-store' });
-                        if (!res.ok) throw new Error('Network');
-                        const data = await res.json();
-                        if (data && data.success && data.count > 0){
-                            // Sort ascending by id then insert
-                            data.invoices.sort((a,b)=>a.id - b.id);
-                            data.invoices.forEach(inv=>{
-                                const row = buildRow(inv);
-                                tbody.insertBefore(row, tbody.firstChild);
-                                // attach event handlers
-                                const cb = row.querySelector('.fina-checkbox'); if (cb) attachFinaHandler(cb);
-                                const view = row.querySelector('.view-link'); if (view) attachViewHandler(view);
-                                // If invoice is unread, leave persistent highlight; otherwise do a brief highlight
-                                if (inv.unread) {
-                                    // leave bg and NEW badge (server provided)
-                                } else {
-                                    highlightRow(row);
-                                }
-                                // notify via sidebar helpers if present
-                                if (window.__invoiceNotifications && typeof window.__invoiceNotifications.playSound === 'function'){
-                                    window.__invoiceNotifications.playSound();
-                                }
-                                if (window.__invoiceNotifications && typeof window.__invoiceNotifications.notify === 'function'){
-                                    window.__invoiceNotifications.notify('New Invoice #' + inv.id, inv.id);
-                                }
-                            });
-
-                            // update lastId and results count
-                            const maxId = Math.max(...data.invoices.map(i=>i.id), lastId);
-                            lastId = maxId;
-
-                            // update results count display
-                            const currentText = resultsCountEl.textContent || '';
-                            const match = currentText.match(/Showing\s+(\d+)/);
-                            let current = match ? parseInt(match[1]) : 0;
-                            current += data.count;
-                            resultsCountEl.textContent = `Showing ${current} result(s)`;
-                        }
-                    }catch(e){ console.warn('pollNew error', e); }
-                    finally{ isPolling = false; }
-                }
-
-                findInitialLastId();
-                setInterval(pollNew, pollingInterval);
-
-                // Listen for SSE / DOM events for real-time notifications
-                document.addEventListener('invoiceNotification', (e) => {
-                    const inv = e.detail;
-                    // If it matches the current filters, insert it (use existing buildRow logic)
-                    // Convert to format expected by buildRow (ensure fields exist)
-                    const invoice = {
-                        id: inv.invoice_id,
-                        customer_name: inv.customer_name,
-                        phone: inv.phone || '',
-                        car_mark: inv.car_mark || '',
-                        plate_number: inv.plate_number || '',
-                        vin: inv.vin || '',
-                        mileage: inv.mileage || '',
-                        sm_username: inv.sm_username || '',
-                        grand_total: inv.grand_total || 0,
-                        created_at: inv.created_at || '',
-                        unread: 1
-                    };
-                    const row = buildRow(invoice);
-                    tbody.insertBefore(row, tbody.firstChild);
-                    const cb = row.querySelector('.fina-checkbox'); if (cb) attachFinaHandler(cb);
-                    const view = row.querySelector('.view-link'); if (view) attachViewHandler(view);
-                    // keep persistent highlight (unread)
+            // Check for already seen invoices on load
+            try {
+                const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                seenInvoices.forEach(invoiceId => {
+                    const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                    if (row && newInvoiceIds.has(invoiceId)) {
+                        markInvoiceAsSeen(invoiceId, row);
+                    }
                 });
-            })();
-        });
+            } catch (e) {
+                console.warn('Error checking seen invoices on load', e);
+            }
+
+            // Expose markAsSeen function for cross-window communication
+            window.__liveInvoices.markAsSeen = function(invoiceId) {
+                const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                if (row) {
+                    markInvoiceAsSeen(invoiceId, row);
+                }
+            };
+
+            function updateResultsCount() {
+                const tableBody = document.querySelector('tbody');
+                if (tableBody) {
+                    const rowCount = tableBody.children.length;
+                    // Update any results count display if it exists
+                    const countDisplay = document.querySelector('.results-count');
+                    if (countDisplay) {
+                        countDisplay.textContent = `Showing ${rowCount} invoice${rowCount !== 1 ? 's' : ''}`;
+                    }
+                }
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Initialize
+            fetchLatestTimestamp().then(() => {
+                pollForUpdates();
+                pollingTimer = setInterval(pollForUpdates, pollingInterval);
+            });
+
+            // Expose for debugging
+            window.__liveInvoices = { pollForUpdates, fetchLatestTimestamp, newInvoiceIds };
+        }
     </script>
 </body>
 </html>

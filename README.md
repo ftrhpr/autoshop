@@ -106,23 +106,20 @@ How to test:
 
 Developer shortcut: admins can trigger a test invoice via `admin/test_create_invoice.php` (POST/GET) which inserts a dummy invoice — this helps verifying notifications quickly.
 
+## Live Invoice Updates in Manager Panel
+
+- The manager panel (`manager.php`) now shows live updates for new invoices.
+- New invoices appear at the top of the table with a blinking yellow highlight.
+- The blinking stops when you click "View" or click anywhere on the invoice row.
+- Invoices remain highlighted (non-blinking) for 30 seconds after being viewed.
+- Updates poll every 10 seconds and work across browser tabs using sessionStorage.
+
 To customize polling interval or behavior, edit `partials/sidebar.php` and adjust `pollingInterval` inside the notification script.
 
 Sound file:
 - By default the app serves a small built-in WAV from `assets/sounds/notify.php`.
 - For better quality, place `notify.mp3` and/or `notify.ogg` in `assets/sounds/` — the app will prefer those files automatically.
 - To use a custom WAV file instead of the server endpoint, add `notify.wav` to the same folder and update `assets/sounds/notify.php` or remove it.
-
-Unread notifications (manager):
-- A new `invoice_notifications` table tracks per-user notifications and seen state. Run the migration `php migrate_add_invoice_notifications.php` to create the table.
-- When a new invoice is created, notification rows are created for all admins and managers.
-- Manager panel highlights unread invoices with a `NEW` badge until that invoice is opened (viewed) or manually marked seen.
-- You can mark a notification as seen by opening the invoice (server-side mark) or clicking a View link in the Manager panel (client-side mark).
-- For lower-latency updates, the app supports Server-Sent Events (SSE) via `sse_notifications.php`.
-  - SSE is **disabled by default** to avoid issues on single-threaded or resource-constrained servers; enable it by setting `$enable_sse = true;` in `config.php` and ensuring your server supports long-lived PHP processes.
-  - The sidebar connects to SSE and will receive `notification` events and a `count` event for unread counts when enabled.
-  - Manager panel listens for SSE events and will insert new rows live when notifications arrive.
-  - If SSE is not available or disabled, the app falls back to polling-based updates.
 
 
 ## License

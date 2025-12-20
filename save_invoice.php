@@ -192,21 +192,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['user_id']
         ]);
         $invoice_id = $pdo->lastInsertId();
-
-        // Create notification rows for all admin and manager users (so they see the invoice as unread)
-        try {
-            $usersStmt = $pdo->query("SELECT id FROM users WHERE role IN ('admin','manager')");
-            $userIds = $usersStmt->fetchAll(PDO::FETCH_COLUMN);
-            if (!empty($userIds)){
-                $insStmt = $pdo->prepare('INSERT INTO invoice_notifications (invoice_id, user_id) VALUES (?,?)');
-                foreach ($userIds as $uid) {
-                    // If user is the creator, you may consider marking as seen; keep it unread for consistency
-                    $insStmt->execute([$invoice_id, $uid]);
-                }
-            }
-        } catch (Exception $e) {
-            error_log('Failed to insert invoice_notifications: ' . $e->getMessage());
-        }
     }
 
     // Handle deleted existing images

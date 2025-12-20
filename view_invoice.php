@@ -20,12 +20,6 @@ if (!$invoice) {
     die('Invoice not found');
 }
 
-// Mark notification as seen for this user (if exists)
-try {
-    $stmt = $pdo->prepare('UPDATE invoice_notifications SET seen_at = NOW() WHERE invoice_id = ? AND user_id = ? AND seen_at IS NULL');
-    $stmt->execute([$id, $_SESSION['user_id']]);
-} catch (Exception $e) { error_log('mark notification seen failed: '.$e->getMessage()); }
-
 $items = json_decode($invoice['items'], true);
 ?>
 
@@ -189,6 +183,33 @@ $items = json_decode($invoice['items'], true);
                 buttonElement.textContent = '×';
             });
         }
+    </script>
+
+    <script>
+        // Mark invoice as seen when viewed (for live updates)
+        (function() {
+            const invoiceId = <?php echo (int)$invoice['id']; ?>;
+
+            // Notify parent window (if opened in popup) or mark as seen locally
+            if (window.opener && window.opener.__liveInvoices) {
+                // If opened in popup, notify parent
+                window.opener.__liveInvoices.markAsSeen && window.opener.__liveInvoices.markAsSeen(invoiceId);
+            } else if (window.parent && window.parent !== window && window.parent.__liveInvoices) {
+                // If in iframe, notify parent
+                window.parent.__liveInvoices.markAsSeen && window.parent.__liveInvoices.markAsSeen(invoiceId);
+            }
+
+            // Also store in sessionStorage for cross-tab communication
+            try {
+                const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                if (!seenInvoices.includes(invoiceId)) {
+                    seenInvoices.push(invoiceId);
+                    sessionStorage.setItem('seen_invoices', JSON.stringify(seenInvoices));
+                }
+            } catch (e) {
+                console.warn('Could not update seen invoices in sessionStorage', e);
+            }
+        })();
     </script>
 </body>
 </html>

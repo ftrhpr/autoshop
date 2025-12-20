@@ -62,19 +62,6 @@ function svgIcon($name){
                         <source src="assets/sounds/notify.php" type="audio/wav">
                     </audio>
                     <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
-
-                    <!-- Unread dropdown -->
-                    <div id="notifDropdown" class="hidden absolute right-0 mt-8 w-80 bg-white border border-gray-200 rounded shadow-lg p-2 z-50">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="text-sm font-semibold">Unread</div>
-                            <div>
-                                <button id="markAllReadBtn" class="text-xs text-gray-600 hover:underline mr-2">Mark all read</button>
-                                <button id="closeNotifDropdown" class="text-xs text-gray-600 hover:underline">Close</button>
-                            </div>
-                        </div>
-                        <div id="notifList" class="max-h-48 overflow-auto space-y-2 text-sm"></div>
-                        <div id="notifEmpty" class="text-xs text-gray-500 text-center py-2 hidden">No unread notifications</div>
-                    </div>
                 </div>
                 <?php endif; ?>
             </div>
@@ -293,79 +280,8 @@ function svgIcon($name){
             if (window.Notification && Notification.permission === 'default'){
                 try { Notification.requestPermission(); } catch(e) {}
             }
-
-            // Initialize SSE if supported and enabled; otherwise fall back to polling
-            if (<?php echo ($enable_sse ? 'true' : 'false'); ?> && window.EventSource) {
-                try {
-                    const es = new EventSource('sse_notifications.php');
-                    es.addEventListener('open', () => { console.info('SSE open'); });
-                    es.addEventListener('notification', (ev) => {
-                        try {
-                            const d = JSON.parse(ev.data);
-                            // update badge
-                            const nb = document.getElementById('notifBadge');
-                            let cur = parseInt(nb.textContent || '0') || 0; cur = cur + 1; updateBadge(cur);
-                            // add to dropdown list
-                            addNotifToDropdown(d);
-                            // play and animate
-                            playBeep(); animateBell();
-                            showAnimatedNotification(`New Invoice #${d.invoice_id}: ${d.customer_name || ''}`, d.invoice_id);
-                            // dispatch DOM event so other pages (manager) can react
-                            document.dispatchEvent(new CustomEvent('invoiceNotification', { detail: d }));
-                        } catch (e) { console.warn('SSE notification parsing error', e); }
-                    });
-                    es.addEventListener('count', (ev) => {
-                        try { const c = JSON.parse(ev.data); updateBadge(c.unread || 0); } catch(e){}
-                    });
-                    es.addEventListener('error', (ev) => { console.warn('SSE error', ev); });
-                } catch (e) { console.warn('SSE init failed', e); }
-            } else {
-                // fetch start id then start polling (fallback)
-                fetchLatestId().then(()=>{ poll(); pollingTimer = setInterval(poll, pollingInterval); });
-            }
-
-            // Dropdown behavior
-            const btn = document.getElementById('notifButton');
-            const dd = document.getElementById('notifDropdown');
-            const list = document.getElementById('notifList');
-            const empty = document.getElementById('notifEmpty');
-            const markAllBtn = document.getElementById('markAllReadBtn');
-            const closeBtn = document.getElementById('closeNotifDropdown');
-
-            function toggleDropdown(){
-                if (!dd) return;
-                dd.classList.toggle('hidden');
-            }
-            if (btn) btn.addEventListener('click', toggleDropdown);
-            if (closeBtn) closeBtn.addEventListener('click', ()=>{ dd.classList.add('hidden'); });
-            if (markAllBtn) markAllBtn.addEventListener('click', async ()=>{
-                try {
-                    const res = await fetch('mark_all_notifications_seen.php', { method: 'POST' });
-                    const data = await res.json();
-                    if (data.success){
-                        // clear list
-                        list.innerHTML = '';
-                        empty.classList.remove('hidden');
-                        updateBadge(0);
-                    }
-                } catch (e) { console.warn('markAll error', e); }
-            });
-
-            function addNotifToDropdown(d){
-                if (!list) return;
-                empty.classList.add('hidden');
-                const el = document.createElement('div');
-                el.className = 'p-2 border border-gray-100 rounded hover:bg-gray-50 cursor-pointer flex items-center justify-between';
-                el.innerHTML = `<div class="truncate">#${d.invoice_id} — ${escapeHtml(d.customer_name || '')} <div class="text-xs text-gray-500">${escapeHtml(d.plate_number || '')}</div></div><div><button class=\"text-xs text-blue-600\">Open</button></div>`;
-                el.addEventListener('click', ()=>{ window.open('view_invoice.php?id='+d.invoice_id, '_blank'); });
-                list.prepend(el);
-            }
-
-            // Initialize existing unread list count if possible via API
-            (async function initUnread(){
-                try { const res = await fetch('api_unread_list.php', { cache: 'no-store' }); if (res.ok){ const d = await res.json(); if (d.success){ updateBadge(d.unread || 0); if (Array.isArray(d.list) && d.list.length>0){ d.list.forEach(addNotifToDropdown); empty.classList.toggle('hidden', d.list.length>0); } } } } catch(e){}
-            })();
-
+            // fetch start id then start polling
+            fetchLatestId().then(()=>{ poll(); pollingTimer = setInterval(poll, pollingInterval); });
         })();
 
         // clicking bell opens manager panel
@@ -417,8 +333,8 @@ function svgIcon($name){
         if (notifTestButton) notifTestButton.addEventListener('click', testAudio);
         if (notifMuteButton) notifMuteButton.addEventListener('click', ()=>{ setMuted(!isMuted()); });
 
-        // Expose for console debugging and to allow other pages to trigger sounds/notifications
-        window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted, playSound: playBeep, notify: showAnimatedNotification };
+        // Expose for console debugging
+        window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
     })();
 </script>
 
