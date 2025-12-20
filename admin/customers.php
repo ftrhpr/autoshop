@@ -106,9 +106,9 @@ $totalPages = (int)ceil($total / $perPage);
     <title>Customers - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-6">
+<body class="bg-gray-100 p-6 overflow-x-hidden">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
-    <div class="container mx-auto ml-0 md:ml-64">
+    <div class="w-full ml-0 md:ml-64 p-4 md:p-6">
         <a href="index.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back</a>
 
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
@@ -181,12 +181,12 @@ $totalPages = (int)ceil($total / $perPage);
 
                 <div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                        <table class="w-full text-sm min-w-full">
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="px-2 py-2 text-left">Plate</th>
                                     <th class="px-2 py-2 text-left">Name</th>
-                                    <th class="px-2 py-2 text-left">Phone</th>
+                                    <th class="px-2 py-2 text-left hidden sm:table-cell">Phone</th>
                                     <th class="px-2 py-2">Actions</th>
                                 </tr>
                             </thead>
@@ -195,12 +195,12 @@ $totalPages = (int)ceil($total / $perPage);
                                 <tr class="border-t">
                                     <td class="px-2 py-2"><?php echo htmlspecialchars($c['plate_number']); ?></td>
                                     <td class="px-2 py-2"><?php echo htmlspecialchars($c['full_name']); ?></td>
-                                    <td class="px-2 py-2"><?php echo htmlspecialchars($c['phone']); ?></td>
+                                    <td class="px-2 py-2 hidden sm:table-cell"><?php echo htmlspecialchars($c['phone']); ?></td>
                                     <td class="px-2 py-2">
-                                        <button onclick="prefill(<?php echo $c['id']; ?>)" class="px-2 py-1 bg-gray-200 rounded">Edit</button>
+                                        <button onclick="prefill(<?php echo $c['id']; ?>)" class="px-2 py-1 bg-gray-200 rounded text-xs">Edit</button>
                                         <form method="post" style="display:inline-block" onsubmit="return confirm('Delete?');">
                                             <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
-                                            <button type="submit" name="delete_customer" class="px-2 py-1 bg-red-200 rounded">Delete</button>
+                                            <button type="submit" name="delete_customer" class="px-2 py-1 bg-red-200 rounded text-xs">Delete</button>
                                         </form>
                                     </td>
                                 </tr>
