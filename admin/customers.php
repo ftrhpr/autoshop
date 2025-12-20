@@ -261,7 +261,7 @@ $totalPages = (int)ceil($total / $perPage);
                             </svg>
                             Import Customers (CSV)
                         </h4>
-                        <p class="text-sm text-gray-600 mb-4">Download the template and fill it. Required: full_name, phone. Optional: plate_number, email, car_mark, notes, last_service_at. Import will insert new customers or update existing ones by plate number or phone. <strong>Ensure the CSV file is saved in UTF-8 encoding to support Georgian characters.</strong></p>
+                        <p class="text-sm text-gray-600 mb-4">Download the template and fill it. Required: full_name, phone. Optional: plate_number, email, car_mark, notes, last_service_at. Import will insert new customers or update existing ones by plate number, phone, or name. If a customer exists by any of these fields, all provided details will be updated. <strong>Ensure the CSV file is saved in UTF-8 encoding to support Georgian characters.</strong></p>
                         <a href="customers_import_template.csv" class="inline-flex items-center px-4 py-2 bg-green-100 hover:bg-green-200 text-green-800 rounded-md text-sm font-medium transition mb-4">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -287,7 +287,7 @@ $totalPages = (int)ceil($total / $perPage);
                             </svg>
                             Import Customers (Raw Text)
                         </h4>
-                        <p class="text-sm text-gray-600 mb-4">Paste names and phones separately (one per line). Import will pair them by line and insert new customers or update existing ones by phone.</p>
+                        <p class="text-sm text-gray-600 mb-4">Paste names and phones separately (one per line). Import will pair them by line and insert new customers or update existing ones by phone or name. If a customer exists by phone, it updates their name. If a customer exists by name but has a different phone, it updates their phone and name.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Names (one per line)</label>

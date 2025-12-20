@@ -38,9 +38,10 @@ $rowNo = 0;
 
 $pdo->beginTransaction();
 try {
-    $select = $pdo->prepare('SELECT id FROM customers WHERE phone = ? LIMIT 1');
+    $selectByPhone = $pdo->prepare('SELECT id FROM customers WHERE phone = ? LIMIT 1');
+    $selectByName = $pdo->prepare('SELECT id FROM customers WHERE full_name = ? LIMIT 1');
     $insert = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, created_by) VALUES (?, ?, NULL, ?)');
-    $update = $pdo->prepare('UPDATE customers SET full_name = ? WHERE id = ?');
+    $update = $pdo->prepare('UPDATE customers SET full_name = ?, phone = ? WHERE id = ?');
 
     foreach ($validLines as $rowNo => $pair) {
         $rowNo++; // 1-based
@@ -58,22 +59,32 @@ try {
         $full = trim($full);
         $phone = trim($phone);
 
-        // Check if exists by phone
-        $select->execute([$phone]);
-        $found = $select->fetch();
+        // Check if exists by phone first
+        $selectByPhone->execute([$phone]);
+        $found = $selectByPhone->fetch();
         if ($found) {
-            // Update
+            // Update existing customer by phone
             $uid = $found['id'];
-            $update->execute([$full, $uid]);
+            $update->execute([$full, $phone, $uid]);
             $updated++;
         } else {
-            // Insert
-            try {
-                $insert->execute([$full, $phone, $_SESSION['user_id']]);
-                $inserted++;
-            } catch (PDOException $e) {
-                $failed++;
-                $failures[] = "Row {$rowNo}: DB error - " . $e->getMessage();
+            // Check if exists by name
+            $selectByName->execute([$full]);
+            $foundByName = $selectByName->fetch();
+            if ($foundByName) {
+                // Update existing customer by name with new phone and name
+                $uid = $foundByName['id'];
+                $update->execute([$full, $phone, $uid]);
+                $updated++;
+            } else {
+                // Insert new customer
+                try {
+                    $insert->execute([$full, $phone, $_SESSION['user_id']]);
+                    $inserted++;
+                } catch (PDOException $e) {
+                    $failed++;
+                    $failures[] = "Row {$rowNo}: DB error - " . $e->getMessage();
+                }
             }
         }
     }

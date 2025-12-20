@@ -101,7 +101,7 @@ try {
         $lastService = trim($data['last_service_at'] ?? null);
         $lastService = $lastService ? date('Y-m-d H:i:s', strtotime($lastService)) : null;
 
-        // Check if exists by plate or phone
+        // Check if exists by plate, phone, or name
         $found = null;
         if ($plate !== '') {
             $select->execute([$plate]);
@@ -111,6 +111,11 @@ try {
             $selectPhone = $pdo->prepare('SELECT id FROM customers WHERE phone = ? LIMIT 1');
             $selectPhone->execute([$phone]);
             $found = $selectPhone->fetch();
+        }
+        if (!$found && $full !== '') {
+            $selectName = $pdo->prepare('SELECT id FROM customers WHERE full_name = ? LIMIT 1');
+            $selectName->execute([$full]);
+            $found = $selectName->fetch();
         }
         if ($found) {
             // Update
