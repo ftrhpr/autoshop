@@ -60,15 +60,15 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto Shop Manager - Invoice</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    animation: { 'fade-in': 'fadeIn 0.3s ease-in-out' },
-                    keyframes: { fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } } }
+                    animation: { 'fade-in': 'fadeIn 0.5s ease-in-out' },
+                    keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } } }
                 }
             }
         }
@@ -84,35 +84,75 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             /* Exact A4 Table Styling */
             table { border-collapse: collapse !important; border-color: #000 !important; width: 100% !important; }
             td, th { border: 1px solid #000 !important; color: #000 !important; }
-            
+
             /* Compact padding for print to fit one page */
             td { padding-top: 2px !important; padding-bottom: 2px !important; padding-left: 4px !important; padding-right: 4px !important; }
-            
+
             /* Ensure container is exact A4 height */
             .a4-container { height: 297mm !important; max-height: 297mm !important; overflow: hidden !important; }
         }
-        
-        .tab-active { background-color: #eab308; color: #0f172a; font-weight: bold; }
-        .tab-inactive { background-color: transparent; color: white; }
-        .tab-inactive:hover { background-color: #334155; }
+
+        .tab-active { @apply bg-yellow-500 text-slate-900 font-semibold shadow-md; }
+        .tab-inactive { @apply bg-white text-gray-700 border border-gray-300; }
+        .tab-inactive:hover { @apply bg-gray-50 border-gray-400; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800 pb-20 md:pb-0">
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen font-sans text-gray-800 antialiased overflow-x-hidden">
     <?php include 'partials/sidebar.php'; ?>
 
-
-
-    <main class="max-w-7xl mx-auto p-4 md:p-8 print:p-0 print:max-w-none ml-0 md:ml-64">
-        <div class="mb-4 print-hidden flex justify-end gap-2">
-            <button onclick="switchTab('edit')" id="btn-edit" class="px-4 py-2 rounded-md transition-colors tab-active">Edit Details</button>
-            <button onclick="switchTab('preview')" id="btn-preview" class="px-4 py-2 rounded-md transition-colors tab-inactive">Preview Invoice</button>
-            <button type="submit" form="invoice-form" class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-500 text-white">Save</button>
-            <button onclick="handlePrint()" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-500 text-white">Print</button>
-        </div>
+    <main class="max-w-7xl mx-auto p-4 md:p-8 print:p-0 print:max-w-none ml-0 md:ml-64" role="main">
+        <!-- Header -->
+        <header class="mb-8 print-hidden">
+            <nav aria-label="Breadcrumb" class="mb-6">
+                <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                    <li><a href="admin/index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
+                    <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
+                    <li aria-current="page">Invoice Editor</li>
+                </ol>
+            </nav>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900 flex items-center">
+                        <svg class="w-10 h-10 mr-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Invoice Editor
+                    </h1>
+                    <p class="mt-2 text-gray-600">Create and manage auto shop invoices with ease.</p>
+                </div>
+                <div class="mt-4 sm:mt-0 flex gap-3">
+                    <button onclick="switchTab('edit')" id="btn-edit" class="inline-flex items-center px-4 py-2 rounded-lg transition-all tab-active shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Edit Details
+                    </button>
+                    <button onclick="switchTab('preview')" id="btn-preview" class="inline-flex items-center px-4 py-2 rounded-lg transition-all tab-inactive">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        Preview Invoice
+                    </button>
+                    <button type="submit" form="invoice-form" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Save
+                    </button>
+                    <button onclick="handlePrint()" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                        </svg>
+                        Print
+                    </button>
+                </div>
+            </div>
+        </header>
         
         <!-- ================= EDIT MODE ================= -->
         <div id="edit-mode" class="block print-hidden animate-fade-in">
-            <form id="invoice-form" action="save_invoice.php" method="post" onsubmit="return prepareData()">
+            <form id="invoice-form" action="save_invoice.php" method="post" onsubmit="return prepareData()" role="form" aria-label="Invoice form">
                 <input type="hidden" name="creation_date" id="hidden_creation_date">
                 <input type="hidden" name="service_manager" id="hidden_service_manager">
                 <input type="hidden" name="customer_name" id="hidden_customer_name">
@@ -124,68 +164,131 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 <input type="hidden" name="service_total" id="hidden_service_total">
                 <input type="hidden" name="grand_total" id="hidden_grand_total">
                 <input type="hidden" name="print_after_save" id="print_after_save">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-                    
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
                     <!-- Left Column: Inputs -->
                     <div class="lg:col-span-1 space-y-6">
-                        
+
                         <!-- Workflow Card -->
-                        <div class="bg-white p-4 md:p-6 rounded-lg shadow-sm border-t-4 border-yellow-500">
-                            <h2 class="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-slate-700">
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                                <svg class="h-6 w-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
                                 Workflow Details
                             </h2>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-600 mb-1">Creation Date (შემოსვლის დრო)</label>
-                                    <input type="datetime-local" id="input_creation_date" name="creation_date" value="<?php echo $currentDate; ?>" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 p-3 border text-base">
+                                    <label for="input_creation_date" class="block text-sm font-medium text-gray-700 mb-2">Creation Date (შემოსვლის დრო)</label>
+                                    <input type="datetime-local" id="input_creation_date" name="creation_date" value="<?php echo $currentDate; ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 p-3 text-base transition" aria-describedby="date-help">
+                                    <p id="date-help" class="mt-1 text-xs text-gray-500">Select the date and time when the vehicle arrived.</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-600 mb-1">Service Manager (სერვისის მენეჯერი)</label>
-                                    <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 p-3 border text-base">
+                                    <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">Service Manager (სერვისის მენეჯერი)</label>
+                                    <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 p-3 text-base transition" aria-describedby="manager-help">
                                     <input type="hidden" id="input_service_manager_id" name="service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
+                                    <p id="manager-help" class="mt-1 text-xs text-gray-500">The service manager handling this invoice.</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Customer Card -->
-                        <div class="bg-white p-4 md:p-6 rounded-lg shadow-sm border-t-4 border-blue-500">
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6 rounded-xl shadow-lg border border-blue-200 hover:shadow-xl transition-all duration-300">
                             <h2 class="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-slate-700">
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
                                 Customer Info
                             </h2>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-600 mb-1">Customer Name (კლიენტი)</label>
-                                    <input type="text" id="input_customer_name" placeholder="First Last Name" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border text-base">
+                                    <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Customer Name (კლიენტი)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="text" id="input_customer_name" placeholder="First Last Name" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="customer-name-help">
+                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
                                     <input type="hidden" id="input_customer_id" name="customer_id">
+                                    <p id="customer-name-help" class="mt-1 text-xs text-gray-500">Enter the full name of the customer as it appears on their ID.</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-600 mb-1">Phone Number (ტელეფონი)</label>
-                                    <input type="tel" id="input_phone_number" placeholder="+995 555 00 00 00" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 border text-base">
+                                    <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                        </svg>
+                                        Phone Number (ტელეფონი)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="tel" id="input_phone_number" placeholder="+995 555 00 00 00" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="phone-help">
+                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                        </svg>
+                                    </div>
+                                    <p id="phone-help" class="mt-1 text-xs text-gray-500">Include country code for international numbers.</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Vehicle Card -->
-                        <div class="bg-white p-4 md:p-6 rounded-lg shadow-sm border-t-4 border-red-500">
+                        <div class="bg-gradient-to-br from-red-50 to-pink-100 p-4 md:p-6 rounded-xl shadow-lg border border-red-200 hover:shadow-xl transition-all duration-300">
                             <h2 class="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-slate-700">
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                <svg class="h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
                                 Vehicle Data
                             </h2>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-600 mb-1">Car Mark/Model (ავტომანქანა)</label>
-                                    <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 p-3 border text-base">
+                                    <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                        Car Mark/Model (ავტომანქანა)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="car-mark-help">
+                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                    <p id="car-mark-help" class="mt-1 text-xs text-gray-500">Enter the make and model of the vehicle.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-600 mb-1">Plate Number (ნომერი)</label>
-                                        <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 p-3 border text-base">
+                                        <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Plate Number (ნომერი)
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="plate-help">
+                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <p id="plate-help" class="mt-1 text-xs text-gray-500">License plate in Georgian format.</p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-600 mb-1">Mileage (გარბენი)</label>
-                                        <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 p-3 border text-base">
+                                        <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            </svg>
+                                            Mileage (გარბენი)
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="mileage-help">
+                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            </svg>
+                                        </div>
+                                        <p id="mileage-help" class="mt-1 text-xs text-gray-500">Current odometer reading in kilometers.</p>
                                     </div>
                                 </div>
                             </div>
@@ -194,47 +297,54 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
                     <!-- Right Column: Line Items -->
                     <div class="lg:col-span-2">
-                        <div class="bg-white p-4 md:p-6 rounded-lg shadow-sm h-full flex flex-col">
+                        <div class="bg-gradient-to-br from-gray-50 to-slate-100 p-4 md:p-6 rounded-xl shadow-lg border border-gray-200 h-full flex flex-col hover:shadow-xl transition-all duration-300">
                             <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-lg md:text-xl font-bold text-slate-700">Service & Parts</h2>
-                                <button type="button" onclick="addItemRow()" class="flex items-center gap-1 text-sm bg-green-100 text-green-700 px-4 py-2 rounded-full hover:bg-green-200 transition-colors font-medium active:scale-95">
-                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <h2 class="text-lg md:text-xl font-bold text-slate-700 flex items-center gap-2">
+                                    <svg class="h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                    </svg>
+                                    Service & Parts
+                                </h2>
+                                <button type="button" onclick="addItemRow()" class="flex items-center gap-2 text-sm bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg active:scale-95 focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                    </svg>
                                     Add Row
                                 </button>
                             </div>
 
                             <div class="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0 flex-grow">
-                                <table class="w-full text-sm text-left min-w-[600px]">
-                                    <thead class="bg-gray-50 text-gray-600 uppercase">
+                                <table class="w-full text-sm text-left min-w-[600px] bg-white rounded-lg overflow-hidden shadow-sm">
+                                    <thead class="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 uppercase font-semibold">
                                         <tr>
-                                            <th class="px-3 py-3 w-8">#</th>
-                                            <th class="px-3 py-3 w-1/3">Item Name</th>
-                                            <th class="px-3 py-3 w-16">Qty</th>
-                                            <th class="px-3 py-3 w-24">Part Price</th>
-                                            <th class="px-3 py-3 w-24">Svc Price</th>
-                                            <th class="px-3 py-3 w-32">Technician</th>
-                                            <th class="px-3 py-3 w-12 text-center">Action</th>
+                                            <th class="px-4 py-3 w-8 text-center">#</th>
+                                            <th class="px-4 py-3 w-1/3">Item Name</th>
+                                            <th class="px-4 py-3 w-16 text-center">Qty</th>
+                                            <th class="px-4 py-3 w-24 text-right">Part Price</th>
+                                            <th class="px-4 py-3 w-24 text-right">Svc Price</th>
+                                            <th class="px-4 py-3 w-32">Technician</th>
+                                            <th class="px-4 py-3 w-12 text-center">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="items-table-body" class="divide-y divide-gray-100">
+                                    <tbody id="items-table-body" class="divide-y divide-gray-100 hover:bg-gray-50 transition-colors">
                                         <!-- Rows added via JS -->
                                     </tbody>
                                 </table>
                             </div>
 
                             <!-- Live Totals -->
-                            <div class="mt-6 border-t pt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-right">
-                                <div class="bg-gray-50 p-3 rounded flex justify-between md:block">
-                                    <p class="text-xs text-gray-500 uppercase">Parts Total</p>
-                                    <p class="font-bold text-lg" id="display_parts_total">0.00</p>
+                            <div class="mt-6 border-t border-gray-200 pt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-right">
+                                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200">
+                                    <p class="text-xs text-gray-600 uppercase font-medium mb-1">Parts Total</p>
+                                    <p class="font-bold text-lg text-gray-800" id="display_parts_total">0.00 ₾</p>
                                 </div>
-                                <div class="bg-gray-50 p-3 rounded flex justify-between md:block">
-                                    <p class="text-xs text-gray-500 uppercase">Service Total</p>
-                                    <p class="font-bold text-lg" id="display_service_total">0.00</p>
+                                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200">
+                                    <p class="text-xs text-gray-600 uppercase font-medium mb-1">Service Total</p>
+                                    <p class="font-bold text-lg text-gray-800" id="display_service_total">0.00 ₾</p>
                                 </div>
-                                <div class="bg-green-50 p-3 rounded border border-green-100 flex justify-between md:block">
-                                    <p class="text-xs text-green-600 uppercase">Grand Total</p>
-                                    <p class="font-bold text-xl text-green-700" id="display_grand_total">0.00 ₾</p>
+                                <div class="bg-gradient-to-r from-green-50 to-emerald-100 p-4 rounded-lg border-2 border-green-200 hover:shadow-lg transition-all duration-200">
+                                    <p class="text-xs text-green-700 uppercase font-medium mb-1">Grand Total</p>
+                                    <p class="font-bold text-xl text-green-800" id="display_grand_total">0.00 ₾</p>
                                 </div>
                             </div>
                         </div>
