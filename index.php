@@ -95,6 +95,90 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         .tab-active { @apply bg-yellow-500 text-slate-900 font-semibold shadow-md; }
         .tab-inactive { @apply bg-white text-gray-700 border border-gray-300; }
         .tab-inactive:hover { @apply bg-gray-50 border-gray-400; }
+
+        /* Mobile Step Animations and Enhancements */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .step-indicator.completed svg {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Enhanced mobile form styling */
+        @media (max-width: 767px) {
+            .step-content {
+                transition: all 0.3s ease-out;
+            }
+
+            .step-content.hidden {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            .step-content:not(.hidden) {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            /* Better touch targets */
+            button, input, select, textarea {
+                min-height: 44px;
+            }
+
+            /* Improved focus states for mobile */
+            input:focus, select:focus, textarea:focus {
+                transform: scale(1.02);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+        }
+
+        /* Progress bar animations */
+        #progress-bar, #step-progress-bar {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Step indicator hover effects */
+        .step-indicator:not(.completed):not(.active):hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Navigation button enhancements */
+        #prev-step:not(:disabled):hover svg {
+            transform: translateX(-2px);
+        }
+
+        #next-step:hover svg {
+            transform: translateX(2px);
+        }
+
+        /* Validation message animation */
+        #step-validation-message {
+            animation: slideInRight 0.3s ease-out;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen font-sans text-gray-800 antialiased overflow-x-hidden">
@@ -152,27 +236,52 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         
         <!-- ================= EDIT MODE ================= -->
         <div id="edit-mode" class="block print-hidden animate-fade-in">
-            <!-- Step Indicators (Mobile Only) -->
-            <div id="step-indicators" class="md:hidden mb-6">
-                <div class="flex items-center justify-center space-x-4">
-                    <div class="flex items-center">
-                        <div id="step-1-indicator" class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium step-indicator active">1</div>
-                        <span class="ml-2 text-sm text-gray-600">Workflow</span>
+            <!-- Enhanced Step Indicators (Mobile Only) -->
+            <div id="step-indicators" class="md:hidden mb-8">
+                <div class="relative">
+                    <!-- Progress Bar Background -->
+                    <div class="absolute top-5 left-8 right-8 h-1 bg-gray-200 rounded-full">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out" style="width: 25%"></div>
                     </div>
-                    <div class="w-8 h-0.5 bg-gray-300"></div>
-                    <div class="flex items-center">
-                        <div id="step-2-indicator" class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium step-indicator">2</div>
-                        <span class="ml-2 text-sm text-gray-600">Customer</span>
-                    </div>
-                    <div class="w-8 h-0.5 bg-gray-300"></div>
-                    <div class="flex items-center">
-                        <div id="step-3-indicator" class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium step-indicator">3</div>
-                        <span class="ml-2 text-sm text-gray-600">Vehicle</span>
-                    </div>
-                    <div class="w-8 h-0.5 bg-gray-300"></div>
-                    <div class="flex items-center">
-                        <div id="step-4-indicator" class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium step-indicator">4</div>
-                        <span class="ml-2 text-sm text-gray-600">Services</span>
+
+                    <!-- Step Circles -->
+                    <div class="relative flex items-center justify-between px-4">
+                        <div class="flex flex-col items-center">
+                            <div id="step-1-indicator" class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center text-sm font-bold step-indicator active shadow-lg transform transition-all duration-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <span class="mt-2 text-xs font-medium text-blue-600 step-label">Workflow</span>
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <div id="step-2-indicator" class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-sm font-bold step-indicator shadow-md transform transition-all duration-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                            <span class="mt-2 text-xs font-medium text-gray-400 step-label">Customer</span>
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <div id="step-3-indicator" class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-sm font-bold step-indicator shadow-md transform transition-all duration-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                            <span class="mt-2 text-xs font-medium text-gray-400 step-label">Vehicle</span>
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <div id="step-4-indicator" class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-sm font-bold step-indicator shadow-md transform transition-all duration-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            <span class="mt-2 text-xs font-medium text-gray-400 step-label">Services</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -381,26 +490,57 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
                 <!-- Mobile Steps Layout -->
                 <div id="mobile-steps-layout" class="md:hidden">
+                <!-- Enhanced Mobile Steps Layout -->
+                <div id="mobile-steps-layout" class="md:hidden">
                     <!-- Step 1: Workflow -->
-                    <div id="step-1" class="step-content">
-                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                            <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
-                                <svg class="h-6 w-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Step 1: Workflow Details
-                            </h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="input_creation_date_mobile" class="block text-sm font-medium text-gray-700 mb-2">Creation Date (შემოსვლის დრო)</label>
-                                    <input type="datetime-local" id="input_creation_date_mobile" name="creation_date_mobile" value="<?php echo $currentDate; ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 p-3 text-base transition" aria-describedby="date-help-mobile">
-                                    <p id="date-help-mobile" class="mt-1 text-xs text-gray-500">Select the date and time when the vehicle arrived.</p>
+                    <div id="step-1" class="step-content animate-fade-in">
+                        <div class="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 rounded-2xl shadow-xl border border-amber-200 hover:shadow-2xl transition-all duration-300">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                                    <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
                                 </div>
                                 <div>
-                                    <label for="input_service_manager_mobile" class="block text-sm font-medium text-gray-700 mb-2">Service Manager (სერვისის მენეჯერი)</label>
-                                    <input type="text" id="input_service_manager_mobile" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 p-3 text-base transition" aria-describedby="manager-help-mobile">
+                                    <h2 class="text-xl font-bold text-gray-800">Workflow Details</h2>
+                                    <p class="text-sm text-amber-700 font-medium">Step 1 of 4 • Basic Information</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-5">
+                                <div class="bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-amber-100">
+                                    <label for="input_creation_date_mobile" class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Creation Date & Time
+                                        <span class="text-amber-600 text-xs">(შემოსვლის დრო)</span>
+                                    </label>
+                                    <input type="datetime-local" id="input_creation_date_mobile" name="creation_date_mobile" value="<?php echo $currentDate; ?>" class="w-full border-amber-200 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 p-4 text-base bg-white transition-all duration-200 hover:border-amber-300" aria-describedby="date-help-mobile">
+                                    <p id="date-help-mobile" class="mt-2 text-xs text-amber-600 flex items-center gap-1">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Select when the vehicle arrived at the service
+                                    </p>
+                                </div>
+
+                                <div class="bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-amber-100">
+                                    <label for="input_service_manager_mobile" class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Service Manager
+                                        <span class="text-amber-600 text-xs">(სერვისის მენეჯერი)</span>
+                                    </label>
+                                    <input type="text" id="input_service_manager_mobile" placeholder="Enter manager name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border-amber-200 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 p-4 text-base bg-white transition-all duration-200 hover:border-amber-300" aria-describedby="manager-help-mobile">
                                     <input type="hidden" id="input_service_manager_id_mobile" name="service_manager_id_mobile" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
-                                    <p id="manager-help-mobile" class="mt-1 text-xs text-gray-500">The service manager handling this invoice.</p>
+                                    <p id="manager-help-mobile" class="mt-2 text-xs text-amber-600 flex items-center gap-1">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Person handling this service request
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -408,44 +548,63 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
                     <!-- Step 2: Customer -->
                     <div id="step-2" class="step-content hidden">
-                        <div class="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl shadow-lg border border-blue-200">
-                            <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
-                                <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                Step 2: Customer Info
-                            </h2>
-                            <div class="space-y-4">
+                        <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 rounded-2xl shadow-xl border border-blue-200 hover:shadow-2xl transition-all duration-300">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                    <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
                                 <div>
-                                    <label for="input_customer_name_mobile" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <h2 class="text-xl font-bold text-gray-800">Customer Information</h2>
+                                    <p class="text-sm text-blue-700 font-medium">Step 2 of 4 • Client Details</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-5">
+                                <div class="bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-blue-100">
+                                    <label for="input_customer_name_mobile" class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
-                                        Customer Name (კლიენტი)
+                                        Customer Full Name
+                                        <span class="text-blue-600 text-xs">(კლიენტი)</span>
                                     </label>
                                     <div class="relative">
-                                        <input type="text" id="input_customer_name_mobile" placeholder="First Last Name" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="customer-name-help-mobile">
-                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <input type="text" id="input_customer_name_mobile" placeholder="Enter full name as on ID" class="w-full border-blue-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-4 text-base bg-white pl-12 transition-all duration-200 hover:border-blue-300" aria-describedby="customer-name-help-mobile">
+                                        <svg class="absolute left-4 top-4 h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                     </div>
                                     <input type="hidden" id="input_customer_id_mobile" name="customer_id_mobile">
-                                    <p id="customer-name-help-mobile" class="mt-1 text-xs text-gray-500">Enter the full name of the customer as it appears on their ID.</p>
+                                    <p id="customer-name-help-mobile" class="mt-2 text-xs text-blue-600 flex items-center gap-1">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Full name exactly as it appears on their identification
+                                    </p>
                                 </div>
-                                <div>
-                                    <label for="input_phone_number_mobile" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+                                <div class="bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-blue-100">
+                                    <label for="input_phone_number_mobile" class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                         </svg>
-                                        Phone Number (ტელეფონი)
+                                        Phone Number
+                                        <span class="text-blue-600 text-xs">(ტელეფონი)</span>
                                     </label>
                                     <div class="relative">
-                                        <input type="tel" id="input_phone_number_mobile" placeholder="+995 555 00 00 00" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="phone-help-mobile">
-                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <input type="tel" id="input_phone_number_mobile" placeholder="+995 555 00 00 00" class="w-full border-blue-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-4 text-base bg-white pl-12 transition-all duration-200 hover:border-blue-300" aria-describedby="phone-help-mobile">
+                                        <svg class="absolute left-4 top-4 h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                         </svg>
                                     </div>
-                                    <p id="phone-help-mobile" class="mt-1 text-xs text-gray-500">Include country code for international numbers.</p>
+                                    <p id="phone-help-mobile" class="mt-2 text-xs text-blue-600 flex items-center gap-1">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Include country code for international contacts
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -453,59 +612,85 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
                     <!-- Step 3: Vehicle -->
                     <div id="step-3" class="step-content hidden">
-                        <div class="bg-gradient-to-br from-red-50 to-pink-100 p-6 rounded-xl shadow-lg border border-red-200">
-                            <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
-                                <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                Step 3: Vehicle Data
-                            </h2>
-                            <div class="space-y-4">
+                        <div class="bg-gradient-to-br from-red-50 via-pink-50 to-rose-50 p-6 rounded-2xl shadow-xl border border-red-200 hover:shadow-2xl transition-all duration-300">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-r from-red-500 to-pink-600 flex items-center justify-center shadow-lg">
+                                    <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
                                 <div>
-                                    <label for="input_car_mark_mobile" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <h2 class="text-xl font-bold text-gray-800">Vehicle Information</h2>
+                                    <p class="text-sm text-red-700 font-medium">Step 3 of 4 • Car Details</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-5">
+                                <div class="bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-red-100">
+                                    <label for="input_car_mark_mobile" class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                         </svg>
-                                        Car Mark/Model (ავტომანქანა)
+                                        Car Make & Model
+                                        <span class="text-red-600 text-xs">(ავტომანქანა)</span>
                                     </label>
                                     <div class="relative">
-                                        <input type="text" id="input_car_mark_mobile" placeholder="e.g., Toyota Camry" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="car-mark-help-mobile">
-                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <input type="text" id="input_car_mark_mobile" placeholder="e.g., Toyota Camry, BMW X5" class="w-full border-red-200 rounded-xl shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-4 text-base bg-white pl-12 transition-all duration-200 hover:border-red-300" aria-describedby="car-mark-help-mobile">
+                                        <svg class="absolute left-4 top-4 h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </div>
-                                    <p id="car-mark-help-mobile" class="mt-1 text-xs text-gray-500">Enter the make and model of the vehicle.</p>
+                                    <p id="car-mark-help-mobile" class="mt-2 text-xs text-red-600 flex items-center gap-1">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Enter the complete make and model of the vehicle
+                                    </p>
                                 </div>
+
                                 <div class="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label for="input_plate_number_mobile" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div class="bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-red-100">
+                                        <label for="input_plate_number_mobile" class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
-                                            Plate Number (ნომერი)
+                                            License Plate Number
+                                            <span class="text-red-600 text-xs">(ნომერი)</span>
                                         </label>
                                         <div class="relative">
-                                            <input type="text" id="input_plate_number_mobile" placeholder="ZZ-000-ZZ" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="plate-help-mobile">
-                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <input type="text" id="input_plate_number_mobile" placeholder="AA-123-BB" class="w-full border-red-200 rounded-xl shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-4 text-base bg-white pl-12 transition-all duration-200 hover:border-red-300 uppercase" aria-describedby="plate-help-mobile">
+                                            <svg class="absolute left-4 top-4 h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                         </div>
-                                        <p id="plate-help-mobile" class="mt-1 text-xs text-gray-500">License plate in Georgian format.</p>
+                                        <p id="plate-help-mobile" class="mt-2 text-xs text-red-600 flex items-center gap-1">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Georgian license plate format (XX-000-XX)
+                                        </p>
                                     </div>
-                                    <div>
-                                        <label for="input_mileage_mobile" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+                                    <div class="bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-red-100">
+                                        <label for="input_mileage_mobile" class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                                             </svg>
-                                            Mileage (გარბენი)
+                                            Current Mileage
+                                            <span class="text-red-600 text-xs">(გარბენი)</span>
                                         </label>
                                         <div class="relative">
-                                            <input type="text" id="input_mileage_mobile" placeholder="150000 km" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="mileage-help-mobile">
-                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <input type="number" id="input_mileage_mobile" placeholder="150000" min="0" class="w-full border-red-200 rounded-xl shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-4 text-base bg-white pl-12 transition-all duration-200 hover:border-red-300" aria-describedby="mileage-help-mobile">
+                                            <svg class="absolute left-4 top-4 h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                                             </svg>
                                         </div>
-                                        <p id="mileage-help-mobile" class="mt-1 text-xs text-gray-500">Current odometer reading in kilometers.</p>
+                                        <p id="mileage-help-mobile" class="mt-2 text-xs text-red-600 flex items-center gap-1">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Current odometer reading in kilometers
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -569,23 +754,41 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                     </div>
                 </div>
 
-                <!-- Navigation Buttons (Mobile Only) -->
-                <div id="step-navigation" class="md:hidden flex justify-between items-center mt-6">
-                    <button type="button" id="prev-step" class="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Previous
-                    </button>
+                <!-- Enhanced Navigation Buttons (Mobile Only) -->
+                <div id="step-navigation" class="md:hidden mt-8">
+                    <div class="flex items-center justify-between">
+                        <button type="button" id="prev-step" class="flex items-center gap-3 px-6 py-4 bg-white hover:bg-gray-50 text-gray-700 rounded-2xl font-semibold transition-all duration-300 shadow-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transform hover:scale-105 active:scale-95">
+                            <svg class="h-5 w-5 transition-transform group-hover:-translate-x-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span>Previous</span>
+                        </button>
 
-                    <span id="step-counter" class="text-sm text-gray-600 font-medium">Step 1 of 4</span>
+                        <div class="flex flex-col items-center">
+                            <div class="text-sm font-medium text-gray-500 mb-1">Progress</div>
+                            <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="step-progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out" style="width: 25%"></div>
+                            </div>
+                            <div id="step-counter" class="text-sm font-bold text-gray-700 mt-2">Step 1 of 4</div>
+                        </div>
 
-                    <button type="button" id="next-step" class="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium shadow-md">
-                        Next
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
+                        <button type="button" id="next-step" class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg transform hover:scale-105 active:scale-95">
+                            <span id="next-button-text">Next</span>
+                            <svg class="h-5 w-5 transition-transform group-hover:translate-x-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Step Validation Messages -->
+                    <div id="step-validation-message" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl hidden">
+                        <div class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                            <span class="text-sm text-yellow-800 font-medium" id="validation-text">Please fill in all required fields before continuing.</span>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1259,51 +1462,164 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         }
 
         function showStep(step) {
-            // Hide all steps
+            // Hide all steps with fade animation
             for (let i = 1; i <= totalSteps; i++) {
                 const stepElement = document.getElementById(`step-${i}`);
                 if (stepElement) {
                     stepElement.classList.add('hidden');
+                    stepElement.classList.remove('animate-fade-in');
                 }
             }
 
-            // Show current step
+            // Show current step with animation
             const currentStepElement = document.getElementById(`step-${step}`);
             if (currentStepElement) {
-                currentStepElement.classList.remove('hidden');
+                setTimeout(() => {
+                    currentStepElement.classList.remove('hidden');
+                    currentStepElement.classList.add('animate-fade-in');
+                }, 100);
             }
 
+            // Update step indicators
+            updateStepIndicators();
+
+            // Update progress bars
+            updateProgressBars(step);
+
             // Update navigation buttons
+            updateNavigationButtons(step);
+
+            // Update step counter
+            document.getElementById('step-counter').textContent = `Step ${step} of ${totalSteps}`;
+
+            // Hide validation message
+            document.getElementById('step-validation-message').classList.add('hidden');
+        }
+
+        function updateStepIndicators() {
+            // Update main step indicators
+            for (let i = 1; i <= totalSteps; i++) {
+                const indicator = document.getElementById(`step-${i}-indicator`);
+                const label = document.querySelector(`#step-${i}-indicator`).nextElementSibling;
+
+                if (i < currentStep) {
+                    // Completed steps
+                    indicator.className = `w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center justify-center text-sm font-bold step-indicator completed shadow-lg transform transition-all duration-300`;
+                    label.className = `mt-2 text-xs font-medium text-green-600 step-label`;
+                } else if (i === currentStep) {
+                    // Current step
+                    const gradients = [
+                        'from-blue-500 to-blue-600', // Step 1
+                        'from-blue-500 to-indigo-600', // Step 2
+                        'from-red-500 to-pink-600', // Step 3
+                        'from-purple-500 to-violet-600' // Step 4
+                    ];
+                    indicator.className = `w-10 h-10 rounded-full bg-gradient-to-r ${gradients[i-1]} text-white flex items-center justify-center text-sm font-bold step-indicator active shadow-lg transform scale-110 transition-all duration-300`;
+                    label.className = `mt-2 text-xs font-medium text-blue-600 step-label`;
+                } else {
+                    // Future steps
+                    indicator.className = `w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-sm font-bold step-indicator shadow-md transform transition-all duration-300`;
+                    label.className = `mt-2 text-xs font-medium text-gray-400 step-label`;
+                }
+            }
+        }
+
+        function updateProgressBars(step) {
+            const progress = ((step - 1) / (totalSteps - 1)) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('step-progress-bar').style.width = `${progress}%`;
+        }
+
+        function updateNavigationButtons(step) {
             const prevBtn = document.getElementById('prev-step');
             const nextBtn = document.getElementById('next-step');
+            const nextButtonText = document.getElementById('next-button-text');
 
+            // Previous button
             prevBtn.disabled = step === 1;
             prevBtn.classList.toggle('disabled:opacity-50', step === 1);
             prevBtn.classList.toggle('disabled:cursor-not-allowed', step === 1);
+            prevBtn.classList.toggle('disabled:hover:bg-white', step === 1);
 
+            // Next button
             if (step === totalSteps) {
+                nextButtonText.textContent = 'Save Invoice';
                 nextBtn.innerHTML = `
-                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span id="next-button-text">Save Invoice</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
-                    Save Invoice
                 `;
                 nextBtn.onclick = () => {
-                    if (handleSave()) {
+                    if (validateCurrentStep() && handleSave()) {
                         document.getElementById('invoice-form').submit();
                     }
                 };
             } else {
+                nextButtonText.textContent = 'Next';
                 nextBtn.innerHTML = `
-                    Next
-                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span id="next-button-text">Next</span>
+                    <svg class="h-5 w-5 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 `;
-                nextBtn.onclick = nextStep;
+                nextBtn.onclick = () => {
+                    if (validateCurrentStep()) {
+                        nextStep();
+                    }
+                };
+            }
+        }
+
+        function validateCurrentStep() {
+            const validationMessage = document.getElementById('step-validation-message');
+            const validationText = document.getElementById('validation-text');
+
+            // Basic validation for current step
+            let isValid = true;
+            let message = '';
+
+            switch (currentStep) {
+                case 1:
+                    const date = document.getElementById('input_creation_date_mobile').value;
+                    const manager = document.getElementById('input_service_manager_mobile').value.trim();
+                    if (!date || !manager) {
+                        isValid = false;
+                        message = 'Please fill in the creation date and service manager.';
+                    }
+                    break;
+                case 2:
+                    const customerName = document.getElementById('input_customer_name_mobile').value.trim();
+                    const phone = document.getElementById('input_phone_number_mobile').value.trim();
+                    if (!customerName || !phone) {
+                        isValid = false;
+                        message = 'Please fill in the customer name and phone number.';
+                    }
+                    break;
+                case 3:
+                    const carMark = document.getElementById('input_car_mark_mobile').value.trim();
+                    const plateNumber = document.getElementById('input_plate_number_mobile').value.trim();
+                    const mileage = document.getElementById('input_mileage_mobile').value.trim();
+                    if (!carMark || !plateNumber || !mileage) {
+                        isValid = false;
+                        message = 'Please fill in the car make/model, plate number, and mileage.';
+                    }
+                    break;
+                case 4:
+                    // Services step - always valid for now
+                    break;
             }
 
-            updateStepIndicators();
+            if (!isValid) {
+                validationText.textContent = message;
+                validationMessage.classList.remove('hidden');
+                // Scroll to validation message
+                validationMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                validationMessage.classList.add('hidden');
+            }
+
+            return isValid;
         }
 
         function nextStep() {
@@ -1337,10 +1653,26 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
             // Set up navigation
             document.getElementById('prev-step').onclick = prevStep;
-            document.getElementById('next-step').onclick = nextStep;
 
-            // Show first step
+            // Initialize first step
+            currentStep = 1;
             showStep(1);
+
+            // Add fade-in animation CSS if not present
+            if (!document.getElementById('mobile-step-styles')) {
+                const style = document.createElement('style');
+                style.id = 'mobile-step-styles';
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(20px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    .animate-fade-in {
+                        animation: fadeIn 0.3s ease-out;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         }
 
         function addItemRowMobile() {
