@@ -72,13 +72,6 @@ function esc($s){ return htmlspecialchars((string)$s); }
                     <div class="border-b border-black px-2 h-6 flex items-center font-mono" id="out_phone_number"></div>
                 <?php endif; ?>
 
-                <div class="font-bold whitespace-nowrap">ელ-ფოსტა:</div>
-                <?php if ($server): ?>
-                    <div class="border-b border-black px-2 h-6 flex items-center font-mono"><?php echo esc($customer['email'] ?? ''); ?></div>
-                <?php else: ?>
-                    <div class="border-b border-black px-2 h-6 flex items-center font-mono" id="out_email"></div>
-                <?php endif; ?>
-
                 <div class="font-bold whitespace-nowrap">გარბენი:</div>
                 <?php if ($server): ?>
                     <div class="border-b border-black px-2 h-6 flex items-center"><?php echo esc($invoice['mileage']); ?></div>

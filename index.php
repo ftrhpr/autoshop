@@ -417,21 +417,6 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                     </div>
                                     <p id="phone-help" class="mt-1 text-xs text-gray-500">Include country code for international numbers.</p>
                                 </div>
-                                <div>
-                                    <label for="input_email" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
-                                        Email (ელ-ფოსტა)
-                                    </label>
-                                    <div class="relative">
-                                        <input type="email" id="input_email" placeholder="customer@example.com" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="email-help">
-                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
-                                    </div>
-                                    <p id="email-help" class="mt-1 text-xs text-gray-500">Optional email address for the customer.</p>
-                                </div>
                             </div>
                         </div>
 
@@ -703,7 +688,6 @@ if (!empty($serverInvoice)) {
                 attachTypeahead(cn, './admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
                     cn.value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
-                    document.getElementById('input_email').value = it.email || '';
                     document.getElementById('input_plate_number').value = it.plate_number || '';
                     const cid = document.getElementById('input_customer_id'); if (cid) cid.value = it.id;
                 });
