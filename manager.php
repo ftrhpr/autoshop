@@ -244,7 +244,7 @@ foreach ($invoices as $invoice) {
                                    <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
-                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
+                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">View</a>
                             <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
                             <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
                                 <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
@@ -322,27 +322,46 @@ foreach ($invoices as $invoice) {
             let newInvoiceIds = new Set(); // Track new invoices that haven't been viewed
 
             function fetchLatestTimestamp() {
+                console.log('Fetching latest timestamp...');
                 return fetch('api_live_invoices.php', { cache: 'no-store' })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('fetchLatestTimestamp response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('fetchLatestTimestamp data:', data);
                         if (data && data.success) {
                             lastTimestamp = data.latest_timestamp || null;
+                            console.log('Set lastTimestamp to:', lastTimestamp);
                         }
                     })
                     .catch(e => console.warn('fetchLatestTimestamp error', e));
             }
 
             function pollForUpdates() {
-                if (inFlight) return;
+                if (inFlight) {
+                    console.log('Poll already in flight, skipping');
+                    return;
+                }
                 inFlight = true;
+                console.log('Polling for updates, lastTimestamp:', lastTimestamp);
 
                 const url = 'api_live_invoices.php' + (lastTimestamp ? ('?last_timestamp=' + encodeURIComponent(lastTimestamp)) : '');
+                console.log('Polling URL:', url);
+
                 fetch(url, { cache: 'no-store' })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('pollForUpdates response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('pollForUpdates data:', data);
                         if (data && data.success && data.new_count > 0) {
+                            console.log('Found', data.new_count, 'new invoices');
                             handleNewInvoices(data.invoices);
                             lastTimestamp = data.latest_timestamp;
+                        } else {
+                            console.log('No new invoices found');
                         }
                     })
                     .catch(e => console.warn('pollForUpdates error', e))
@@ -414,10 +433,14 @@ foreach ($invoices as $invoice) {
             }
 
             function setupRowEventListeners(row) {
+                const invoiceId = row.getAttribute('data-invoice-id');
+                console.log('Setting up event listeners for row', invoiceId);
+
                 // Stop blinking and mark as seen when View link is clicked
                 const viewLink = row.querySelector('.view-link');
                 if (viewLink) {
                     viewLink.addEventListener('click', function() {
+                        console.log('View link clicked for invoice', invoiceId);
                         const invoiceId = parseInt(row.getAttribute('data-invoice-id'));
                         markInvoiceAsSeen(invoiceId, row);
                     });
@@ -429,6 +452,7 @@ foreach ($invoices as $invoice) {
                     if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.type === 'checkbox') {
                         return;
                     }
+                    console.log('Row clicked for invoice', invoiceId);
                     const invoiceId = parseInt(row.getAttribute('data-invoice-id'));
                     markInvoiceAsSeen(invoiceId, row);
                 });
@@ -468,14 +492,44 @@ foreach ($invoices as $invoice) {
             }
 
             function markInvoiceAsSeen(invoiceId, row) {
+                console.log('Marking invoice', invoiceId, 'as seen');
                 if (newInvoiceIds.has(invoiceId)) {
                     newInvoiceIds.delete(invoiceId);
-                    row.classList.remove('invoice-new');
+                    row.classList.remove('invoice-new', 'invoice-recent');
                     row.classList.add('invoice-highlight');
+                    console.log('Removed invoice-new and invoice-recent classes, added invoice-highlight');
                     // Remove highlight after 30 seconds
                     setTimeout(() => {
                         row.classList.remove('invoice-highlight');
+                        console.log('Removed invoice-highlight from invoice', invoiceId);
                     }, 30000);
+                } else {
+                    // Even if not in newInvoiceIds, still mark as seen for cross-tab communication
+                    row.classList.remove('invoice-new', 'invoice-recent');
+                    row.classList.add('invoice-highlight');
+                    console.log('Marked as seen (cross-tab), removed classes and added invoice-highlight');
+                    setTimeout(() => {
+                        row.classList.remove('invoice-highlight');
+                        console.log('Removed invoice-highlight from invoice', invoiceId);
+                    }, 30000);
+                }
+
+                // Update sessionStorage for cross-tab communication
+                try {
+                    const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                    if (!seenInvoices.includes(invoiceId)) {
+                        seenInvoices.push(invoiceId);
+                        sessionStorage.setItem('seen_invoices', JSON.stringify(seenInvoices));
+                        console.log('Updated sessionStorage with seen invoice', invoiceId);
+                        // Trigger storage event for cross-tab communication
+                        window.dispatchEvent(new StorageEvent('storage', {
+                            key: 'seen_invoices',
+                            newValue: JSON.stringify(seenInvoices),
+                            storageArea: sessionStorage
+                        }));
+                    }
+                } catch (e) {
+                    console.warn('Could not update seen invoices in sessionStorage', e);
                 }
             }
 
@@ -484,6 +538,7 @@ foreach ($invoices as $invoice) {
                 if (e.key === 'seen_invoices' && e.newValue) {
                     try {
                         const seenInvoices = JSON.parse(e.newValue);
+                        console.log('Received storage event with seen invoices:', seenInvoices);
                         seenInvoices.forEach(invoiceId => {
                             const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
                             if (row) {
@@ -501,8 +556,10 @@ foreach ($invoices as $invoice) {
 
             // Initialize recent invoices as "new" unless already seen
             function initializeRecentInvoices() {
+                console.log('Initializing recent invoices:', recentInvoiceIds);
                 try {
                     const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                    console.log('Seen invoices from storage:', seenInvoices);
                     const seenSet = new Set(seenInvoices);
 
                     recentInvoiceIds.forEach(invoiceId => {
@@ -511,7 +568,12 @@ foreach ($invoices as $invoice) {
                             if (row) {
                                 row.classList.add('invoice-new');
                                 newInvoiceIds.add(invoiceId);
+                                console.log('Marked invoice', invoiceId, 'as new');
+                            } else {
+                                console.log('Row not found for invoice', invoiceId);
                             }
+                        } else {
+                            console.log('Invoice', invoiceId, 'already seen');
                         }
                     });
                 } catch (e) {
@@ -519,17 +581,12 @@ foreach ($invoices as $invoice) {
                 }
             }
 
-            // Check for already seen invoices on load
-            try {
-                const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
-                seenInvoices.forEach(invoiceId => {
-                    const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
-                    if (row && newInvoiceIds.has(invoiceId)) {
-                        markInvoiceAsSeen(invoiceId, row);
-                    }
+            // Add event listeners to all existing rows
+            function setupExistingRowEventListeners() {
+                console.log('Setting up event listeners for existing rows');
+                document.querySelectorAll('tbody tr[data-invoice-id]').forEach(row => {
+                    setupRowEventListeners(row);
                 });
-            } catch (e) {
-                console.warn('Error checking seen invoices on load', e);
             }
 
 
@@ -554,6 +611,7 @@ foreach ($invoices as $invoice) {
 
             // Initialize
             initializeRecentInvoices(); // Mark recent invoices as new
+            setupExistingRowEventListeners(); // Add event listeners to existing rows
             fetchLatestTimestamp().then(() => {
                 pollForUpdates();
                 pollingTimer = setInterval(pollForUpdates, pollingInterval);
@@ -569,6 +627,22 @@ foreach ($invoices as $invoice) {
                     if (row) {
                         markInvoiceAsSeen(invoiceId, row);
                     }
+                },
+                // Test functions
+                testMarkAsSeen: function(invoiceId) {
+                    console.log('Testing mark as seen for invoice', invoiceId);
+                    this.markAsSeen(invoiceId);
+                },
+                testAddNewInvoice: function() {
+                    console.log('Testing add new invoice');
+                    const testInvoice = {
+                        id: Date.now(),
+                        customer_name: 'Test Customer',
+                        plate_number: 'TEST-' + Math.floor(Math.random() * 1000),
+                        grand_total: Math.floor(Math.random() * 500) + 50,
+                        created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                    };
+                    handleNewInvoices([testInvoice]);
                 }
             };
         }
