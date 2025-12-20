@@ -15,7 +15,7 @@ CREATE TABLE customers (
     full_name VARCHAR(200),
     phone VARCHAR(32),
     email VARCHAR(150),
-    plate_number VARCHAR(20) UNIQUE NOT NULL,
+    plate_number VARCHAR(20) NOT NULL,
     car_mark VARCHAR(100),
     notes TEXT,
     last_service_at DATETIME NULL,
