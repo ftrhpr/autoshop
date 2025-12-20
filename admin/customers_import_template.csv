@@ -1,2 +1,2 @@
-plate_number,full_name,phone,email,car_mark,notes,last_service_at
-AA-123-AA,John Doe,+995555000000,john@example.com,Toyota Camry,First time customer,2025-12-01 09:00:00
+full_name,phone
+John Doe,+995555000000

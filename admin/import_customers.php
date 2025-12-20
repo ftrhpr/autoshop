@@ -43,9 +43,10 @@ if (!$header) {
 
 // Normalize header
 $columns = array_map(function($c){ return strtolower(trim($c)); }, $header);
-$required = ['plate_number'];
-if (!in_array('plate_number', $columns)) {
-    $_SESSION['import_summary'] = ['error' => 'CSV must include a "plate_number" column.'];
+$required = ['full_name', 'phone'];
+$missing = array_diff($required, $columns);
+if (!empty($missing)) {
+    $_SESSION['import_summary'] = ['error' => 'CSV must include columns: ' . implode(', ', $missing)];
     fclose($handle);
     header('Location: customers.php');
     exit;
@@ -79,23 +80,31 @@ try {
         }
 
         $plate = strtoupper(trim($data['plate_number'] ?? ''));
-        if ($plate === '') {
+        $phone = trim($data['phone'] ?? '');
+        if ($phone === '') {
             $failed++;
-            $failures[] = "Row {$rowNo}: empty plate number";
+            $failures[] = "Row {$rowNo}: empty phone number";
             continue;
         }
 
         $full = trim($data['full_name'] ?? '');
-        $phone = trim($data['phone'] ?? '');
         $email = trim($data['email'] ?? '');
         $car = trim($data['car_mark'] ?? '');
         $notes = trim($data['notes'] ?? '');
         $lastService = trim($data['last_service_at'] ?? null);
         $lastService = $lastService ? date('Y-m-d H:i:s', strtotime($lastService)) : null;
 
-        // Check if exists
-        $select->execute([$plate]);
-        $found = $select->fetch();
+        // Check if exists by plate or phone
+        $found = null;
+        if ($plate !== '') {
+            $select->execute([$plate]);
+            $found = $select->fetch();
+        }
+        if (!$found) {
+            $selectPhone = $pdo->prepare('SELECT id FROM customers WHERE phone = ? LIMIT 1');
+            $selectPhone->execute([$phone]);
+            $found = $selectPhone->fetch();
+        }
         if ($found) {
             // Update
             $uid = $found['id'];
@@ -103,7 +112,7 @@ try {
             $updated++;
 
             $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
-            $stmt->execute([$_SESSION['user_id'], 'update_customer_via_import', "id={$uid}, plate={$plate}", $_SERVER['REMOTE_ADDR'] ?? '']);
+            $stmt->execute([$_SESSION['user_id'], 'update_customer_via_import', "id={$uid}, phone={$phone}", $_SERVER['REMOTE_ADDR'] ?? '']);
         } else {
             // Insert
             try {
@@ -112,7 +121,7 @@ try {
                 $newId = $pdo->lastInsertId();
 
                 $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
-                $stmt->execute([$_SESSION['user_id'], 'create_customer_via_import', "id={$newId}, plate={$plate}", $_SERVER['REMOTE_ADDR'] ?? '']);
+                $stmt->execute([$_SESSION['user_id'], 'create_customer_via_import', "id={$newId}, phone={$phone}", $_SERVER['REMOTE_ADDR'] ?? '']);
             } catch (PDOException $e) {
                 $failed++;
                 $failures[] = "Row {$rowNo}: DB error - " . $e->getMessage();
