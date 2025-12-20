@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Migration Runner</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .migration { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { border-left: 4px solid #28a745; background: #d4edda; }
+        .error { border-left: 4px solid #dc3545; background: #f8d7da; }
+        .pending { border-left: 4px solid #ffc107; background: #fff3cd; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>Database Migration Runner</h1>
+    <p>This tool will run necessary database migrations for the autoshop application.</p>
+
+    <div id="migrations">
+        <div class="migration pending" id="fina-status-migration">
+            <h3>Add opened_in_fina column to invoices table</h3>
+            <p>Adds a column to track whether invoices have been opened in FINA system.</p>
+            <button onclick="runMigration('fina')">Run Migration</button>
+        </div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        async function runMigration(type) {
+            const button = event.target;
+            const migrationDiv = button.parentElement;
+
+            button.disabled = true;
+            button.textContent = 'Running...';
+
+            try {
+                let response;
+                if (type === 'fina') {
+                    response = await fetch('migrate_add_fina_status.php');
+                }
+
+                if (response.ok) {
+                    const text = await response.text();
+                    migrationDiv.className = 'migration success';
+                    button.textContent = 'Completed';
+                    addResult('Migration completed successfully: ' + text, 'success');
+                } else {
+                    throw new Error('HTTP ' + response.status);
+                }
+            } catch (error) {
+                migrationDiv.className = 'migration error';
+                button.disabled = false;
+                button.textContent = 'Retry';
+                addResult('Migration failed: ' + error.message, 'error');
+            }
+        }
+
+        function addResult(message, type) {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `migration ${type}`;
+            div.innerHTML = `<p>${message}</p>`;
+            resultsDiv.appendChild(div);
+        }
+    </script>
+</body>
+</html>
