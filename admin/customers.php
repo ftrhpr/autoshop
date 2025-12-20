@@ -259,7 +259,7 @@ $totalPages = (int)ceil($total / $perPage);
                 </div>
 
                 <div>
-                    <div class="overflow-x-auto bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div class="overflow-x-auto overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200" style="max-height: 70vh;">
                         <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;">
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200">
                                 <tr>
