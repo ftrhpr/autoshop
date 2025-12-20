@@ -91,6 +91,18 @@ function esc($s){ return htmlspecialchars((string)$s); }
 
         <!-- Table -->
         <div class="mb-4">
+<?php if ($server && $serverItems):
+    $computedParts = 0.0;
+    $computedSvc = 0.0;
+    foreach ($items as $it) {
+        $qty = isset($it['qty']) ? (float)$it['qty'] : 0;
+        $pPart = isset($it['price_part']) ? (float)$it['price_part'] : 0;
+        $pSvc = isset($it['price_svc']) ? (float)$it['price_svc'] : 0;
+        $computedParts += $qty * $pPart;
+        $computedSvc += $qty * $pSvc;
+    }
+    $computedGrand = $computedParts + $computedSvc;
+endif; ?>
             <table class="w-full text-xs border-collapse border border-black">
                 <thead>
                     <tr class="bg-gray-200 print:bg-gray-200">
@@ -108,22 +120,64 @@ function esc($s){ return htmlspecialchars((string)$s); }
                     <?php if ($server && $serverItems):
                         $i = 1;
                         foreach ($items as $it) {
+                            $name = trim($it['name'] ?? '');
                             $qty = isset($it['qty']) ? (float)$it['qty'] : 0;
                             $pPart = isset($it['price_part']) ? (float)$it['price_part'] : 0;
                             $pSvc = isset($it['price_svc']) ? (float)$it['price_svc'] : 0;
-                            $totalPart = $qty * $pPart;
-                            $totalSvc = $qty * $pSvc;
+                            $tech = $it['tech'] ?? ''; 
+
+                            $displayQty = $qty;
+                            $displayPPart = $pPart > 0 ? number_format($pPart,2) : '';
+                            $displayTotalPart = ($qty * $pPart) > 0 ? number_format($qty * $pPart, 2) : '';
+                            $displayPSvc = $pSvc > 0 ? number_format($pSvc,2) : '';
+                            $displayTotalSvc = ($qty * $pSvc) > 0 ? number_format($qty * $pSvc, 2) : '';
+
+                            if ($name === '') {
+                                $displayQty = '';
+                                $displayPPart = '';
+                                $displayTotalPart = '';
+                                $displayPSvc = '';
+                                $displayTotalSvc = '';
+                            }
+
                             echo "<tr>";
                             echo "<td class=\"border border-black p-1 text-center\">" . $i++ . "</td>";
-                            echo "<td class=\"border border-black p-1\">" . esc($it['name'] ?? '') . "</td>";
-                            echo "<td class=\"border border-black p-1 text-center\">" . ($qty ? $qty : '') . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right\">" . ($pPart ? number_format($pPart,2) : '') . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . ($totalPart ? number_format($totalPart,2) : '') . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right\">" . ($pSvc ? number_format($pSvc,2) : '') . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . ($totalSvc ? number_format($totalSvc,2) : '') . "</td>";
-                            echo "<td class=\"border border-black p-1\">" . esc($it['tech'] ?? '') . "</td>";
+                            echo "<td class=\"border border-black p-1\">" . esc($name) . "</td>";
+                            echo "<td class=\"border border-black p-1 text-center\">" . $displayQty . "</td>";
+                            echo "<td class=\"border border-black p-1 text-right\">" . $displayPPart . "</td>";
+                            echo "<td class=\"border border-black p-1 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalPart . "</td>";
+                            echo "<td class=\"border border-black p-1 text-right\">" . $displayPSvc . "</td>";
+                            echo "<td class=\"border border-black p-1 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalSvc . "</td>";
+                            echo "<td class=\"border border-black p-1\">" . esc($tech) . "</td>";
                             echo "</tr>";
                         }
+
+                        // Fill empty rows up to 20 to match preview behaviour
+                        $rowsCount = count($items);
+                        $needed = max(0, 20 - $rowsCount);
+                        for ($j = 0; $j < $needed; $j++) {
+                            echo "<tr>";
+                            echo "<td class=\"border border-black p-1 text-center text-white\">.</td>";
+                            echo "<td class=\"border border-black p-1\"></td>";
+                            echo "<td class=\"border border-black p-1\"></td>";
+                            echo "<td class=\"border border-black p-1\"></td>";
+                            echo "<td class=\"border border-black p-1 bg-gray-50 print:bg-gray-50\"></td>";
+                            echo "<td class=\"border border-black p-1\"></td>";
+                            echo "<td class=\"border border-black p-1 bg-gray-50 print:bg-gray-50\"></td>";
+                            echo "<td class=\"border border-black p-1\"></td>";
+                            echo "</tr>";
+                        }
+
+                        // Add footer row (totals) matching preview logic (hide zeros)
+                        $displayPartTotal = ($computedParts ?? 0) > 0 ? number_format($computedParts, 2) : '';
+                        $displaySvcTotal = ($computedSvc ?? 0) > 0 ? number_format($computedSvc, 2) : '';
+                        echo "<tr class=\"font-bold bg-gray-100 print:bg-gray-100\">";
+                        echo "<td class=\"border border-black p-2 text-right\" colSpan=\"4\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-2 text-right\">" . $displayPartTotal . "</td>";
+                        echo "<td class=\"border border-black p-2 text-right\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-2 text-right\">" . $displaySvcTotal . "</td>";
+                        echo "<td class=\"border border-black p-2 bg-gray-300 print:bg-gray-300\"></td>";
+                        echo "</tr>";
                     endif; ?>
                 </tbody>
             </table>
@@ -131,7 +185,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
             <!-- Grand Total -->
             <div class="flex justify-end mt-2">
                 <div class="border border-black px-4 py-2 bg-yellow-100 print:bg-yellow-100 text-lg font-bold">
-                    სულ გადასახდელი: <span id="out_grand_total"><?php echo $server ? number_format((float)($invoice['grand_total'] ?? 0), 2) : '0.00'; ?></span> ₾
+                    სულ გადასახდელი: <span id="out_grand_total"><?php echo $server ? number_format((float)($computedGrand ?? ($invoice['grand_total'] ?? 0)), 2) : '0.00'; ?></span> ₾
                 </div>
             </div>
         </div>
