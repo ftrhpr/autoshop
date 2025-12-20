@@ -6,6 +6,18 @@ if (!isset($_SESSION['user_id']) || !currentUserCan('manage_customers')) {
     exit;
 }
 
+// Check customers table exists
+$tbl = $pdo->query("SHOW TABLES LIKE 'customers'")->fetch();
+if (!$tbl) {
+    echo '<div style="max-width:800px;margin:40px auto;padding:20px;background:#fff;border:1px solid #eee;border-radius:8px;">
+            <h2 style="margin-top:0">Customers table not found</h2>
+            <p>The database table <code>customers</code> does not exist. Run the migration to create it:</p>
+            <p><a href="migrate_customers.php" style="display:inline-block;padding:8px 12px;background:#2563eb;color:white;border-radius:6px;text-decoration:none;">Run migration</a>
+            <small style="display:block;margin-top:8px;color:#666">This will create the <code>customers</code> table and add <code>customer_id</code> to <code>invoices</code>. Only admins may run it.</small></p>
+          </div>';
+    exit;
+}
+
 // Handle create / update / delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['create_customer'])) {
