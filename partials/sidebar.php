@@ -18,6 +18,13 @@ $menu = [
     ['label' => 'Roles & Permissions', 'href' => $appRoot.'/admin/permissions.php', 'icon' => 'shield', 'permission' => null],
     ['label' => 'Audit Logs', 'href' => $appRoot.'/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
 ];
+
+// If current user is a manager, restrict sidebar to only New Invoice and Invoices
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'manager') {
+    $menu = array_values(array_filter($menu, function($it){
+        return in_array($it['label'], ['New Invoice', 'Invoices']);
+    }));
+}
 $logoutHref = $appRoot.'/logout.php';
 
 function svgIcon($name){
