@@ -11,16 +11,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$rawData = trim($_POST['raw_data'] ?? '');
-if (empty($rawData)) {
-    $_SESSION['import_summary'] = ['error' => 'No raw data provided.'];
+$namesData = trim($_POST['names'] ?? '');
+$phonesData = trim($_POST['phones'] ?? '');
+if (empty($namesData) || empty($phonesData)) {
+    $_SESSION['import_summary'] = ['error' => 'Both names and phones must be provided.'];
     header('Location: customers.php');
     exit;
 }
 
-$lines = explode("\n", $rawData);
+$names = array_filter(array_map('trim', explode("\n", $namesData)));
+$phones = array_filter(array_map('trim', explode("\n", $phonesData)));
+if (count($names) !== count($phones)) {
+    $_SESSION['import_summary'] = ['error' => 'Names and phones must have the same number of lines.'];
+    header('Location: customers.php');
+    exit;
+}
+
+$lines = array_map(null, $names, $phones); // Pair them
 if (empty($lines)) {
-    $_SESSION['import_summary'] = ['error' => 'No valid lines in raw data.'];
+    $_SESSION['import_summary'] = ['error' => 'No valid data provided.'];
     header('Location: customers.php');
     exit;
 }
@@ -38,25 +47,14 @@ try {
     $insert = $pdo->prepare('INSERT INTO customers (full_name, phone, created_by) VALUES (?, ?, ?)');
     $update = $pdo->prepare('UPDATE customers SET full_name = ? WHERE id = ?');
 
-    foreach ($lines as $line) {
-        $rowNo++;
+    foreach ($lines as $rowNo => $pair) {
+        $rowNo++; // 1-based
         if ($rowNo > $maxRows) {
             $failures[] = "Row limit reached at {$maxRows}";
             break;
         }
 
-        $line = trim($line);
-        if (empty($line)) continue;
-
-        $parts = str_getcsv($line, ',', '"');
-        if (count($parts) < 2) {
-            $failed++;
-            $failures[] = "Row {$rowNo}: invalid format, expected full_name,phone";
-            continue;
-        }
-
-        $full = trim($parts[0]);
-        $phone = trim($parts[1]);
+        list($full, $phone) = $pair;
 
         if (empty($phone)) {
             $failed++;
