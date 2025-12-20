@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Handle customer - always create new customer if none selected
     $customer_id = null;
-    if (!empty($data['customer_id'])) {
+    $was_selected = !empty($data['customer_id']);
+    if ($was_selected) {
         $customer_id = (int)$data['customer_id'];
         // Verify the customer still exists
         $stmt = $pdo->prepare('SELECT full_name, phone, plate_number, car_mark FROM customers WHERE id = ? LIMIT 1');
@@ -48,21 +49,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $customer_id = null; // Will create new below
         }
         // No update for existing customer
-    } else {
-        // No existing customer selected - create or find customer
+    }
+
+    // Now handle creation if needed
+    if ($customer_id === null) {
         $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
         if (trim($data['customer_name']) !== '' && !empty($plateNumber)) {
-            // Check if customer with this plate number already exists
-            $stmt = $pdo->prepare('SELECT id, full_name FROM customers WHERE plate_number = ? LIMIT 1');
-            $stmt->execute([$plateNumber]);
-            $existingCustomer = $stmt->fetch();
-
-            if ($existingCustomer) {
-                // Use existing customer
-                $customer_id = $existingCustomer['id'];
-                // No update
-            } else {
-                // Create new customer
+            if ($was_selected) {
+                // Create new customer directly since selected was changed
                 $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
                 $stmt->execute([
                     $data['customer_name'],
@@ -72,11 +66,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $_SESSION['user_id']
                 ]);
                 $customer_id = $pdo->lastInsertId();
-                error_log("Created new customer ID $customer_id with plate number $plateNumber");
+                error_log("Created new customer ID $customer_id because selected was changed");
+            } else {
+                // Check if customer with this plate number already exists
+                $stmt = $pdo->prepare('SELECT id FROM customers WHERE plate_number = ? LIMIT 1');
+                $stmt->execute([$plateNumber]);
+                $existingCustomer = $stmt->fetch();
 
-                // Verify the customer was actually created
-                if (!$customer_id) {
-                    throw new Exception('Failed to create new customer');
+                if ($existingCustomer) {
+                    // Use existing customer
+                    $customer_id = $existingCustomer['id'];
+                    error_log("Used existing customer ID $customer_id for plate $plateNumber");
+                } else {
+                    // Create new customer
+                    $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
+                    $stmt->execute([
+                        $data['customer_name'],
+                        $data['phone_number'],
+                        $plateNumber,
+                        $data['car_mark'],
+                        $_SESSION['user_id']
+                    ]);
+                    $customer_id = $pdo->lastInsertId();
+                    error_log("Created new customer ID $customer_id for plate $plateNumber");
                 }
             }
         } elseif (trim($data['customer_name']) !== '') {
