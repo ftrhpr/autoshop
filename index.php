@@ -546,6 +546,14 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             </div>
 
             <!-- A4 Container -->
+<?php
+if (!empty($serverInvoice)) {
+    $invoice = $serverInvoice;
+    $items = $serverInvoice['items'];
+    $customer = $serverInvoice['customer'] ?? null;
+    $sm_username = $serverInvoice['service_manager_username'] ?? '';
+}
+?>
 <?php include 'partials/invoice_print_template.php'; ?>
         </div>
 
