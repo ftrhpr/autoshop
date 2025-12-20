@@ -19,17 +19,12 @@ if (empty($namesData) || empty($phonesData)) {
     exit;
 }
 
-$names = array_filter(array_map('trim', explode("\n", $namesData)));
-$phones = array_filter(array_map('trim', explode("\n", $phonesData)));
-if (count($names) !== count($phones)) {
-    $_SESSION['import_summary'] = ['error' => 'Names and phones must have the same number of lines.'];
-    header('Location: customers.php');
-    exit;
-}
-
-$lines = array_map(null, $names, $phones); // Pair them
-if (empty($lines)) {
-    $_SESSION['import_summary'] = ['error' => 'No valid data provided.'];
+$names = array_map('trim', explode("\n", $namesData));
+$phones = array_map('trim', explode("\n", $phonesData));
+$lines = array_map(null, $names, $phones); // Pair them, padding with null if uneven
+$validLines = array_filter($lines, function($pair) { return !empty($pair[1]); }); // Keep only pairs with phone
+if (empty($validLines)) {
+    $_SESSION['import_summary'] = ['error' => 'No valid data with phones provided.'];
     header('Location: customers.php');
     exit;
 }
@@ -47,20 +42,17 @@ try {
     $insert = $pdo->prepare('INSERT INTO customers (full_name, phone, created_by) VALUES (?, ?, ?)');
     $update = $pdo->prepare('UPDATE customers SET full_name = ? WHERE id = ?');
 
-    foreach ($lines as $rowNo => $pair) {
+    foreach ($validLines as $rowNo => $pair) {
         $rowNo++; // 1-based
         if ($rowNo > $maxRows) {
             $failures[] = "Row limit reached at {$maxRows}";
             break;
         }
 
-        list($full, $phone) = $pair;
+        $full = $pair[0] ?? '';
+        $phone = $pair[1] ?? '';
 
-        if (empty($phone)) {
-            $failed++;
-            $failures[] = "Row {$rowNo}: empty phone number";
-            continue;
-        }
+        if (empty($phone)) continue; // Skip if no phone
 
         // Ensure UTF-8
         $full = mb_convert_encoding($full, 'UTF-8', mb_detect_encoding($full, ['UTF-8', 'Windows-1251', 'ISO-8859-1'], true) ?: 'UTF-8');
