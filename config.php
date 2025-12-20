@@ -17,13 +17,20 @@ try {
 session_start();
 
 // Permission helpers
-function roleHasPermission(PDO $pdo, string $role, string $permissionName): bool {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role = ? AND p.name = ?");
-    $stmt->execute([$role, $permissionName]);
-    return (int)$stmt->fetchColumn() > 0;
+function roleHasPermission($pdo, $role, $permissionName) {
+    // Backwards-compatible: no strict type hints or return types
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role = ? AND p.name = ?");
+        $stmt->execute([$role, $permissionName]);
+        return (int)$stmt->fetchColumn() > 0;
+    } catch (Exception $e) {
+        // If permissions table doesn't exist yet, treat as false (pre-seed state)
+        error_log('Permission check failed: ' . $e->getMessage());
+        return false;
+    }
 }
 
-function currentUserCan(string $permissionName): bool {
+function currentUserCan($permissionName) {
     global $pdo;
     if (!isset($_SESSION['role'])) return false;
     $role = $_SESSION['role'];
