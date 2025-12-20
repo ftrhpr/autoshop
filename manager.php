@@ -276,7 +276,40 @@ $resultsCount = count($invoices);
                 });
             });
 
+            // Helper: mark notification seen (used by view handlers and clicking rows)
+            function markNotificationSeen(invoiceId, row){
+                if (!invoiceId) return;
+                fetch('mark_notification_seen.php', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ invoice_id: invoiceId })
+                }).then(r=>r.json()).then(data=>{
+                    if (data && data.success){
+                        if (row){ row.classList.remove('bg-yellow-50'); row.classList.remove('unread-row'); row.setAttribute('data-unread','0'); const badge = row.querySelector('span.inline-flex'); if (badge) badge.remove(); }
+                        // Update sidebar badge count if available
+                        try {
+                            const nb = document.getElementById('notifBadge');
+                            if (nb && !nb.classList.contains('hidden')){
+                                let v = parseInt(nb.textContent) || 0; if (v > 0) v = v - 1; if (v <= 0){ nb.classList.add('hidden'); nb.textContent = '0'; } else { nb.textContent = ''+v; }
+                            }
+                        } catch(e){}
+                    }
+                }).catch(e=>{ console.warn('markNotificationSeen error', e); });
+            }
+
             // Attach view handlers for existing rows so clicking View marks notification seen
+            function attachViewHandler(link){
+                link.addEventListener('click', function(e){
+                    const url = this.getAttribute('href');
+                    const row = this.closest('tr');
+                    const invoiceId = row ? row.dataset.invoiceId : null;
+                    if (invoiceId){
+                        // mark seen in background; view_invoice.php will also mark server-side
+                        markNotificationSeen(invoiceId, row);
+                    }
+                    // allow navigation to proceed (no preventDefault)
+                });
+            }
+
             const viewLinks = document.querySelectorAll('.view-link');
             viewLinks.forEach(link => { attachViewHandler(link); });
 
@@ -333,37 +366,7 @@ $resultsCount = count($invoices);
                     });
                 }
 
-                function markNotificationSeen(invoiceId, row){
-                    if (!invoiceId) return;
-                    fetch('mark_notification_seen.php', {
-                        method: 'POST', headers: {'Content-Type':'application/json'},
-                        body: JSON.stringify({ invoice_id: invoiceId })
-                    }).then(r=>r.json()).then(data=>{
-                        if (data && data.success){
-                            if (row){ row.classList.remove('bg-yellow-50'); row.classList.remove('unread-row'); row.setAttribute('data-unread','0'); const badge = row.querySelector('span.inline-flex'); if (badge) badge.remove(); }
-                            // Update sidebar badge count if available
-                            try {
-                                const nb = document.getElementById('notifBadge');
-                                if (nb && !nb.classList.contains('hidden')){
-                                    let v = parseInt(nb.textContent) || 0; if (v > 0) v = v - 1; if (v <= 0){ nb.classList.add('hidden'); nb.textContent = '0'; } else { nb.textContent = ''+v; }
-                                }
-                            } catch(e){}
-                        }
-                    }).catch(e=>{ console.warn('markNotificationSeen error', e); });
-                }
-
-                function attachViewHandler(link){
-                    link.addEventListener('click', function(e){
-                        const url = this.getAttribute('href');
-                        const row = this.closest('tr');
-                        const invoiceId = row ? row.dataset.invoiceId : null;
-                        if (invoiceId){
-                            // mark seen in background; view_invoice.php will also mark server-side
-                            markNotificationSeen(invoiceId, row);
-                        }
-                        // allow navigation to proceed (no preventDefault)
-                    });
-                }
+                // markNotificationSeen and attachViewHandler moved earlier to ensure availability before use.
 
                 function buildRow(invoice){
                     const tr = document.createElement('tr'); tr.className = 'hover:bg-gray-50';
