@@ -9,7 +9,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
     <div class="bg-white p-4 sm:p-6 lg:p-8 shadow-xl print-no-shadow w-full max-w-[210mm] min-w-0 min-h-[297mm] a4-container print:w-full print:max-w-none print:min-w-0 print:p-4 mx-auto box-border text-black invoice-container">
 
         <!-- Header -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 mb-4 gap-4 sm:gap-8 items-start">
+        <div class="grid grid-cols-1 sm:grid-cols-2 mb-2 gap-4 sm:gap-8 items-start">
             <div class="text-xs sm:text-sm space-y-1">
                 <div class="mb-2 text-slate-800">
                     <img src="https://service.otoexpress.ge/wp-content/uploads/2023/08/cropped-otomotors.png" width="60%" alt="Logo" class="sm:w-1/2">
@@ -25,10 +25,10 @@ function esc($s){ return htmlspecialchars((string)$s); }
             </div>
         </div>
 
-        <hr class="border-2 border-black mb-4" />
+        <hr class="border-2 border-black mb-2" />
 
         <!-- Info Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 mb-4 text-xs sm:text-sm info-grid">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 mb-2 text-xs sm:text-sm info-grid">
             <!-- Left -->
             <div class="grid grid-cols-[120px_1fr] sm:grid-cols-[150px_1fr] gap-2 items-center info-section">
                 <div class="font-bold whitespace-nowrap">შემოსვლის დრო:</div>
@@ -107,7 +107,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
 
 
         <!-- Table -->
-        <div class="mb-2 overflow-x-auto">
+        <div class="mb-1 overflow-x-auto">
 <?php if ($server && $serverItems):
     $computedParts = 0.0;
     $computedSvc = 0.0;
@@ -209,14 +209,14 @@ endif; ?>
         </div>
 
         <!-- Legal Text -->
-        <div class="text-[8px] sm:text-[10px] lg:text-[12px] text-gray-600 space-y-1 mb-4 text-justify leading-tight">
+        <div class="text-[8px] sm:text-[10px] lg:text-[12px] text-gray-600 space-y-1 mb-2 text-justify leading-tight">
             <p><strong>შენიშვნა:</strong> კლიენტის მიერ მოწოდებული ნაწილის ხარისხზე და გამართულობაზე კომპანია არ აგებს პასუხს. მანქანის შეკეთებისას თუ კლიენტი გადაწყვეტს ნაწილის მოწოდებას, ვალდებულია ნაწილი მოაწოდოს სერვისს არაუგვიანეს 2 სამუშაო დღისა, წინააღმდეგ შემთხვევაში машина გადაინაცვლებს კომპანიის ავტოსადგომზე, რა შემთხვევაშიც მანქანის დგომის დღიური საფასური იქნება 10 ლარი. თუ შენიშვნის ველში გარანტიის ვადა არ არის მითითებული გარანტია არ ვრცელდება. წინამდებარე დოკუმენტზე ხელმოწერით კლიენტი ადასტურებს რომ კომპანიის მიმართ პრეტენზია არ გააჩნია.</p>
             <p><strong>საგარანტიო პირობები:</strong> 1. აალების სანთლების საგარანტიო ვადა განისაზღვრება კილომეტრაჟით, რომელიც შეადგენს 1000 კმ-ს. 2. სამუხრუჭე ხუნდების საგარანტიო ვადა განისაზღვრება მონტაჟიდან 7 დღის ვადით.</p>
             <p class="italic mt-2">Oneclub: საიდან გაიგეთ ჩვენს შესახებ? ________________________</p>
         </div>
 
         <!-- Signatures -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-20 mt-4 text-xs sm:text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-20 mt-2 text-xs sm:text-sm">
             <div class="border-t border-black pt-2 text-center">მენეჯერის ხელმოწერა</div>
             <div class="border-t border-black pt-2 text-center">კლიენტის ხელმოწერა</div>
         </div>
