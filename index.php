@@ -381,13 +381,14 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             Photos
                         </h2>
                         <div class="flex gap-2 items-center mb-4">
-                            <button type="button" id="btn_take_photo" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">📷 Take Photo</button>
+                            <button type="button" id="btn_take_photo" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors" title="Click for single photo, long-press for multi-capture">📷 Take Photo</button>
+                            <button type="button" id="btn_take_multiple" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors" title="Take multiple photos in sequence">📸 Multi-Capture</button>
                             <button type="button" id="btn_upload_photo" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300 transition-colors">📁 Choose Files</button>
                             <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="hidden">
                         </div>
                         <div id="input_images_preview" class="space-y-3"></div>
                         <div class="mt-2 flex items-center justify-between">
-                            <p class="text-xs text-gray-500">Upload multiple vehicle photos (max 10MB each). On mobile, use camera for quick capture.</p>
+                            <p class="text-xs text-gray-500">Upload multiple vehicle photos (max 10MB each). Long-press "Take Photo" or use "Multi-Capture" for continuous photo taking.</p>
                             <span id="image_count" class="text-xs text-gray-400">0 images</span>
                         </div>
                         <div class="mt-6 flex justify-end">
@@ -440,6 +441,59 @@ if (!empty($serverInvoice)) {
         </div>
 
     </main>
+
+    <!-- Multi-Capture Modal -->
+    <div id="multi-capture-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">📸 Multi-Photo Capture</h3>
+                    <button id="close-multi-capture" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="text-center mb-6">
+                    <div class="w-32 h-32 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">Take multiple photos in sequence</p>
+                    <p class="text-xs text-gray-500">Each photo will be added to your collection</p>
+                </div>
+
+                <div class="flex gap-3">
+                    <button id="start-multi-capture" class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        Start Capturing
+                    </button>
+                    <button id="cancel-multi-capture" class="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                        Cancel
+                    </button>
+                </div>
+
+                <div id="capture-controls" class="hidden mt-4">
+                    <div class="flex gap-2 justify-center mb-3">
+                        <button id="capture-photo" class="bg-green-600 text-white p-3 rounded-full hover:bg-green-700 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
+                        <button id="finish-multi-capture" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                            Finish
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <span id="capture-count" class="text-sm text-gray-600">Photos taken: 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- JS Logic -->
 <?php if (!empty($serverInvoice)): ?>
@@ -607,15 +661,76 @@ if (!empty($serverInvoice)) {
             const imgPreview = document.getElementById('input_images_preview');
             const imageCount = document.getElementById('image_count');
             let selectedFiles = [];
+            let isMultiCaptureMode = false;
 
             if (imgInput && imgPreview) {
                 // Click helpers for separate buttons
                 const btnTake = document.getElementById('btn_take_photo');
+                const btnTakeMultiple = document.getElementById('btn_take_multiple');
                 const btnUpload = document.getElementById('btn_upload_photo');
 
-                if (btnTake) btnTake.addEventListener('click', () => {
-                    imgInput.setAttribute('capture', 'environment');
-                    imgInput.click();
+                if (btnTake) {
+                    let pressTimer;
+                    let isLongPress = false;
+
+                    btnTake.addEventListener('mousedown', () => {
+                        isLongPress = false;
+                        pressTimer = setTimeout(() => {
+                            isLongPress = true;
+                            btnTake.textContent = '📸 Multi-Capture...';
+                            btnTake.classList.add('bg-green-600', 'hover:bg-green-700');
+                            btnTake.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                            startMultiCapture();
+                        }, 1000); // Long press for 1 second
+                    });
+
+                    btnTake.addEventListener('mouseup', () => {
+                        clearTimeout(pressTimer);
+                        if (!isLongPress) {
+                            takeSinglePhoto();
+                        }
+                        // Reset button appearance
+                        btnTake.textContent = '📷 Take Photo';
+                        btnTake.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                        btnTake.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    });
+
+                    btnTake.addEventListener('mouseleave', () => {
+                        clearTimeout(pressTimer);
+                        // Reset button appearance
+                        btnTake.textContent = '📷 Take Photo';
+                        btnTake.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                        btnTake.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    });
+
+                    // For touch devices
+                    btnTake.addEventListener('touchstart', (e) => {
+                        isLongPress = false;
+                        pressTimer = setTimeout(() => {
+                            isLongPress = true;
+                            btnTake.textContent = '📸 Multi-Capture...';
+                            btnTake.classList.add('bg-green-600', 'hover:bg-green-700');
+                            btnTake.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                            startMultiCapture();
+                            e.preventDefault();
+                        }, 1000);
+                    });
+
+                    btnTake.addEventListener('touchend', () => {
+                        clearTimeout(pressTimer);
+                        if (!isLongPress) {
+                            takeSinglePhoto();
+                        }
+                        // Reset button appearance
+                        btnTake.textContent = '📷 Take Photo';
+                        btnTake.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                        btnTake.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    });
+                }
+
+                // Multi-capture functionality
+                if (btnTakeMultiple) btnTakeMultiple.addEventListener('click', () => {
+                    startMultiCapture();
                 });
 
                 if (btnUpload) btnUpload.addEventListener('click', () => {
@@ -720,6 +835,145 @@ if (!empty($serverInvoice)) {
                         imageCount.textContent = `${selectedFiles.length} image${selectedFiles.length !== 1 ? 's' : ''}`;
                     }
                 });
+            }
+
+            // Multi-capture functionality
+            function startMultiCapture() {
+                const modal = document.getElementById('multi-capture-modal');
+                const startBtn = document.getElementById('start-multi-capture');
+                const controls = document.getElementById('capture-controls');
+                const captureBtn = document.getElementById('capture-photo');
+                const finishBtn = document.getElementById('finish-multi-capture');
+                const countDisplay = document.getElementById('capture-count');
+
+                modal.classList.remove('hidden');
+                startBtn.classList.remove('hidden');
+                controls.classList.add('hidden');
+
+                let captureCount = 0;
+
+                startBtn.onclick = () => {
+                    startBtn.classList.add('hidden');
+                    controls.classList.remove('hidden');
+                    captureCount = 0;
+                    countDisplay.textContent = `Photos taken: ${captureCount}`;
+                };
+
+                captureBtn.onclick = () => {
+                    takePhotoForMultiCapture((file) => {
+                        captureCount++;
+                        countDisplay.textContent = `Photos taken: ${captureCount}`;
+                    });
+                };
+
+                finishBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    // Update the main file input with all captured files
+                    const dt = new DataTransfer();
+                    selectedFiles.forEach(f => dt.items.add(f));
+                    imgInput.files = dt.files;
+                    imgInput.dispatchEvent(new Event('change'));
+                };
+
+                // Close modal handlers
+                document.getElementById('close-multi-capture').onclick = () => {
+                    modal.classList.add('hidden');
+                };
+
+                document.getElementById('cancel-multi-capture').onclick = () => {
+                    modal.classList.add('hidden');
+                };
+
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                };
+            }
+
+            // Function to take a single photo
+            function takeSinglePhoto() {
+                const tempInput = document.createElement('input');
+                tempInput.type = 'file';
+                tempInput.accept = 'image/*';
+                tempInput.capture = 'environment';
+                tempInput.multiple = false;
+
+                tempInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        selectedFiles.push(file);
+                        const dt = new DataTransfer();
+                        selectedFiles.forEach(f => dt.items.add(f));
+                        imgInput.files = dt.files;
+                        imgInput.dispatchEvent(new Event('change'));
+                    }
+                };
+
+                tempInput.click();
+            }
+
+            // Function to take photo for multi-capture
+            function takePhotoForMultiCapture(callback) {
+                const tempInput = document.createElement('input');
+                tempInput.type = 'file';
+                tempInput.accept = 'image/*';
+                tempInput.capture = 'environment';
+                tempInput.multiple = false;
+
+                tempInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        selectedFiles.push(file);
+
+                        // Create preview immediately
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const container = document.createElement('div');
+                            container.className = 'relative inline-block';
+
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.style.width = '80px';
+                            img.style.height = '60px';
+                            img.style.objectFit = 'cover';
+                            img.className = 'rounded border border-gray-300';
+
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.type = 'button';
+                            deleteBtn.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600 transition-colors';
+                            deleteBtn.innerHTML = '×';
+                            deleteBtn.onclick = () => {
+                                const index = selectedFiles.indexOf(file);
+                                if (index > -1) {
+                                    selectedFiles.splice(index, 1);
+                                    container.remove();
+                                    updateImageCount();
+                                }
+                            };
+
+                            container.appendChild(img);
+                            container.appendChild(deleteBtn);
+                            imgPreview.appendChild(container);
+                            updateImageCount();
+
+                            if (callback) callback(file);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+
+                tempInput.click();
+            }
+
+            // Function to update image count
+            function updateImageCount() {
+                const imageCount = document.getElementById('image_count');
+                if (imageCount) {
+                    const preview = document.getElementById('input_images_preview');
+                    const existingImages = preview.querySelectorAll('img').length;
+                    imageCount.textContent = `${existingImages} image${existingImages !== 1 ? 's' : ''}`;
+                }
             }
 
             // Function to update image count

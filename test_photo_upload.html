@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Upload Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-4">Photo Upload Test</h1>
+
+        <div class="space-y-4">
+            <button id="btnTake" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                📷 Take Photo
+            </button>
+
+            <div id="imgPreview" class="grid grid-cols-3 gap-2"></div>
+
+            <div id="image_count" class="text-sm text-gray-600">0 images</div>
+        </div>
+    </div>
+
+    <!-- Multi-Capture Modal -->
+    <div id="multi-capture-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Multi-Photo Capture</h3>
+                <button id="close-multi-capture" class="text-gray-500 hover:text-gray-700">×</button>
+            </div>
+
+            <div id="start-multi-capture" class="text-center">
+                <p class="text-gray-600 mb-4">Click Start to begin capturing multiple photos</p>
+                <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Start Capture
+                </button>
+            </div>
+
+            <div id="capture-controls" class="hidden text-center space-y-4">
+                <div id="capture-count" class="text-lg font-semibold">Photos taken: 0</div>
+                <button id="capture-photo" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">
+                    📸 Capture Photo
+                </button>
+                <br>
+                <button id="finish-multi-capture" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Finish
+                </button>
+                <button id="cancel-multi-capture" class="ml-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        const btnTake = document.getElementById('btnTake');
+        const imgPreview = document.getElementById('imgPreview');
+
+        // Long-press detection
+        if (btnTake) {
+            let pressTimer;
+            let isLongPress = false;
+
+            btnTake.addEventListener('mousedown', () => {
+                isLongPress = false;
+                pressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    btnTake.textContent = '📸 Multi-Capture...';
+                    btnTake.classList.add('bg-green-600', 'hover:bg-green-700');
+                    btnTake.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    startMultiCapture();
+                }, 1000); // Long press for 1 second
+            });
+
+            btnTake.addEventListener('mouseup', () => {
+                clearTimeout(pressTimer);
+                if (!isLongPress) {
+                    takeSinglePhoto();
+                }
+                // Reset button appearance
+                btnTake.textContent = '📷 Take Photo';
+                btnTake.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btnTake.classList.remove('bg-green-600', 'hover:bg-green-700');
+            });
+
+            btnTake.addEventListener('mouseleave', () => {
+                clearTimeout(pressTimer);
+                // Reset button appearance
+                btnTake.textContent = '📷 Take Photo';
+                btnTake.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btnTake.classList.remove('bg-green-600', 'hover:bg-green-700');
+            });
+
+            // For touch devices
+            btnTake.addEventListener('touchstart', (e) => {
+                isLongPress = false;
+                pressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    btnTake.textContent = '📸 Multi-Capture...';
+                    btnTake.classList.add('bg-green-600', 'hover:bg-green-700');
+                    btnTake.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    startMultiCapture();
+                    e.preventDefault();
+                }, 1000);
+            });
+
+            btnTake.addEventListener('touchend', () => {
+                clearTimeout(pressTimer);
+                if (!isLongPress) {
+                    takeSinglePhoto();
+                }
+                // Reset button appearance
+                btnTake.textContent = '📷 Take Photo';
+                btnTake.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btnTake.classList.remove('bg-green-600', 'hover:bg-green-700');
+            });
+        }
+
+        function takeSinglePhoto() {
+            const tempInput = document.createElement('input');
+            tempInput.type = 'file';
+            tempInput.accept = 'image/*';
+            tempInput.capture = 'environment';
+            tempInput.multiple = false;
+
+            tempInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedFiles.push(file);
+                    addImagePreview(file);
+                    updateImageCount();
+                }
+            };
+
+            tempInput.click();
+        }
+
+        function startMultiCapture() {
+            const modal = document.getElementById('multi-capture-modal');
+            const startBtn = document.getElementById('start-multi-capture');
+            const controls = document.getElementById('capture-controls');
+            const captureBtn = document.getElementById('capture-photo');
+            const finishBtn = document.getElementById('finish-multi-capture');
+            const countDisplay = document.getElementById('capture-count');
+
+            modal.classList.remove('hidden');
+            startBtn.classList.remove('hidden');
+            controls.classList.add('hidden');
+
+            let captureCount = 0;
+
+            startBtn.querySelector('button').onclick = () => {
+                startBtn.classList.add('hidden');
+                controls.classList.remove('hidden');
+                captureCount = 0;
+                countDisplay.textContent = `Photos taken: ${captureCount}`;
+            };
+
+            captureBtn.onclick = () => {
+                takePhotoForMultiCapture((file) => {
+                    captureCount++;
+                    countDisplay.textContent = `Photos taken: ${captureCount}`;
+                });
+            };
+
+            finishBtn.onclick = () => {
+                modal.classList.add('hidden');
+                updateImageCount();
+            };
+
+            // Close modal handlers
+            document.getElementById('close-multi-capture').onclick = () => {
+                modal.classList.add('hidden');
+            };
+
+            document.getElementById('cancel-multi-capture').onclick = () => {
+                modal.classList.add('hidden');
+            };
+
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            };
+        }
+
+        function takePhotoForMultiCapture(callback) {
+            const tempInput = document.createElement('input');
+            tempInput.type = 'file';
+            tempInput.accept = 'image/*';
+            tempInput.capture = 'environment';
+            tempInput.multiple = false;
+
+            tempInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedFiles.push(file);
+                    addImagePreview(file);
+                    if (callback) callback(file);
+                }
+            };
+
+            tempInput.click();
+        }
+
+        function addImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const container = document.createElement('div');
+                container.className = 'relative inline-block';
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.width = '80px';
+                img.style.height = '60px';
+                img.style.objectFit = 'cover';
+                img.className = 'rounded border border-gray-300';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600 transition-colors';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.onclick = () => {
+                    const index = selectedFiles.indexOf(file);
+                    if (index > -1) {
+                        selectedFiles.splice(index, 1);
+                        container.remove();
+                        updateImageCount();
+                    }
+                };
+
+                container.appendChild(img);
+                container.appendChild(deleteBtn);
+                imgPreview.appendChild(container);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateImageCount() {
+            const imageCount = document.getElementById('image_count');
+            if (imageCount) {
+                const existingImages = imgPreview.querySelectorAll('img').length;
+                imageCount.textContent = `${existingImages} image${existingImages !== 1 ? 's' : ''}`;
+            }
+        }
+    </script>
+</body>
+</html>
