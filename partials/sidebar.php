@@ -111,39 +111,78 @@ function svgIcon($name){
         let pollingTimer = null;
         let inFlight = false;
 
+        // Create and append minimal styles for animated notifications and bell animation
+        (function addNotifStyles(){
+            const css = `
+                @keyframes notif-slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity:1; } }
+                @keyframes bell-pulse { 0%{ transform: scale(1); } 30%{ transform: scale(1.15) rotate(-8deg);} 60%{ transform: scale(1.03) rotate(6deg);} 100%{transform: scale(1);} }
+                .notif-bell-anim { animation: bell-pulse 0.9s ease; }
+                #notifContainer { position: fixed; top: 3.5rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+                .notif-item { width: 20rem; max-width: calc(100vw - 4rem); background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(0,0,0,0.08); padding: 0.75rem; cursor: pointer; transform: translateX(24px); opacity:0; animation: notif-slide-in 320ms forwards ease; }
+                .notif-item .notif-dismiss{ background: transparent; border: 0; font-size: 1.05rem; line-height: 1; cursor: pointer; color: #6b7280; }
+            `;
+            const s = document.createElement('style'); s.appendChild(document.createTextNode(css)); document.head.appendChild(s);
+        })();
+
         function playBeep(){
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const o = ctx.createOscillator();
-                const g = ctx.createGain();
-                o.type = 'sine';
-                o.frequency.value = 520;
-                o.connect(g);
-                g.connect(ctx.destination);
-                g.gain.value = 0.0001;
-                o.start();
-                // ramp up then down for a short click
-                g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-                setTimeout(()=>{
-                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.02);
-                    o.stop(ctx.currentTime + 0.03);
-                }, 150);
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                // Two short tones for a pleasant notification
+                const tones = [880, 660];
+                tones.forEach((freq, i) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = 'sine';
+                    o.frequency.value = freq;
+                    o.connect(g);
+                    g.connect(ctx.destination);
+                    g.gain.setValueAtTime(0.0001, now + i*0.12);
+                    g.gain.exponentialRampToValueAtTime(0.12, now + i*0.12 + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.12 + 0.10);
+                    o.start(now + i*0.12);
+                    o.stop(now + i*0.12 + 0.11);
+                });
             } catch (e) {
-                // fallback: silent
-                console.warn('Audio context failed', e);
+                // If WebAudio fails (browsers or autoplay restriction), try an <audio> fallback if possible
+                try {
+                    const fallback = new Audio();
+                    // Tiny generated WAV base64 (very short click) - data URI kept minimal; if not supported, it will silently fail
+                    fallback.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+                    fallback.play().catch(()=>{});
+                } catch (err) { console.warn('Audio fallback failed', err); }
             }
         }
 
+        function ensureNotifContainer(){
+            let c = document.getElementById('notifContainer');
+            if (!c){ c = document.createElement('div'); c.id = 'notifContainer'; document.body.appendChild(c); }
+            return c;
+        }
+
+        function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]; }); }
+
+        function showAnimatedNotification(text, invoiceId){
+            const container = ensureNotifContainer();
+            const item = document.createElement('div');
+            item.className = 'notif-item';
+            item.innerHTML = `<div style="display:flex;align-items:flex-start;gap:0.5rem"><div style="flex:1"><div style="font-weight:600">${escapeHtml(text)}</div><div style="font-size:12px;color:#6b7280;margin-top:6px">Click to open</div></div><button class="notif-dismiss" aria-label="Dismiss">×</button></div>`;
+            item.addEventListener('click', (e)=>{ if (!e.target.classList.contains('notif-dismiss')) window.open('view_invoice.php?id='+invoiceId,'_blank'); });
+            item.querySelector('.notif-dismiss').addEventListener('click', (e)=>{ e.stopPropagation(); hide(); });
+
+            function hide(){ item.style.transform = 'translateX(24px)'; item.style.opacity = '0'; setTimeout(()=>{ item.remove(); }, 300); }
+
+            container.appendChild(item);
+            // auto-hide after 7s
+            setTimeout(hide, 7000);
+        }
+
+        function animateBell(){ if (!notifButton) return; notifButton.classList.add('notif-bell-anim'); setTimeout(()=> notifButton.classList.remove('notif-bell-anim'), 1000); }
+
         function showToast(text, invoiceId){
-            const container = document.createElement('div');
-            container.className = 'fixed top-20 right-6 z-50 max-w-sm bg-white border border-gray-200 rounded shadow-md p-3 text-sm cursor-pointer transition-opacity opacity-0';
-            container.style.transition = 'opacity 200ms ease';
-            container.innerHTML = `<div class="font-medium">${text}</div><div class="text-xs text-gray-500 mt-1">Click to open</div>`;
-            container.onclick = () => { window.open('view_invoice.php?id='+invoiceId, '_blank'); };
-            document.body.appendChild(container);
-            // small fade in
-            setTimeout(()=>{ container.classList.add('!opacity-100'); container.style.opacity = 1; }, 10);
-            setTimeout(()=>{ container.style.opacity = 0; setTimeout(()=>container.remove(), 400); }, 6000);
+            // Keep backward-compatible toast (small fade) but also show animated notification
+            showAnimatedNotification(text, invoiceId);
         }
 
         function showBrowserNotification(title, body, invoiceId){
@@ -181,18 +220,20 @@ function svgIcon($name){
                 const data = await res.json();
                 if (data && data.success){
                     if (data.new_count && data.new_count > 0){
-                        // Update badge and show toasts
+                        // Update badge and show animated notification
                         updateBadge(parseInt(notifBadge.textContent || '0') + data.new_count);
                         // Play sound once
                         playBeep();
+                        // animate bell
+                        animateBell();
                         // show browser notification for the most recent invoice
                         const latestInvoice = data.invoices[data.invoices.length - 1];
                         if (latestInvoice){
                             const title = `New Invoice #${latestInvoice.id}`;
                             const body = `${latestInvoice.customer_name || 'Unknown'} — ${latestInvoice.plate_number || ''} — ${latestInvoice.grand_total ? '$'+latestInvoice.grand_total : ''}`;
                             showBrowserNotification(title, body, latestInvoice.id);
-                            // show a toast for latest invoice
-                            showToast(`${title}: ${latestInvoice.customer_name || ''}`, latestInvoice.id);
+                            // show an animated in-page notification for latest invoice
+                            showAnimatedNotification(`${title}: ${latestInvoice.customer_name || ''}`, latestInvoice.id);
                         }
                         // keep lastId advanced
                         lastId = data.latest_id || lastId;
