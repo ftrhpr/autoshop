@@ -2,28 +2,6 @@
 require 'config.php';
 header('Content-Type: application/json');
 
-// Only managers and admins should get live invoice updates
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
-}
-
-try {
-    $lastTimestamp = isset($_GET['last_timestamp']) ? $_GET['last_timestamp'] : null;
-
-    // For initial timestamp request (no last_timestamp), allow without auth for debugging
-    if ($lastTimestamp === null) {
-        // Skip auth check for initial timestamp
-    } else {
-        // Only managers and admins should get live invoice updates
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Unauthorized - please log in as manager or admin']);
-            exit;
-        }
-    }
-
 try {
     $lastTimestamp = isset($_GET['last_timestamp']) ? $_GET['last_timestamp'] : null;
 

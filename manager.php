@@ -323,17 +323,6 @@ foreach ($invoices as $invoice) {
                 });
             });
 
-            // Live invoice updates
-            initializeLiveUpdates();
-        });
-
-        function initializeLiveUpdates() {
-            let lastTimestamp = null;
-            let pollingInterval = 10000; // 10 seconds for manager panel
-            let pollingTimer = null;
-            let inFlight = false;
-            let newInvoiceIds = new Set(); // Track new invoices that haven't been viewed
-
         function initializeLiveUpdates() {
             console.log('Initializing live updates...');
             let lastTimestamp = null;
