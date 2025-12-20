@@ -1288,7 +1288,11 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                     </svg>
                     Save Invoice
                 `;
-                nextBtn.onclick = () => document.getElementById('invoice-form').submit();
+                nextBtn.onclick = () => {
+                    if (handleSave()) {
+                        document.getElementById('invoice-form').submit();
+                    }
+                };
             } else {
                 nextBtn.innerHTML = `
                     Next
