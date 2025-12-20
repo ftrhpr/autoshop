@@ -75,8 +75,10 @@ if ($finaStatus !== '') {
     }
 }
 
-// Compose SQL
-$sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
+// Compose SQL (include unread flag for current user)
+$sql = 'SELECT i.*, u.username AS sm_username, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?)';
+// Add current user id at start of params for the notification join
+array_unshift($params, $_SESSION['user_id']);
 if (!empty($filters)) {
     $sql .= ' WHERE ' . implode(' AND ', $filters);
 }
@@ -181,9 +183,10 @@ $resultsCount = count($invoices);
                 </thead>
                 <tbody>
                     <?php foreach ($invoices as $invoice): ?>
-                    <tr class="hover:bg-gray-50">
+                    <?php $isUnread = !empty($invoice['unread']); ?>
+                    <tr class="hover:bg-gray-50 <?php echo $isUnread ? 'bg-yellow-50 unread-row' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-unread="<?php echo $isUnread ? '1' : '0'; ?>">
                         <td class="px-2 md:px-4 py-2"><?php echo $invoice['id']; ?></td>
-                        <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?><?php if ($isUnread): ?> <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-200 text-yellow-800">NEW</span><?php endif; ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['car_mark']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['plate_number']); ?></td>
@@ -199,7 +202,7 @@ $resultsCount = count($invoices);
                                    <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
-                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
+                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="view-link text-blue-500 hover:underline mr-2 text-xs md:text-sm">View</a>
                             <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
                             <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
                                 <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
@@ -265,6 +268,20 @@ $resultsCount = count($invoices);
                 });
             });
 
+            // Attach view handlers for existing rows so clicking View marks notification seen
+            const viewLinks = document.querySelectorAll('.view-link');
+            viewLinks.forEach(link => { attachViewHandler(link); });
+
+            // Optionally allow clicking the row to mark as seen (but not on action cells)
+            document.querySelectorAll('tbody tr[data-unread="1"]').forEach(r=>{
+                r.addEventListener('click', function(e){
+                    // don't mark if clicking on an action button/link
+                    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('input')) return;
+                    const iid = this.dataset.invoiceId;
+                    markNotificationSeen(iid, this);
+                });
+            });
+
             // --- Live updates: poll for new invoices and insert them into the table ---
             (function(){
                 const tbody = document.querySelector('table tbody');
@@ -305,6 +322,38 @@ $resultsCount = count($invoices);
                             method: 'POST', headers: {'Content-Type':'application/json'},
                             body: JSON.stringify({ invoice_id: invoiceId, opened_in_fina: isChecked ? 1 : 0 })
                         }).then(r=>r.json()).then(data=>{ if (!data.success){ this.checked = !isChecked; alert('Failed to update FINA status'); } }).catch(e=>{ this.checked = !isChecked; }).finally(()=>{ this.disabled=false; this.style.opacity = originalOpacity; });
+                    });
+                }
+
+                function markNotificationSeen(invoiceId, row){
+                    if (!invoiceId) return;
+                    fetch('mark_notification_seen.php', {
+                        method: 'POST', headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ invoice_id: invoiceId })
+                    }).then(r=>r.json()).then(data=>{
+                        if (data && data.success){
+                            if (row){ row.classList.remove('bg-yellow-50'); row.classList.remove('unread-row'); row.setAttribute('data-unread','0'); const badge = row.querySelector('span.inline-flex'); if (badge) badge.remove(); }
+                            // Update sidebar badge count if available
+                            try {
+                                const nb = document.getElementById('notifBadge');
+                                if (nb && !nb.classList.contains('hidden')){
+                                    let v = parseInt(nb.textContent) || 0; if (v > 0) v = v - 1; if (v <= 0){ nb.classList.add('hidden'); nb.textContent = '0'; } else { nb.textContent = ''+v; }
+                                }
+                            } catch(e){}
+                        }
+                    }).catch(e=>{ console.warn('markNotificationSeen error', e); });
+                }
+
+                function attachViewHandler(link){
+                    link.addEventListener('click', function(e){
+                        const url = this.getAttribute('href');
+                        const row = this.closest('tr');
+                        const invoiceId = row ? row.dataset.invoiceId : null;
+                        if (invoiceId){
+                            // mark seen in background; view_invoice.php will also mark server-side
+                            markNotificationSeen(invoiceId, row);
+                        }
+                        // allow navigation to proceed (no preventDefault)
                     });
                 }
 
@@ -356,7 +405,13 @@ $resultsCount = count($invoices);
                                 tbody.insertBefore(row, tbody.firstChild);
                                 // attach event handlers
                                 const cb = row.querySelector('.fina-checkbox'); if (cb) attachFinaHandler(cb);
-                                highlightRow(row);
+                                const view = row.querySelector('.view-link'); if (view) attachViewHandler(view);
+                                // If invoice is unread, leave persistent highlight; otherwise do a brief highlight
+                                if (inv.unread) {
+                                    // leave bg and NEW badge (server provided)
+                                } else {
+                                    highlightRow(row);
+                                }
                                 // notify via sidebar helpers if present
                                 if (window.__invoiceNotifications && typeof window.__invoiceNotifications.playSound === 'function'){
                                     window.__invoiceNotifications.playSound();

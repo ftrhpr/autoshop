@@ -20,6 +20,12 @@ if (!$invoice) {
     die('Invoice not found');
 }
 
+// Mark notification as seen for this user (if exists)
+try {
+    $stmt = $pdo->prepare('UPDATE invoice_notifications SET seen_at = NOW() WHERE invoice_id = ? AND user_id = ? AND seen_at IS NULL');
+    $stmt->execute([$id, $_SESSION['user_id']]);
+} catch (Exception $e) { error_log('mark notification seen failed: '.$e->getMessage()); }
+
 $items = json_decode($invoice['items'], true);
 ?>
 

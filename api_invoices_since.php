@@ -42,7 +42,10 @@ try {
         elseif ($finaStatus === 'not_opened') { $filters[] = 'i.opened_in_fina = 0'; }
     }
 
-    $sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
+    // Include unread flag for the current user
+    $sql = 'SELECT i.*, u.username AS sm_username, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?)';
+    // current user id must be the first param for the notification join
+    array_unshift($params, $_SESSION['user_id']);
     if (!empty($filters)) { $sql .= ' WHERE ' . implode(' AND ', $filters); }
     $sql .= ' ORDER BY i.id ASC LIMIT 100';
 
@@ -50,7 +53,11 @@ try {
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode(['success' => true, 'latest_id' => $lastId, 'count' => count($rows), 'invoices' => $rows]);
+    // compute latest id from rows if present
+    $latest = $lastId;
+    foreach ($rows as $r){ if (!empty($r['id']) && $r['id'] > $latest) $latest = (int)$r['id']; }
+
+    echo json_encode(['success' => true, 'latest_id' => $latest, 'count' => count($rows), 'invoices' => $rows]);
 
 } catch (Exception $e) {
     http_response_code(500);

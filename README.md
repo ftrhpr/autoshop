@@ -113,6 +113,12 @@ Sound file:
 - For better quality, place `notify.mp3` and/or `notify.ogg` in `assets/sounds/` — the app will prefer those files automatically.
 - To use a custom WAV file instead of the server endpoint, add `notify.wav` to the same folder and update `assets/sounds/notify.php` or remove it.
 
+Unread notifications (manager):
+- A new `invoice_notifications` table tracks per-user notifications and seen state. Run the migration `php migrate_add_invoice_notifications.php` to create the table.
+- When a new invoice is created, notification rows are created for all admins and managers.
+- Manager panel highlights unread invoices with a `NEW` badge until that invoice is opened (viewed) or manually marked seen.
+- You can mark a notification as seen by opening the invoice (server-side mark) or clicking a View link in the Manager panel (client-side mark).
+
 
 ## License
 

@@ -21,8 +21,9 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT id, created_at, customer_name, plate_number, grand_total FROM invoices WHERE id > ? ORDER BY id ASC');
-    $stmt->execute([$lastId]);
+    // Include unread flag for current user
+    $stmt = $pdo->prepare('SELECT i.id, i.created_at, i.customer_name, i.plate_number, i.grand_total, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?) WHERE i.id > ? ORDER BY i.id ASC');
+    $stmt->execute([$_SESSION['user_id'], $lastId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $newCount = count($rows);
