@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = $_POST;
+    $existing_id = isset($data['existing_invoice_id']) ? (int)$data['existing_invoice_id'] : null;
 
     // Process itemss
     $items = [];
@@ -147,25 +148,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([
-        $data['creation_date'],
-        $serviceManagerName,
-        !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
-        $customer_id,
-        $data['customer_name'],
-        $data['phone_number'],
-        $data['car_mark'],
-        $data['plate_number'],
-        $data['mileage'],
-        json_encode($items),
-        $finalPartsTotal,
-        $finalServiceTotal,
-        $finalGrandTotal,
-        $_SESSION['user_id']
-    ]);
-
-    $invoice_id = $pdo->lastInsertId();
+    if ($existing_id) {
+        // Update existing invoice
+        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, customer_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
+        $stmt->execute([
+            $data['creation_date'],
+            $serviceManagerName,
+            !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
+            $customer_id,
+            $data['customer_name'],
+            $data['phone_number'],
+            $data['car_mark'],
+            $data['plate_number'],
+            $data['mileage'],
+            json_encode($items),
+            $finalPartsTotal,
+            $finalServiceTotal,
+            $finalGrandTotal,
+            $existing_id
+        ]);
+        $invoice_id = $existing_id;
+    } else {
+        // Insert new invoice
+        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $data['creation_date'],
+            $serviceManagerName,
+            !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
+            $customer_id,
+            $data['customer_name'],
+            $data['phone_number'],
+            $data['car_mark'],
+            $data['plate_number'],
+            $data['mileage'],
+            json_encode($items),
+            $finalPartsTotal,
+            $finalServiceTotal,
+            $finalGrandTotal,
+            $_SESSION['user_id']
+        ]);
+        $invoice_id = $pdo->lastInsertId();
+    }
 
     // Redirect based on flag
     if (!empty($data['print_after_save'])) {

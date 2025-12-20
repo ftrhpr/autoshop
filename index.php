@@ -346,6 +346,9 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 <input type="hidden" name="service_total" id="hidden_service_total">
                 <input type="hidden" name="grand_total" id="hidden_grand_total">
                 <input type="hidden" name="print_after_save" id="print_after_save">
+                <?php if ($serverInvoice): ?>
+                <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="<?php echo $serverInvoice['id']; ?>">
+                <?php endif; ?>
 
                 <!-- Desktop Layout (unchanged) -->
                 <div id="desktop-layout" class="block">
@@ -1057,8 +1060,13 @@ if (!empty($serverInvoice)) {
         }
 
         function handlePrint() {
-            document.getElementById('print_after_save').value = '1';
-            document.getElementById('invoice-form').submit();
+            const existingId = document.getElementById('existing_invoice_id');
+            if (existingId) {
+                window.location.href = 'print_invoice.php?id=' + existingId.value;
+            } else {
+                document.getElementById('print_after_save').value = '1';
+                document.getElementById('invoice-form').submit();
+            }
         }
 
         // Initialize on load
