@@ -502,9 +502,13 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
                         <div class="bg-white p-4 rounded-xl shadow-lg border border-gray-200 mt-4">
                             <h3 class="text-sm font-semibold mb-2">Photos (ფოტოები)</h3>
-                            <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="block w-full">
+                            <div class="flex gap-2 items-center">
+                                <button type="button" id="btn_take_photo" class="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Take Photo</button>
+                                <button type="button" id="btn_upload_photo" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300">Choose Existing</button>
+                                <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="hidden" capture="environment">
+                            </div>
                             <div id="input_images_preview" class="mt-3 flex gap-2 flex-wrap"></div>
-                            <p class="mt-1 text-xs text-gray-500">Upload vehicle photos (JPG/PNG). Images will be attached to the invoice.</p>
+                            <p class="mt-1 text-xs text-gray-500">On mobile, use "Take Photo" to open camera, or "Choose Existing" to pick from gallery.</p>
                         </div>
                     </div>
 
@@ -752,6 +756,20 @@ if (!empty($serverInvoice)) {
             const imgInput = document.getElementById('input_images');
             const imgPreview = document.getElementById('input_images_preview');
             if (imgInput && imgPreview) {
+                // Click helpers for separate buttons
+                const btnTake = document.getElementById('btn_take_photo');
+                const btnUpload = document.getElementById('btn_upload_photo');
+                if (btnTake) btnTake.addEventListener('click', () => {
+                    // request camera capture
+                    imgInput.setAttribute('capture', 'environment');
+                    imgInput.click();
+                });
+                if (btnUpload) btnUpload.addEventListener('click', () => {
+                    // open file picker without forcing camera
+                    imgInput.removeAttribute('capture');
+                    imgInput.click();
+                });
+
                 imgInput.addEventListener('change', (ev) => {
                     imgPreview.innerHTML = '';
                     const files = Array.from(imgInput.files || []);
