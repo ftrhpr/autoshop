@@ -620,9 +620,9 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         let smDefault = <?php echo json_encode($_SESSION['username'] ?? ''); ?>;
         let smDefaultId = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
 
-        // Initialize with 14 rows
+        // Initialize with 4 rows
         document.addEventListener('DOMContentLoaded', () => {
-            for(let i=0; i<14; i++) addItemRow();
+            for(let i=0; i<4; i++) addItemRow();
             calculateTotals();
 
             // Prefill service manager with current logged in user (set if empty)

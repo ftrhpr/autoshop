@@ -152,9 +152,9 @@ endif; ?>
                             echo "</tr>";
                         }
 
-                        // Fill empty rows up to 10 to fit one page
+                        // Fill empty rows up to 20 to fit one page
                         $rowsCount = count($items);
-                        $needed = max(0, 10 - $rowsCount);
+                        $needed = max(0, 20 - $rowsCount);
                         for ($j = 0; $j < $needed; $j++) {
                             echo "<tr>";
                             echo "<td class=\"border border-black p-0.5 text-center text-white\">.</td>";
