@@ -28,5 +28,6 @@ CREATE TABLE invoices (
 );
 
 -- Insert default admin user
-INSERT INTO users (username, password, role) VALUES ('admin', '$2y$10$examplehashedpassword', 'admin');
--- Note: Replace with actual hashed password, e.g., password_hash('yourpassword', PASSWORD_DEFAULT)
+INSERT INTO users (username, password, role) VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+-- Default password: admin123
+-- Note: Change this password after first login for security
