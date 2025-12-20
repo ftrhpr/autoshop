@@ -327,10 +327,82 @@ foreach ($invoices as $invoice) {
             initializeLiveUpdates();
         });
 
+        function playNotificationSound() {
+            // Check if notifications are muted
+            const MUTE_KEY = 'autoshop_notif_muted';
+            if (localStorage.getItem(MUTE_KEY) === '1') {
+                console.log('Notifications muted, skipping sound');
+                return;
+            }
+
+            // Try to use the existing audio element from sidebar
+            try {
+                const audioEl = document.getElementById('notifAudio');
+                if (audioEl) {
+                    audioEl.currentTime = 0;
+                    const p = audioEl.play();
+                    if (p && typeof p.then === 'function') {
+                        p.catch(() => {
+                            // If play() is rejected (autoplay policy), fall back to WebAudio
+                            playWebAudioBeep();
+                        });
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.warn('Audio element play error:', e);
+            }
+
+            // Fallback to WebAudio
+            playWebAudioBeep();
+        }
+
+        function playWebAudioBeep() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                // Two short tones for a pleasant notification
+                const tones = [880, 660];
+                tones.forEach((freq, i) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = 'sine';
+                    o.frequency.value = freq;
+                    o.connect(g);
+                    g.connect(ctx.destination);
+                    g.gain.setValueAtTime(0.0001, now + i * 0.12);
+                    g.gain.exponentialRampToValueAtTime(0.15, now + i * 0.12 + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.10);
+                    o.start(now + i * 0.12);
+                    o.stop(now + i * 0.12 + 0.11);
+                });
+            } catch (e) {
+                console.warn('WebAudio fallback failed:', e);
+                // Final fallback: small embedded WAV via Audio object
+                try {
+                    const fallback = new Audio();
+                    fallback.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+                    fallback.play().catch(() => {});
+                } catch (err) {
+                    console.warn('Audio fallback failed:', err);
+                }
+            }
+        }
+
+        function flashPageBackground() {
+            const body = document.body;
+            const originalBackground = body.style.backgroundColor;
+            body.style.backgroundColor = '#fef3c7'; // Light yellow flash
+            setTimeout(() => {
+                body.style.backgroundColor = originalBackground || '';
+            }, 300);
+        }
+
         function initializeLiveUpdates() {
             console.log('Initializing live updates...');
             let lastTimestamp = null;
-            let pollingInterval = 10000; // 10 seconds for manager panel
+            let pollingInterval = 2000; // 2 seconds for immediate updates
             let pollingTimer = null;
             let inFlight = false;
             let newInvoiceIds = new Set(); // Track new invoices that haven't been viewed
@@ -411,6 +483,13 @@ foreach ($invoices as $invoice) {
 
                 // Update results count display
                 updateResultsCount();
+
+                // Play notification sound for new invoices
+                if (newInvoices.length > 0) {
+                    playNotificationSound();
+                    // Add visual flash effect
+                    flashPageBackground();
+                }
 
                 // Auto-scroll to top if there are new invoices
                 if (newInvoices.length > 0) {
