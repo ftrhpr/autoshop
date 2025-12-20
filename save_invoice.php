@@ -28,23 +28,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!empty($data['customer_id'])) {
         $customer_id = (int)$data['customer_id'];
         // Verify the customer still exists
-        $stmt = $pdo->prepare('SELECT id FROM customers WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT plate_number FROM customers WHERE id = ? LIMIT 1');
         $stmt->execute([$customer_id]);
-        if (!$stmt->fetch()) {
+        $existing = $stmt->fetch();
+        if (!$existing) {
             error_log("Selected customer ID $customer_id no longer exists");
             throw new Exception('The selected customer no longer exists. Please select a different customer or create a new one.');
         }
-        // Update existing customer with provided invoice data
-        $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
-        $updateFields = ['full_name = ?', 'phone = ?', 'car_mark = ?'];
-        $updateValues = [$data['customer_name'], $data['phone_number'], $data['car_mark']];
-        if (!empty($plateNumber)) {
-            $updateFields[] = 'plate_number = ?';
-            $updateValues[] = $plateNumber;
+        // If plate changed, treat as new customer
+        $currentPlate = strtoupper(trim($existing['plate_number']));
+        $newPlate = strtoupper(trim($data['plate_number'] ?? ''));
+        if ($currentPlate !== $newPlate) {
+            $customer_id = null; // Will create new below
         }
-        $stmt = $pdo->prepare('UPDATE customers SET ' . implode(', ', $updateFields) . ' WHERE id = ?');
-        $updateValues[] = $customer_id;
-        $stmt->execute($updateValues);
+        // No update for existing customer
     } else {
         // No existing customer selected - create or find customer
         $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
@@ -55,18 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $existingCustomer = $stmt->fetch();
 
             if ($existingCustomer) {
-                // Use existing customer - update with new data
+                // Use existing customer
                 $customer_id = $existingCustomer['id'];
-                $updateFields = ['full_name = ?', 'phone = ?', 'car_mark = ?'];
-                $updateValues = [$data['customer_name'], $data['phone_number'], $data['car_mark']];
-                if (!empty($plateNumber)) {
-                    $updateFields[] = 'plate_number = ?';
-                    $updateValues[] = $plateNumber;
-                }
-                $stmt = $pdo->prepare('UPDATE customers SET ' . implode(', ', $updateFields) . ' WHERE id = ?');
-                $updateValues[] = $customer_id;
-                $stmt->execute($updateValues);
-                error_log("Updated existing customer ID $customer_id with plate number $plateNumber");
+                // No update
             } else {
                 // Create new customer
                 $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
