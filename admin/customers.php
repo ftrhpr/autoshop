@@ -102,6 +102,7 @@ $totalPages = (int)ceil($total / $perPage);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customers - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -209,11 +210,40 @@ $totalPages = (int)ceil($total / $perPage);
                     </div>
 
                     <!-- Pagination -->
-                    <div class="mt-4 flex gap-2">
-                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <a href="?search=<?php echo urlencode($search); ?>&page=<?php echo $i; ?>" class="px-3 py-1 rounded <?php echo $i === $page ? 'bg-blue-600 text-white' : 'bg-gray-100'; ?>"><?php echo $i; ?></a>
-                        <?php endfor; ?>
+                    <?php if ($totalPages > 1): ?>
+                    <div class="mt-4 flex flex-wrap gap-2 items-center">
+                        <?php
+                        $searchParam = $search ? '&search=' . urlencode($search) : '';
+                        $prevPage = $page - 1;
+                        $nextPage = $page + 1;
+                        ?>
+                        <?php if ($page > 1): ?>
+                        <a href="?page=<?php echo $prevPage; ?><?php echo $searchParam; ?>" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">&laquo; Prev</a>
+                        <?php endif; ?>
+
+                        <?php if ($totalPages <= 7): ?>
+                            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                            <a href="?page=<?php echo $i; ?><?php echo $searchParam; ?>" class="px-3 py-1 rounded <?php echo $i === $page ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'; ?>"><?php echo $i; ?></a>
+                            <?php endfor; ?>
+                        <?php else: ?>
+                            <a href="?page=1<?php echo $searchParam; ?>" class="px-3 py-1 rounded <?php echo 1 === $page ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'; ?>">1</a>
+                            <?php if ($page > 4): ?>
+                            <span class="px-2">...</span>
+                            <?php endif; ?>
+                            <?php for ($i = max(2, $page - 2); $i <= min($totalPages - 1, $page + 2); $i++): ?>
+                            <a href="?page=<?php echo $i; ?><?php echo $searchParam; ?>" class="px-3 py-1 rounded <?php echo $i === $page ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'; ?>"><?php echo $i; ?></a>
+                            <?php endfor; ?>
+                            <?php if ($page < $totalPages - 3): ?>
+                            <span class="px-2">...</span>
+                            <?php endif; ?>
+                            <a href="?page=<?php echo $totalPages; ?><?php echo $searchParam; ?>" class="px-3 py-1 rounded <?php echo $totalPages === $page ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'; ?>"><?php echo $totalPages; ?></a>
+                        <?php endif; ?>
+
+                        <?php if ($page < $totalPages): ?>
+                        <a href="?page=<?php echo $nextPage; ?><?php echo $searchParam; ?>" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Next &raquo;</a>
+                        <?php endif; ?>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
