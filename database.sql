@@ -44,3 +44,14 @@ CREATE TABLE password_resets (
     INDEX (token_hash),
     INDEX (expires_at)
 );
+
+-- Audit logs for admin actions
+CREATE TABLE audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    action VARCHAR(100) NOT NULL,
+    details TEXT,
+    ip VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);

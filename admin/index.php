@@ -6,22 +6,52 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// Handle user creation
+// Handle user creation (with auditing)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_user'])) {
-    $username = $_POST['username'];
+    $username = trim($_POST['username']);
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
     $role = $_POST['role'];
 
     $stmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
     $stmt->execute([$username, $password, $role]);
     $success = 'User created successfully';
+
+    // Log audit
+    $actor = $_SESSION['user_id'] ?? null;
+    $stmt = $pdo->prepare("INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, 'create_user', ?, ?)");
+    $stmt->execute([$actor, "created user={$username}, role={$role}", $_SERVER['REMOTE_ADDR'] ?? '']);
 }
 
-// Fetch users
-$stmt = $pdo->query("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC");
-$users = $stmt->fetchAll();
+// Analytics summary (Pro feature)
+$totalUsers = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+$totalInvoices = (int)$pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
+$totalRevenue = (float)$pdo->query('SELECT IFNULL(SUM(grand_total),0) FROM invoices')->fetchColumn();
 
-// Fetch invoices
+// User search & pagination
+$search = trim($_GET['search'] ?? '');
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 15;
+$offset = ($page - 1) * $perPage;
+
+if ($search !== '') {
+    $stmt = $pdo->prepare("SELECT id, username, role, created_at FROM users WHERE username LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?");
+    $stmt->execute(["%$search%", $perPage, $offset]);
+    $users = $stmt->fetchAll();
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username LIKE ?");
+    $countStmt->execute(["%$search%"]);
+    $totalMatched = (int)$countStmt->fetchColumn();
+} else {
+    $stmt = $pdo->prepare("SELECT id, username, role, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?");
+    $stmt->execute([$perPage, $offset]);
+    $users = $stmt->fetchAll();
+
+    $totalMatched = $totalUsers;
+}
+
+$totalPages = (int)ceil($totalMatched / $perPage);
+
+// Fetch invoices (recent)
 $stmt = $pdo->query("SELECT * FROM invoices ORDER BY created_at DESC LIMIT 50");
 $invoices = $stmt->fetchAll();
 ?>
@@ -45,65 +75,125 @@ $invoices = $stmt->fetchAll();
     </nav>
 
     <div class="container mx-auto p-6">
-        <h2 class="text-2xl font-bold mb-6">Manage Users</h2>
-        <?php if (isset($success)) echo "<p class='text-green-500 mb-4'>$success</p>"; ?>
-
-        <form method="post" class="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h3 class="text-lg font-bold mb-4">Create New User</h3>
-            <div class="grid grid-cols-3 gap-4">
-                <input type="text" name="username" placeholder="Username" class="px-3 py-2 border rounded" required>
-                <input type="password" name="password" placeholder="Password" class="px-3 py-2 border rounded" required>
-                <select name="role" class="px-3 py-2 border rounded" required>
-                    <option value="user">User</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                </select>
+        <!-- Analytics cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white p-4 rounded shadow flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Users</p>
+                    <p class="text-2xl font-bold"><?php echo number_format($totalUsers); ?></p>
+                </div>
+                <div class="text-green-500 font-bold text-xl">●</div>
             </div>
-            <button type="submit" name="create_user" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create User</button>
-        </form>
+            <div class="bg-white p-4 rounded shadow flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Invoices</p>
+                    <p class="text-2xl font-bold"><?php echo number_format($totalInvoices); ?></p>
+                </div>
+                <div class="text-blue-500 font-bold text-xl">●</div>
+            </div>
+            <div class="bg-white p-4 rounded shadow flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Revenue</p>
+                    <p class="text-2xl font-bold"><?php echo number_format($totalRevenue, 2); ?> ₾</p>
+                </div>
+                <div class="text-yellow-500 font-bold text-xl">●</div>
+            </div>
+        </div>
 
-        <table class="bg-white rounded-lg shadow-md w-full">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="px-4 py-2">ID</th>
-                    <th class="px-4 py-2">Username</th>
-                    <th class="px-4 py-2">Role</th>
-                    <th class="px-4 py-2">Created At</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($users as $user): ?>
-                <tr>
-                    <td class="px-4 py-2"><?php echo $user['id']; ?></td>
-                    <td class="px-4 py-2"><?php echo htmlspecialchars($user['username']); ?></td>
-                    <td class="px-4 py-2"><?php echo $user['role']; ?></td>
-                    <td class="px-4 py-2"><?php echo $user['created_at']; ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="flex flex-col md:flex-row gap-6">
+            <div class="md:w-1/2">
+                <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Users</h3>
+                        <form method="get" class="flex items-center gap-2">
+                            <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search username" class="px-3 py-2 border rounded">
+                            <button type="submit" class="px-3 py-2 bg-gray-200 rounded">Search</button>
+                        </form>
+                    </div>
 
-        <h2 class="text-2xl font-bold mt-8 mb-6">Recent Invoices</h2>
-        <table class="bg-white rounded-lg shadow-md w-full">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="px-4 py-2">ID</th>
-                    <th class="px-4 py-2">Customer</th>
-                    <th class="px-4 py-2">Total</th>
-                    <th class="px-4 py-2">Created At</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($invoices as $invoice): ?>
-                <tr>
-                    <td class="px-4 py-2"><?php echo $invoice['id']; ?></td>
-                    <td class="px-4 py-2"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
-                    <td class="px-4 py-2"><?php echo $invoice['grand_total']; ?> ₾</td>
-                    <td class="px-4 py-2"><?php echo $invoice['created_at']; ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                    <?php if (isset($success)) echo "<p class='text-green-500 mb-4'>$success</p>"; ?>
+
+                    <form method="post" class="bg-gray-50 p-4 rounded mb-4">
+                        <h4 class="font-semibold mb-2">Create New User</h4>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="text" name="username" placeholder="Username" class="px-2 py-2 border rounded" required>
+                            <input type="password" name="password" placeholder="Password" class="px-2 py-2 border rounded" required>
+                            <select name="role" class="px-2 py-2 border rounded" required>
+                                <option value="user">User</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" name="create_user" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Create</button>
+                    </form>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="text-left px-2 py-2">ID</th>
+                                    <th class="text-left px-2 py-2">Username</th>
+                                    <th class="text-left px-2 py-2">Role</th>
+                                    <th class="text-left px-2 py-2">Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($users as $user): ?>
+                                <tr class="border-t">
+                                    <td class="px-2 py-2"><?php echo $user['id']; ?></td>
+                                    <td class="px-2 py-2"><?php echo htmlspecialchars($user['username']); ?></td>
+                                    <td class="px-2 py-2"><?php echo $user['role']; ?></td>
+                                    <td class="px-2 py-2"><?php echo $user['created_at']; ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="mt-4 flex gap-2">
+                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <a href="?search=<?php echo urlencode($search); ?>&page=<?php echo $i; ?>" class="px-3 py-1 rounded <?php echo $i === $page ? 'bg-blue-600 text-white' : 'bg-gray-100'; ?>"><?php echo $i; ?></a>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:w-1/2">
+                <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Recent Invoices</h3>
+                        <div class="flex items-center gap-2">
+                            <a href="export_invoices.php" class="px-3 py-2 bg-gray-200 rounded">Export CSV</a>
+                            <a href="logs.php" class="px-3 py-2 bg-gray-200 rounded">View Logs</a>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="text-left px-2 py-2">ID</th>
+                                    <th class="text-left px-2 py-2">Customer</th>
+                                    <th class="text-left px-2 py-2">Total</th>
+                                    <th class="text-left px-2 py-2">Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($invoices as $invoice): ?>
+                                <tr class="border-t">
+                                    <td class="px-2 py-2"><?php echo $invoice['id']; ?></td>
+                                    <td class="px-2 py-2"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
+                                    <td class="px-2 py-2"><?php echo $invoice['grand_total']; ?> ₾</td>
+                                    <td class="px-2 py-2"><?php echo $invoice['created_at']; ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>
