@@ -259,7 +259,7 @@ $totalPages = (int)ceil($total / $perPage);
                 </div>
 
                 <div>
-                    <div class="overflow-x-auto overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200" style="max-height: 70vh;">
+                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200" style="max-height: 70vh;">
                         <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;">
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200">
                                 <tr>
@@ -272,9 +272,9 @@ $totalPages = (int)ceil($total / $perPage);
                             <tbody>
                                 <?php foreach ($customers as $c): ?>
                                 <tr class="border-t border-gray-200 hover:bg-blue-50 transition">
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4"><?php echo htmlspecialchars($c['plate_number']); ?></td>
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4"><?php echo htmlspecialchars($c['full_name']); ?></td>
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4"><?php echo htmlspecialchars($c['phone']); ?></td>
+                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['plate_number']); ?></td>
+                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['full_name']); ?></td>
+                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['phone']); ?></td>
                                     <td class="px-1 py-3 sm:px-2 sm:py-4 flex flex-col gap-1 sm:flex-row sm:gap-2">
                                         <button onclick="prefill(<?php echo $c['id']; ?>)" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none">
                                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
