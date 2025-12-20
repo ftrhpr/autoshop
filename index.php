@@ -391,6 +391,9 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                 <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                         </div>
+                        <div class="mt-6 flex justify-end">
+                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                        </div>
                     </div>
                 </div>
 
@@ -419,6 +422,10 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                 <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
                                 <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
+                        </div>
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
+                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
                         </div>
                     </div>
                 </div>
@@ -469,6 +476,10 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                 <p class="font-bold text-xl text-green-800" id="display_grand_total"></p>
                             </div>
                         </div>
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
+                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                        </div>
                     </div>
                 </div>
 
@@ -487,6 +498,9 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                         </div>
                         <div id="input_images_preview" class="flex gap-2 flex-wrap"></div>
                         <p class="mt-2 text-xs text-gray-500">Upload vehicle photos. On mobile, use "Take Photo" to open camera.</p>
+                        <div class="mt-6 flex justify-end">
+                            <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Skip to Review</button>
+                        </div>
                     </div>
                 </div>
 
@@ -783,6 +797,21 @@ if (!empty($serverInvoice)) {
             if (tabButtons.length > 0) {
                 tabButtons[0].click();
             }
+        }
+
+        function nextTab() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const activeButton = document.querySelector('.tab-btn.bg-blue-500');
+            if (!activeButton) return;
+            const currentIndex = Array.from(tabButtons).indexOf(activeButton);
+            if (currentIndex < tabButtons.length - 1) {
+                tabButtons[currentIndex + 1].click();
+            }
+        }
+
+        function skipToReview() {
+            const reviewButton = document.querySelector('.tab-btn[data-tab="review"]');
+            if (reviewButton) reviewButton.click();
         }
 
         function updateReviewContent() {
