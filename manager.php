@@ -402,9 +402,10 @@ foreach ($invoices as $invoice) {
         function initializeLiveUpdates() {
             console.log('Initializing live updates...');
             let lastTimestamp = null;
-            let pollingInterval = 2000; // 2 seconds for immediate updates
+            let pollingInterval = 5000; // 5 seconds for reasonable update frequency
             let pollingTimer = null;
             let inFlight = false;
+            let lastPollTime = 0;
             let newInvoiceIds = new Set(); // Track new invoices that haven't been viewed
 
             function fetchLatestTimestamp() {
@@ -429,10 +430,23 @@ foreach ($invoices as $invoice) {
             }
 
             function pollForUpdates() {
+                // Don't poll if page is not visible
+                if (document.hidden) {
+                    return;
+                }
+
+                // Prevent too frequent polling
+                const now = Date.now();
+                if (now - lastPollTime < 1000) { // Minimum 1 second between polls
+                    return;
+                }
+
                 if (inFlight) {
                     console.log('Poll already in flight, skipping');
                     return;
                 }
+
+                lastPollTime = now;
                 console.log('Polling for updates, lastTimestamp:', lastTimestamp);
                 inFlight = true;
 
@@ -448,10 +462,11 @@ foreach ($invoices as $invoice) {
                         console.log('pollForUpdates data:', data);
                         if (data && data.success && data.new_count > 0) {
                             console.log('Found', data.new_count, 'new invoices');
+                            console.log('New invoices:', data.invoices.map(inv => inv.id));
                             handleNewInvoices(data.invoices);
                             lastTimestamp = data.latest_timestamp;
                         } else {
-                            console.log('No new invoices found');
+                            console.log('No new invoices found (count:', data.new_count, ')');
                         }
                     })
                     .catch(e => {
@@ -467,25 +482,35 @@ foreach ($invoices as $invoice) {
                 const tableBody = document.querySelector('tbody');
                 if (!tableBody) return;
 
+                let hasTrulyNewInvoices = false;
+
                 // Add new invoices to the top of the table
                 newInvoices.forEach(invoice => {
-                    const newRow = createInvoiceRow(invoice);
-                    newRow.classList.add('invoice-new'); // Start with blinking
-                    newInvoiceIds.add(invoice.id);
+                    // Check if this invoice is already in the table
+                    const existingRow = document.querySelector(`tr[data-invoice-id="${invoice.id}"]`);
+                    if (!existingRow) {
+                        // This is a truly new invoice
+                        hasTrulyNewInvoices = true;
+                        const newRow = createInvoiceRow(invoice);
+                        newRow.classList.add('invoice-new'); // Start with blinking
+                        newInvoiceIds.add(invoice.id);
 
-                    // Insert at the top
-                    if (tableBody.firstChild) {
-                        tableBody.insertBefore(newRow, tableBody.firstChild);
+                        // Insert at the top
+                        if (tableBody.firstChild) {
+                            tableBody.insertBefore(newRow, tableBody.firstChild);
+                        } else {
+                            tableBody.appendChild(newRow);
+                        }
                     } else {
-                        tableBody.appendChild(newRow);
+                        console.log('Invoice', invoice.id, 'already exists in table, skipping');
                     }
                 });
 
                 // Update results count display
                 updateResultsCount();
 
-                // Play notification sound for new invoices
-                if (newInvoices.length > 0) {
+                // Play notification sound only for truly new invoices
+                if (hasTrulyNewInvoices) {
                     playNotificationSound();
                     // Add visual flash effect
                     flashPageBackground();
