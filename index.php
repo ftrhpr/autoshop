@@ -649,9 +649,14 @@ if (!empty($serverInvoice)) {
                     const q = input.value.trim();
                     if (!q) { box.innerHTML = ''; return; }
                     try {
+                        console.log('Searching for:', q);
                         const res = await fetch(endpoint + encodeURIComponent(q));
-                        if (!res.ok) { box.innerHTML = ''; return; }
+                        if (!res.ok) { 
+                            console.log('Response not ok:', res.status);
+                            box.innerHTML = ''; return; 
+                        }
                         const list = await res.json();
+                        console.log('Results:', list);
                         if (!Array.isArray(list)) { box.innerHTML = ''; return; }
                         box.innerHTML = list.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
                         box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
@@ -660,6 +665,7 @@ if (!empty($serverInvoice)) {
                             box.innerHTML = '';
                         }));
                     } catch (e) {
+                        console.log('Error:', e);
                         box.innerHTML = '';
                     }
                 }));
