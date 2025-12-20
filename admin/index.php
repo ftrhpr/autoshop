@@ -27,17 +27,96 @@ $totalUsers = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
 $totalInvoices = (int)$pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
 $totalRevenue = (float)$pdo->query('SELECT IFNULL(SUM(grand_total),0) FROM invoices')->fetchColumn();
 
+// Customer Analytics
+$totalCustomers = (int)$pdo->query('SELECT COUNT(*) FROM customers')->fetchColumn();
+$newCustomersThisMonth = (int)$pdo->query("SELECT COUNT(*) FROM customers WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->fetchColumn();
+$avgRevenuePerCustomer = $totalCustomers > 0 ? $totalRevenue / $totalCustomers : 0;
+
+// Top customers by revenue
+$topCustomers = $pdo->query("
+    SELECT c.full_name, c.phone, c.plate_number, c.car_mark, 
+           COUNT(i.id) as total_invoices, 
+           IFNULL(SUM(i.grand_total), 0) as total_spent,
+           MAX(i.created_at) as last_visit
+    FROM customers c 
+    LEFT JOIN invoices i ON c.id = i.customer_id 
+    GROUP BY c.id, c.full_name, c.phone, c.plate_number, c.car_mark 
+    ORDER BY total_spent DESC 
+    LIMIT 10
+")->fetchAll();
+
+// Customer retention (customers with multiple visits)
+$repeatCustomers = (int)$pdo->query("
+    SELECT COUNT(*) FROM (
+        SELECT customer_id, COUNT(*) as visit_count 
+        FROM invoices 
+        WHERE customer_id IS NOT NULL 
+        GROUP BY customer_id 
+        HAVING visit_count > 1
+    ) as repeat_customers
+")->fetchColumn();
+
+// Popular car brands
+$popularCarBrands = $pdo->query("
+    SELECT car_mark, COUNT(*) as count 
+    FROM customers 
+    WHERE car_mark IS NOT NULL AND car_mark != '' 
+    GROUP BY car_mark 
+    ORDER BY count DESC 
+    LIMIT 10
+")->fetchAll();
+
+// Customer acquisition over time (last 6 months)
+$customerAcquisition = $pdo->prepare("
+    SELECT DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as new_customers 
+    FROM customers 
+    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) 
+    GROUP BY period 
+    ORDER BY period
+");
+$customerAcquisition->execute();
+$customerChartData = $customerAcquisition->fetchAll();
+
 // Chart data (last 6 months)
 $stmt = $pdo->prepare("SELECT DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as invoices_count, IFNULL(SUM(grand_total),0) as revenue FROM invoices WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY period ORDER BY period");
 $stmt->execute();
 $chartRows = $stmt->fetchAll();
+
+// Create a map of periods for merging data
+$periods = [];
 $chartLabels = [];
 $chartInvoices = [];
 $chartRevenue = [];
+$chartCustomers = [];
+
+// Initialize with invoice data
 foreach ($chartRows as $r) {
-    $chartLabels[] = $r['period'];
-    $chartInvoices[] = (int)$r['invoices_count'];
-    $chartRevenue[] = (float)$r['revenue'];
+    $periods[$r['period']] = [
+        'invoices' => (int)$r['invoices_count'],
+        'revenue' => (float)$r['revenue'],
+        'customers' => 0
+    ];
+}
+
+// Add customer acquisition data
+foreach ($customerChartData as $c) {
+    if (!isset($periods[$c['period']])) {
+        $periods[$c['period']] = [
+            'invoices' => 0,
+            'revenue' => 0,
+            'customers' => 0
+        ];
+    }
+    $periods[$c['period']]['customers'] = (int)$c['new_customers'];
+}
+
+// Sort periods and create chart arrays
+ksort($periods);
+foreach ($periods as $period => $data) {
+    $chartLabels[] = $period;
+    $chartInvoices[] = $data['invoices'];
+    $chartRevenue[] = $data['revenue'];
+    $chartCustomers[] = $data['customers'];
 }
 
 // User search & pagination
@@ -113,10 +192,35 @@ $invoices = $stmt->fetchAll();
             </div>
         </div>
 
+        <!-- Customer Analytics cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white p-4 rounded shadow flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Total Customers</p>
+                    <p class="text-2xl font-bold"><?php echo number_format($totalCustomers); ?></p>
+                </div>
+                <div class="text-purple-500 font-bold text-xl">●</div>
+            </div>
+            <div class="bg-white p-4 rounded shadow flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">New Customers (This Month)</p>
+                    <p class="text-2xl font-bold"><?php echo number_format($newCustomersThisMonth); ?></p>
+                </div>
+                <div class="text-indigo-500 font-bold text-xl">●</div>
+            </div>
+            <div class="bg-white p-4 rounded shadow flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Avg Revenue per Customer</p>
+                    <p class="text-2xl font-bold"><?php echo number_format($avgRevenuePerCustomer, 2); ?> ₾</p>
+                </div>
+                <div class="text-pink-500 font-bold text-xl">●</div>
+            </div>
+        </div>
+
         <!-- Chart -->
         <div class="bg-white p-4 rounded shadow mb-6">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="text-lg font-bold">Revenue (last 6 months)</h3>
+                <h3 class="text-lg font-bold">Business Overview (last 6 months)</h3>
                 <div>
                     <a href="permissions.php" class="px-3 py-2 bg-gray-200 rounded">Roles & Permissions</a>
                 </div>
@@ -129,6 +233,7 @@ $invoices = $stmt->fetchAll();
             const labels = <?php echo json_encode($chartLabels); ?>;
             const revenueData = <?php echo json_encode($chartRevenue); ?>;
             const invoicesData = <?php echo json_encode($chartInvoices); ?>;
+            const customersData = <?php echo json_encode($chartCustomers); ?>;
 
             const ctx = document.getElementById('revenueChart').getContext('2d');
             new Chart(ctx, {
@@ -136,17 +241,85 @@ $invoices = $stmt->fetchAll();
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Revenue ₾', data: revenueData, backgroundColor: 'rgba(234,179,8,0.9)' },
-                        { label: 'Invoices', data: invoicesData, backgroundColor: 'rgba(59,130,246,0.8)' }
+                        { label: 'Revenue ₾', data: revenueData, backgroundColor: 'rgba(234,179,8,0.9)', yAxisID: 'y' },
+                        { label: 'Invoices', data: invoicesData, backgroundColor: 'rgba(59,130,246,0.8)', yAxisID: 'y' },
+                        { label: 'New Customers', data: customersData, backgroundColor: 'rgba(139,92,246,0.7)', yAxisID: 'y1' }
                     ]
                 },
                 options: {
                     responsive: true,
                     interaction: { mode: 'index', intersect: false },
-                    scales: { y: { beginAtZero: true } }
+                    scales: {
+                        y: { beginAtZero: true, position: 'left' },
+                        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
+                    }
                 }
             });
         </script>
+
+        <!-- Customer Analytics Sections -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Top Customers by Revenue -->
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-bold mb-4">Top Customers by Revenue</h3>
+                <div class="space-y-3">
+                    <?php foreach ($topCustomers as $index => $customer): ?>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <div>
+                                <p class="font-semibold"><?php echo htmlspecialchars($customer['full_name'] ?: 'N/A'); ?></p>
+                                <p class="text-sm text-gray-600"><?php echo htmlspecialchars($customer['plate_number']); ?> • <?php echo htmlspecialchars($customer['car_mark'] ?: 'N/A'); ?></p>
+                                <p class="text-xs text-gray-500"><?php echo $customer['total_invoices']; ?> visits • Last: <?php echo $customer['last_visit'] ? date('M j, Y', strtotime($customer['last_visit'])) : 'N/A'; ?></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-green-600"><?php echo number_format($customer['total_spent'], 2); ?> ₾</p>
+                                <p class="text-xs text-gray-500">#<?php echo $index + 1; ?></p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php if (empty($topCustomers)): ?>
+                        <p class="text-gray-500 text-center py-4">No customer data available</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Popular Car Brands -->
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-bold mb-4">Popular Car Brands</h3>
+                <div class="space-y-3">
+                    <?php foreach ($popularCarBrands as $brand): ?>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span class="font-semibold"><?php echo htmlspecialchars($brand['car_mark']); ?></span>
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"><?php echo $brand['count']; ?> customers</span>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php if (empty($popularCarBrands)): ?>
+                        <p class="text-gray-500 text-center py-4">No car brand data available</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Retention Stats -->
+        <div class="bg-white p-4 rounded shadow mb-6">
+            <h3 class="text-lg font-bold mb-4">Customer Retention</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-green-600"><?php echo number_format($repeatCustomers); ?></p>
+                    <p class="text-sm text-gray-600">Repeat Customers</p>
+                    <p class="text-xs text-gray-500">Customers with 2+ visits</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-blue-600"><?php echo $totalCustomers > 0 ? round(($repeatCustomers / $totalCustomers) * 100, 1) : 0; ?>%</p>
+                    <p class="text-sm text-gray-600">Retention Rate</p>
+                    <p class="text-xs text-gray-500">Repeat customers / total customers</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-purple-600"><?php echo $totalCustomers > 0 ? round($totalInvoices / $totalCustomers, 1) : 0; ?></p>
+                    <p class="text-sm text-gray-600">Avg Visits per Customer</p>
+                    <p class="text-xs text-gray-500">Total invoices / total customers</p>
+                </div>
+            </div>
+        </div>
 
         <div class="flex flex-col md:flex-row gap-6">
             <div class="md:w-1/2">
