@@ -40,9 +40,23 @@ function svgIcon($name){
             <?php foreach ($menu as $item):
                 if ($item['permission'] && !function_exists('currentUserCan')) continue;
                 if ($item['permission'] && !currentUserCan($item['permission'])) continue;
-                $isActive = strpos($_SERVER['SCRIPT_NAME'], $item['href']) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($item['href']);
+
+                // Normalize href and collapse duplicate segments (fixes /admin/admin)
+                $raw = $item['href'];
+                if (preg_match('#^https?://#i', $raw)) {
+                    $href = $raw;
+                } else {
+                    $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
+                    $clean = [];
+                    foreach ($parts as $p) {
+                        if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
+                    }
+                    $href = '/' . implode('/', $clean);
+                }
+
+                $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
             ?>
-            <a href="<?php echo htmlspecialchars($item['href']); ?>" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-700 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>">
+            <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-700 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>">
                 <span class="w-5 h-5"><?php echo svgIcon($item['icon']); ?></span>
                 <span><?php echo htmlspecialchars($item['label']); ?></span>
             </a>
