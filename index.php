@@ -353,220 +353,156 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="<?php echo $serverInvoice['id']; ?>">
                 <?php endif; ?>
 
-                <!-- Desktop Layout (unchanged) -->
-                <div id="desktop-layout" class="block">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Tab Navigation -->
+                <div class="mb-6">
+                    <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">Customer</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="vehicle">Vehicle</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="items">Items</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="photos">Photos</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="review">Review</button>
+                    </nav>
+                </div>
 
-                    <!-- Left Column: Inputs -->
-                    <div class="lg:col-span-1 space-y-6">
-
-                        <!-- Workflow Card -->
-                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                            <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
-                                <svg class="h-6 w-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Workflow Details
-                            </h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="input_creation_date" class="block text-sm font-medium text-gray-700 mb-2">Creation Date (შემოსვლის დრო)</label>
-                                    <input type="datetime-local" id="input_creation_date" name="creation_date" value="<?php echo $currentDate; ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 p-3 text-base transition" aria-describedby="date-help">
-                                    <p id="date-help" class="mt-1 text-xs text-gray-500">Select the date and time when the vehicle arrived.</p>
-                                </div>
-                                <div>
-                                    <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">Service Manager (სერვისის მენეჯერი)</label>
-                                    <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 p-3 text-base transition" aria-describedby="manager-help">
-                                    <input type="hidden" id="input_service_manager_id" name="service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
-                                    <p id="manager-help" class="mt-1 text-xs text-gray-500">The service manager handling this invoice.</p>
-                                </div>
+                <!-- Tab Content -->
+                <div class="tab-content" id="customer-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Customer Details
+                        </h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
+                                <input type="text" id="input_customer_name" placeholder="Enter customer name" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
-                        </div>
-
-                        <!-- Customer Card -->
-                        <div class="bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6 rounded-xl shadow-lg border border-blue-200 hover:shadow-xl transition-all duration-300">
-                            <h2 class="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-slate-700">
-                                <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                Customer Info
-                            </h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        Customer Name (კლიენტი)
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" id="input_customer_name" placeholder="First Last Name" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="customer-name-help">
-                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                    </div>
-                                    <input type="hidden" id="input_customer_id" name="customer_id">
-                                    <p id="customer-name-help" class="mt-1 text-xs text-gray-500">Enter the full name of the customer as it appears on their ID.</p>
-                                </div>
-                                <div>
-                                    <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <svg class="h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                        </svg>
-                                        Phone Number (ტელეფონი)
-                                    </label>
-                                    <div class="relative">
-                                        <input type="tel" id="input_phone_number" placeholder="+995 555 00 00 00" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="phone-help">
-                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                        </svg>
-                                    </div>
-                                    <p id="phone-help" class="mt-1 text-xs text-gray-500">Include country code for international numbers.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Vehicle Card -->
-                        <div class="bg-gradient-to-br from-red-50 to-pink-100 p-4 md:p-6 rounded-xl shadow-lg border border-red-200 hover:shadow-xl transition-all duration-300">
-                            <h2 class="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-slate-700">
-                                <svg class="h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                Vehicle Data
-                            </h2>
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                        Car Mark/Model (ავტომანქანა)
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="car-mark-help">
-                                        <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
-                                    <p id="car-mark-help" class="mt-1 text-xs text-gray-500">Enter the make and model of the vehicle.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            Plate Number (ნომერი)
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="plate-help">
-                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </div>
-                                        <p id="plate-help" class="mt-1 text-xs text-gray-500">License plate in Georgian format.</p>
-                                    </div>
-                                    <div>
-                                        <label for="input_vin" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
-                                            </svg>
-                                            VIN
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" id="input_vin" placeholder="Vehicle VIN" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="vin-help">
-                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
-                                            </svg>
-                                        </div>
-                                        <p id="vin-help" class="mt-1 text-xs text-gray-500">Optional: VIN number for the vehicle.</p>
-                                    </div>
-                                    <div>
-                                        <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                            </svg>
-                                            Mileage (გარბენი)
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="mileage-help">
-                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                            </svg>
-                                        </div>
-                                        <p id="mileage-help" class="mt-1 text-xs text-gray-500">Current odometer reading in kilometers.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-4 rounded-xl shadow-lg border border-gray-200 mt-4">
-                            <h3 class="text-sm font-semibold mb-2">Photos (ფოტოები)</h3>
-                            <div class="flex gap-2 items-center">
-                                <button type="button" id="btn_take_photo" class="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Take Photo</button>
-                                <button type="button" id="btn_upload_photo" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300">Choose Existing</button>
-                                <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="hidden" capture="environment">
-                            </div>
-                            <div id="input_images_preview" class="mt-3 flex gap-2 flex-wrap"></div>
-                            <p class="mt-1 text-xs text-gray-500">On mobile, use "Take Photo" to open camera, or "Choose Existing" to pick from gallery.</p>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Line Items -->
-                    <div class="lg:col-span-2">
-                        <div class="bg-gradient-to-br from-gray-50 to-slate-100 p-4 md:p-6 rounded-xl shadow-lg border border-gray-200 h-full flex flex-col hover:shadow-xl transition-all duration-300">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-lg md:text-xl font-bold text-slate-700 flex items-center gap-2">
-                                    <svg class="h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                    </svg>
-                                    Service & Parts
-                                </h2>
-                                <button type="button" onclick="addItemRow()" class="flex items-center gap-2 text-sm bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg active:scale-95 focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    Add Row
-                                </button>
-                            </div>
-
-                            <div class="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0 flex-grow">
-                                <table class="w-full text-xs sm:text-sm text-left min-w-[500px] md:min-w-[600px] bg-white rounded-lg overflow-hidden shadow-sm">
-                                    <thead class="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 uppercase font-semibold">
-                                        <tr>
-                                            <th class="px-2 md:px-4 py-2 md:py-3 w-6 md:w-8 text-center">#</th>
-                                            <th class="px-2 md:px-4 py-2 md:py-3 w-1/3">Item Name</th>
-                                            <th class="px-2 md:px-4 py-2 md:py-3 w-12 md:w-16 text-center">Qty</th>
-                                            <th class="px-2 md:px-4 py-2 md:py-3 w-20 md:w-24 text-right">Part Price</th>
-                                            <th class="px-2 md:px-4 py-2 md:py-3 w-20 md:w-24 text-right">Svc Price</th>
-                                            <th class="px-2 md:px-4 py-2 md:py-3 w-24 md:w-32">Technician</th>
-                                            <th class="px-2 md:px-4 py-2 md:py-3 w-10 md:w-12 text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="items-table-body" class="divide-y divide-gray-100 hover:bg-gray-50 transition-colors">
-                                        <!-- Rows added via JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Live Totals -->
-                            <div class="mt-6 border-t border-gray-200 pt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-right">
-                                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200">
-                                    <p class="text-xs text-gray-600 uppercase font-medium mb-1">Parts Total</p>
-                                    <p class="font-bold text-lg text-gray-800" id="display_parts_total"></p>
-                                </div>
-                                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200">
-                                    <p class="text-xs text-gray-600 uppercase font-medium mb-1">Service Total</p>
-                                    <p class="font-bold text-lg text-gray-800" id="display_service_total"></p>
-                                </div>
-                                <div class="bg-gradient-to-r from-green-50 to-emerald-100 p-4 rounded-lg border-2 border-green-200 hover:shadow-lg transition-all duration-200">
-                                    <p class="text-xs text-green-700 uppercase font-medium mb-1">Grand Total</p>
-                                    <p class="font-bold text-xl text-green-800" id="display_grand_total"></p>
-                                </div>
+                            <div>
+                                <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                <input type="text" id="input_phone_number" placeholder="Phone number" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="tab-content hidden" id="vehicle-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            Vehicle Details
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">Car Make/Model</label>
+                                <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2">Plate Number</label>
+                                <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_vin" class="block text-sm font-medium text-gray-700 mb-2">VIN</label>
+                                <input type="text" id="input_vin" placeholder="Vehicle VIN" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
+                                <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="items-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            Service & Parts
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm bg-white rounded-lg overflow-hidden shadow-sm min-w-[600px]">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">#</th>
+                                        <th class="px-4 py-3 text-left">Item Name</th>
+                                        <th class="px-4 py-3 text-center">Qty</th>
+                                        <th class="px-4 py-3 text-right">Part Price</th>
+                                        <th class="px-4 py-3 text-right">Svc Price</th>
+                                        <th class="px-4 py-3 text-left">Technician</th>
+                                        <th class="px-4 py-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="items-table-body" class="divide-y divide-gray-100">
+                                    <!-- Rows added via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" onclick="addItemRow()" class="mt-4 flex items-center gap-2 text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Item
+                        </button>
+                        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-xs text-gray-600">Parts Total</p>
+                                <p class="font-bold text-lg" id="display_parts_total"></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-xs text-gray-600">Service Total</p>
+                                <p class="font-bold text-lg" id="display_service_total"></p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <p class="text-xs text-green-700">Grand Total</p>
+                                <p class="font-bold text-xl text-green-800" id="display_grand_total"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="photos-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Photos
+                        </h2>
+                        <div class="flex gap-2 items-center mb-4">
+                            <button type="button" id="btn_take_photo" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Take Photo</button>
+                            <button type="button" id="btn_upload_photo" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300">Choose Existing</button>
+                            <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="hidden" capture="environment">
+                        </div>
+                        <div id="input_images_preview" class="flex gap-2 flex-wrap"></div>
+                        <p class="mt-2 text-xs text-gray-500">Upload vehicle photos. On mobile, use "Take Photo" to open camera.</p>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="review-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Review & Save
+                        </h2>
+                        <div id="review-content" class="space-y-4">
+                            <!-- Review content will be populated by JS -->
+                        </div>
+                        <div class="mt-6 flex gap-4">
+                            <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Save Invoice</button>
+                            <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Save & Print</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden inputs for service manager -->
+                <input type="hidden" id="input_service_manager_id" name="service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
+                <input type="hidden" id="input_customer_id" name="customer_id">
             </form>
         </div>
 
@@ -794,7 +730,99 @@ if (!empty($serverInvoice)) {
             if (window.serverInvoice) {
                 loadServerInvoice(window.serverInvoice);
             }
+
+            // Initialize tabs
+            initializeTabs();
         });
+
+        function initializeTabs() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+
+                    // Remove active classes from all buttons
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('bg-blue-500', 'text-white', 'font-semibold');
+                        btn.classList.add('bg-gray-100', 'text-gray-700');
+                    });
+
+                    // Add active class to clicked button
+                    button.classList.remove('bg-gray-100', 'text-gray-700');
+                    button.classList.add('bg-blue-500', 'text-white', 'font-semibold');
+
+                    // Hide all tab contents
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+
+                    // Show selected tab content
+                    const selectedTab = document.getElementById(tabName + '-tab');
+                    if (selectedTab) {
+                        selectedTab.classList.remove('hidden');
+                    }
+
+                    // Update review tab content when switching to it
+                    if (tabName === 'review') {
+                        updateReviewContent();
+                    }
+                });
+            });
+
+            // Set first tab as active by default
+            if (tabButtons.length > 0) {
+                tabButtons[0].click();
+            }
+        }
+
+        function updateReviewContent() {
+            const reviewContent = document.getElementById('review-content');
+            if (!reviewContent) return;
+
+            const customerName = document.getElementById('input_customer_name').value || 'Not specified';
+            const phone = document.getElementById('input_phone_number').value || 'Not specified';
+            const carMark = document.getElementById('input_car_mark').value || 'Not specified';
+            const plateNumber = document.getElementById('input_plate_number').value || 'Not specified';
+            const vin = document.getElementById('input_vin').value || 'Not specified';
+            const mileage = document.getElementById('input_mileage').value || 'Not specified';
+
+            const totals = calculateTotals();
+
+            reviewContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Customer Information</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p><strong>Name:</strong> ${customerName}</p>
+                            <p><strong>Phone:</strong> ${phone}</p>
+                        </div>
+
+                        <h3 class="text-lg font-semibold text-gray-800">Vehicle Information</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p><strong>Make/Model:</strong> ${carMark}</p>
+                            <p><strong>Plate Number:</strong> ${plateNumber}</p>
+                            <p><strong>VIN:</strong> ${vin}</p>
+                            <p><strong>Mileage:</strong> ${mileage}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Invoice Summary</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p><strong>Parts Total:</strong> ${totals.partTotal > 0 ? totals.partTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
+                            <p><strong>Service Total:</strong> ${totals.svcTotal > 0 ? totals.svcTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
+                            <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${totals.grandTotal > 0 ? totals.grandTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
+                        </div>
+
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-sm text-blue-800">Ready to save this invoice? Click "Save Invoice" to store it or "Save & Print" to save and print immediately.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         function addItemRow() {
             rowCount++;
