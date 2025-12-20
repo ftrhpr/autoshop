@@ -39,7 +39,7 @@ $rowNo = 0;
 $pdo->beginTransaction();
 try {
     $select = $pdo->prepare('SELECT id FROM customers WHERE phone = ? LIMIT 1');
-    $insert = $pdo->prepare('INSERT INTO customers (full_name, phone, created_by) VALUES (?, ?, ?)');
+    $insert = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, created_by) VALUES (?, ?, NULL, ?)');
     $update = $pdo->prepare('UPDATE customers SET full_name = ? WHERE id = ?');
 
     foreach ($validLines as $rowNo => $pair) {
