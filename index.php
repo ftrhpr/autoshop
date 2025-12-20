@@ -40,6 +40,9 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         $stmt->execute([$pid]);
         $inv = $stmt->fetch();
         if ($inv) {
+            echo "<!-- Raw invoice data from DB: " . htmlspecialchars(json_encode($inv)) . " -->";
+            $inv_items = json_decode($inv['items'], true) ?: [];
+            echo "<!-- Decoded items: " . htmlspecialchars(json_encode($inv_items)) . " -->";
             $inv_items = json_decode($inv['items'], true) ?: [];
             $inv_customer = null;
             if (!empty($inv['customer_id'])) {
@@ -72,6 +75,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             ];
             if ($inv_customer) $serverInvoice['customer'] = $inv_customer;
             if (!empty($sm_username)) $serverInvoice['service_manager_username'] = $sm_username;
+            echo "<!-- Final serverInvoice: " . htmlspecialchars(json_encode($serverInvoice)) . " -->";
             echo "<!-- Invoice loaded successfully -->";
         } else {
             $invoiceNotFound = true;
@@ -527,6 +531,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         // Server-provided invoice for preview/print
         window.serverInvoice = <?php echo json_encode($serverInvoice, JSON_UNESCAPED_UNICODE); ?>;
         console.log('Server invoice loaded:', window.serverInvoice);
+        console.log('Server invoice JSON:', '<?php echo json_encode($serverInvoice, JSON_UNESCAPED_UNICODE); ?>');
     </script>
 <?php else: ?>
     <?php if (isset($_GET['print_id'])): ?>
@@ -682,10 +687,15 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 console.log('Found server invoice, loading...');
                 loadServerInvoice(window.serverInvoice);
                 if (window.serverInvoice._print) {
+                    console.log('Will switch to preview and print in 1 second...');
                     setTimeout(() => {
+                        console.log('Switching to preview mode...');
                         switchTab('preview');
-                        setTimeout(() => { window.print(); }, 250);
-                    }, 200);
+                        setTimeout(() => {
+                            console.log('Triggering print...');
+                            window.print();
+                        }, 250);
+                    }, 1000); // Increased delay to ensure form is populated
                 }
             } else {
                 console.log('No server invoice found');
@@ -717,33 +727,120 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
         function loadServerInvoice(inv) {
             console.log('Loading server invoice:', inv);
+            console.log('Invoice properties:', Object.keys(inv));
+            console.log('Invoice data:', JSON.stringify(inv, null, 2));
+
             // Fill fields
             if (inv.creation_date) {
-                // Convert "YYYY-MM-DD HH:MM:SS" to datetime-local value "YYYY-MM-DDTHH:MM"
-                document.getElementById('input_creation_date').value = inv.creation_date.replace(' ', 'T').substring(0,16);
+                console.log('Setting creation date:', inv.creation_date);
+                const dateField = document.getElementById('input_creation_date');
+                if (dateField) {
+                    dateField.value = inv.creation_date.replace(' ', 'T').substring(0,16);
+                    console.log('Creation date set to:', dateField.value);
+                } else {
+                    console.log('Creation date field not found');
+                }
             }
-            document.getElementById('input_service_manager').value = inv.service_manager || inv.service_manager_username || smDefault || '';
-            if (document.getElementById('input_service_manager_id')) document.getElementById('input_service_manager_id').value = inv.service_manager_id || '';
 
-            if (inv.customer_name) document.getElementById('input_customer_name').value = inv.customer_name;
-            if (inv.phone) document.getElementById('input_phone_number').value = inv.phone;
-            if (inv.car_mark) document.getElementById('input_car_mark').value = inv.car_mark;
-            if (inv.plate_number) document.getElementById('input_plate_number').value = inv.plate_number;
-            if (inv.mileage) document.getElementById('input_mileage').value = inv.mileage;
-            if (inv.customer && inv.customer.id) document.getElementById('input_customer_id').value = inv.customer.id;
+            const smField = document.getElementById('input_service_manager');
+            if (smField) {
+                smField.value = inv.service_manager || inv.service_manager_username || smDefault || '';
+                console.log('Service manager set to:', smField.value);
+            } else {
+                console.log('Service manager field not found');
+            }
+
+            const smIdField = document.getElementById('input_service_manager_id');
+            if (smIdField) {
+                smIdField.value = inv.service_manager_id || '';
+                console.log('Service manager ID set to:', smIdField.value);
+            }
+
+            if (inv.customer_name) {
+                console.log('Setting customer name:', inv.customer_name);
+                const customerField = document.getElementById('input_customer_name');
+                if (customerField) {
+                    customerField.value = inv.customer_name;
+                    console.log('Customer name set successfully');
+                } else {
+                    console.log('Customer name field not found');
+                }
+            }
+
+            if (inv.phone) {
+                console.log('Setting phone:', inv.phone);
+                const phoneField = document.getElementById('input_phone_number');
+                if (phoneField) {
+                    phoneField.value = inv.phone;
+                } else {
+                    console.log('Phone field not found');
+                }
+            }
+
+            if (inv.car_mark) {
+                console.log('Setting car mark:', inv.car_mark);
+                const carField = document.getElementById('input_car_mark');
+                if (carField) {
+                    carField.value = inv.car_mark;
+                } else {
+                    console.log('Car mark field not found');
+                }
+            }
+
+            if (inv.plate_number) {
+                console.log('Setting plate number:', inv.plate_number);
+                const plateField = document.getElementById('input_plate_number');
+                if (plateField) {
+                    plateField.value = inv.plate_number;
+                } else {
+                    console.log('Plate number field not found');
+                }
+            }
+
+            if (inv.mileage) {
+                console.log('Setting mileage:', inv.mileage);
+                const mileageField = document.getElementById('input_mileage');
+                if (mileageField) {
+                    mileageField.value = inv.mileage;
+                } else {
+                    console.log('Mileage field not found');
+                }
+            }
+
+            if (inv.customer && inv.customer.id) {
+                console.log('Setting customer ID:', inv.customer.id);
+                const customerIdField = document.getElementById('input_customer_id');
+                if (customerIdField) {
+                    customerIdField.value = inv.customer.id;
+                } else {
+                    console.log('Customer ID field not found');
+                }
+            }
 
             // Replace existing rows with invoice items
+            console.log('Processing items:', inv.items);
             document.querySelectorAll('.item-row').forEach(r => r.remove());
-            (inv.items || []).forEach(it => {
+            (inv.items || []).forEach((it, index) => {
+                console.log('Adding item row', index, ':', it);
                 addItemRow();
-                const tr = document.querySelector('.item-row:last-child'); if (!tr) return;
-                tr.querySelector('.item-name').value = it.name || '';
-                tr.querySelector('.item-qty').value = it.qty || 1;
-                tr.querySelector('.item-price-part').value = it.price_part || 0;
-                tr.querySelector('.item-price-svc').value = it.price_svc || 0;
-                tr.querySelector('.item-tech').value = it.tech || '';
+                const tr = document.querySelector('.item-row:last-child');
+                if (!tr) {
+                    console.log('Could not find last item row');
+                    return;
+                }
+                const nameField = tr.querySelector('.item-name');
+                if (nameField) nameField.value = it.name || '';
+                const qtyField = tr.querySelector('.item-qty');
+                if (qtyField) qtyField.value = it.qty || 1;
+                const partField = tr.querySelector('.item-price-part');
+                if (partField) partField.value = it.price_part || 0;
+                const svcField = tr.querySelector('.item-price-svc');
+                if (svcField) svcField.value = it.price_svc || 0;
+                const techField = tr.querySelector('.item-tech');
+                if (techField) techField.value = it.tech || '';
             });
             calculateTotals();
+            console.log('Invoice loading completed');
         }
 
         function removeRow(id) {
