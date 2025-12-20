@@ -314,16 +314,16 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             </div>
 
                             <div class="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0 flex-grow">
-                                <table class="w-full text-sm text-left min-w-[600px] bg-white rounded-lg overflow-hidden shadow-sm">
+                                <table class="w-full text-xs sm:text-sm text-left min-w-[500px] md:min-w-[600px] bg-white rounded-lg overflow-hidden shadow-sm">
                                     <thead class="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 uppercase font-semibold">
                                         <tr>
-                                            <th class="px-4 py-3 w-8 text-center">#</th>
-                                            <th class="px-4 py-3 w-1/3">Item Name</th>
-                                            <th class="px-4 py-3 w-16 text-center">Qty</th>
-                                            <th class="px-4 py-3 w-24 text-right">Part Price</th>
-                                            <th class="px-4 py-3 w-24 text-right">Svc Price</th>
-                                            <th class="px-4 py-3 w-32">Technician</th>
-                                            <th class="px-4 py-3 w-12 text-center">Action</th>
+                                            <th class="px-2 md:px-4 py-2 md:py-3 w-6 md:w-8 text-center">#</th>
+                                            <th class="px-2 md:px-4 py-2 md:py-3 w-1/3">Item Name</th>
+                                            <th class="px-2 md:px-4 py-2 md:py-3 w-12 md:w-16 text-center">Qty</th>
+                                            <th class="px-2 md:px-4 py-2 md:py-3 w-20 md:w-24 text-right">Part Price</th>
+                                            <th class="px-2 md:px-4 py-2 md:py-3 w-20 md:w-24 text-right">Svc Price</th>
+                                            <th class="px-2 md:px-4 py-2 md:py-3 w-24 md:w-32">Technician</th>
+                                            <th class="px-2 md:px-4 py-2 md:py-3 w-10 md:w-12 text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="items-table-body" class="divide-y divide-gray-100 hover:bg-gray-50 transition-colors">

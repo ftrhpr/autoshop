@@ -79,14 +79,15 @@ $invoices = $stmt->fetchAll();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Auto Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 min-h-screen overflow-x-hidden font-sans antialiased">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
 
 
-    <div class="container mx-auto p-6 ml-0 md:ml-64">
+    <div class="container mx-auto p-4 md:p-6 ml-0 md:ml-64">
         <!-- Analytics cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
@@ -175,22 +176,22 @@ $invoices = $stmt->fetchAll();
                     </form>
 
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                        <table class="w-full text-xs sm:text-sm min-w-[400px]">
                             <thead class="bg-gray-100">
                                 <tr>
-                                    <th class="text-left px-2 py-2">ID</th>
-                                    <th class="text-left px-2 py-2">Username</th>
-                                    <th class="text-left px-2 py-2">Role</th>
-                                    <th class="text-left px-2 py-2">Created</th>
+                                    <th class="text-left px-2 md:px-4 py-2">ID</th>
+                                    <th class="text-left px-2 md:px-4 py-2">Username</th>
+                                    <th class="text-left px-2 md:px-4 py-2">Role</th>
+                                    <th class="text-left px-2 md:px-4 py-2">Created</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($users as $user): ?>
-                                <tr class="border-t">
-                                    <td class="px-2 py-2"><?php echo $user['id']; ?></td>
-                                    <td class="px-2 py-2"><?php echo htmlspecialchars($user['username']); ?></td>
-                                    <td class="px-2 py-2"><?php echo $user['role']; ?></td>
-                                    <td class="px-2 py-2"><?php echo $user['created_at']; ?></td>
+                                <tr class="border-t hover:bg-gray-50">
+                                    <td class="px-2 md:px-4 py-2"><?php echo $user['id']; ?></td>
+                                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($user['username']); ?></td>
+                                    <td class="px-2 md:px-4 py-2"><?php echo $user['role']; ?></td>
+                                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo $user['created_at']; ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
