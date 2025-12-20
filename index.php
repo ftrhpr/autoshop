@@ -375,12 +375,20 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                         </h2>
                         <div class="space-y-4">
                             <div>
+                                <label for="input_creation_date" class="block text-sm font-medium text-gray-700 mb-2">Creation Date</label>
+                                <input type="datetime-local" id="input_creation_date" value="<?php echo $currentDate; ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                            </div>
+                            <div>
                                 <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
                                 <input type="text" id="input_customer_name" placeholder="Enter customer name" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                             <div>
                                 <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                                 <input type="text" id="input_phone_number" placeholder="Phone number" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">Service Manager</label>
+                                <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                         </div>
                     </div>
