@@ -25,6 +25,10 @@ try {
     die("Database connection failed: " . $e->getMessage());
 }
 
+// Feature flags
+// Set to true to enable Server-Sent Events (SSE) for live notifications. Disabled by default to avoid long-lived PHP processes on single-threaded servers.
+$enable_sse = false;
+
 // Start session
 session_start();
 

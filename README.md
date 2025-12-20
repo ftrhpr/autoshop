@@ -118,10 +118,11 @@ Unread notifications (manager):
 - When a new invoice is created, notification rows are created for all admins and managers.
 - Manager panel highlights unread invoices with a `NEW` badge until that invoice is opened (viewed) or manually marked seen.
 - You can mark a notification as seen by opening the invoice (server-side mark) or clicking a View link in the Manager panel (client-side mark).
-- For lower-latency updates, the app now supports Server-Sent Events (SSE) via `sse_notifications.php`.
-  - The sidebar connects to SSE and will receive `notification` events and a `count` event for unread counts.
+- For lower-latency updates, the app supports Server-Sent Events (SSE) via `sse_notifications.php`.
+  - SSE is **disabled by default** to avoid issues on single-threaded or resource-constrained servers; enable it by setting `$enable_sse = true;` in `config.php` and ensuring your server supports long-lived PHP processes.
+  - The sidebar connects to SSE and will receive `notification` events and a `count` event for unread counts when enabled.
   - Manager panel listens for SSE events and will insert new rows live when notifications arrive.
-  - If SSE is not available the app falls back to polling-based updates.
+  - If SSE is not available or disabled, the app falls back to polling-based updates.
 
 
 ## License

@@ -294,8 +294,8 @@ function svgIcon($name){
                 try { Notification.requestPermission(); } catch(e) {}
             }
 
-            // Initialize SSE if supported
-            if (window.EventSource) {
+            // Initialize SSE if supported and enabled; otherwise fall back to polling
+            if (<?php echo ($enable_sse ? 'true' : 'false'); ?> && window.EventSource) {
                 try {
                     const es = new EventSource('sse_notifications.php');
                     es.addEventListener('open', () => { console.info('SSE open'); });
