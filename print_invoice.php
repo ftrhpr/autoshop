@@ -49,26 +49,108 @@ $grandTotal = number_format((float)$invoice['grand_total'], 2);
     <title>Print Invoice #<?php echo $invoice['id']; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Print Styles */
+        /* Print Styles - Force A4 layout regardless of screen size */
         @media print {
             @page { margin: 5mm; size: A4; }
             html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: visible; }
             .print-hidden { display: none !important; }
             .print-visible { display: block !important; }
             .print-no-shadow { box-shadow: none !important; }
+
+            /* Force A4 container dimensions */
+            .a4-container {
+                width: 210mm !important;
+                min-width: 210mm !important;
+                max-width: 210mm !important;
+                min-height: 297mm !important;
+                padding: 8mm !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Override all responsive padding */
+            .invoice-container {
+                padding: 8mm !important;
+            }
+
+            /* Force desktop header layout */
+            .invoice-container > div:first-child {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 2rem !important;
+            }
+
+            /* Force desktop info grid layout */
+            .info-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 3rem 2rem !important;
+            }
+
+            /* Force desktop info section layout */
+            .info-section {
+                grid-template-columns: 120px 1fr !important;
+            }
+            .info-section:nth-child(2) {
+                grid-template-columns: 160px 1fr !important;
+            }
+
+            /* Force desktop text sizes */
+            .invoice-container {
+                font-size: 14px !important;
+            }
+            .invoice-container .text-xs { font-size: 12px !important; }
+            .invoice-container .text-sm { font-size: 14px !important; }
+            .invoice-container .text-base { font-size: 16px !important; }
+            .invoice-container .text-lg { font-size: 18px !important; }
+            .invoice-container .text-\[8px\] { font-size: 8px !important; }
+            .invoice-container .text-\[10px\] { font-size: 10px !important; }
+            .invoice-container .text-\[12px\] { font-size: 12px !important; }
+
+            /* Force desktop logo size */
+            .invoice-container img {
+                width: 50% !important;
+            }
+
             /* Exact A4 Table Styling */
-            table { border-collapse: collapse !important; border-color: #000 !important; width: 100% !important; }
-            td, th { border: 1px solid #000 !important; color: #000 !important; }
+            table {
+                border-collapse: collapse !important;
+                border-color: #000 !important;
+                width: 100% !important;
+                font-size: 8px !important;
+                min-width: auto !important;
+            }
+            td, th {
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                padding: 1px 2px !important;
+            }
 
-            /* Compact padding for print to fit one page */
-            td { padding-top: 1px !important; padding-bottom: 1px !important; padding-left: 2px !important; padding-right: 2px !important; }
+            /* Force desktop table layout */
+            .invoice-container table th:nth-child(1) { width: 8% !important; }
+            .invoice-container table th:nth-child(2) { width: auto !important; }
+            .invoice-container table th:nth-child(3) { width: 12% !important; }
+            .invoice-container table th:nth-child(4) { width: 20% !important; }
+            .invoice-container table th:nth-child(5) { width: 20% !important; }
+            .invoice-container table th:nth-child(6) { width: 20% !important; }
+            .invoice-container table th:nth-child(7) { width: 20% !important; }
+            .invoice-container table th:nth-child(8) { width: 24% !important; }
 
-            /* Ensure container fits within printable area */
-            .a4-container { height: auto !important; max-height: none !important; overflow: visible !important; }
+            /* Force desktop signatures layout */
+            .invoice-container .grid-cols-1 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
+            /* Remove responsive overflow */
+            .overflow-x-auto {
+                overflow: visible !important;
+            }
+
+            /* Ensure background is white for printing */
+            .bg-gray-200\/50 { background: white !important; }
+            .bg-white { background: white !important; }
         }
 
-        /* Responsive adjustments for mobile */
-        @media (max-width: 768px) {
+        /* Responsive adjustments for mobile - screen only */
+        @media screen and (max-width: 768px) {
             .invoice-container {
                 padding: 1rem !important;
                 margin: 0 !important;
