@@ -300,7 +300,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 <input type="hidden" name="print_after_save" id="print_after_save">
 
                 <!-- Desktop Layout (unchanged) -->
-                <div id="desktop-layout" class="hidden md:block">
+                <div id="desktop-layout" class="md:block hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     <!-- Left Column: Inputs -->
@@ -488,12 +488,10 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                     </div>
                 </div>
 
-                <!-- Mobile Steps Layout -->
-                <div id="mobile-steps-layout" class="md:hidden">
                 <!-- Enhanced Mobile Steps Layout -->
-                <div id="mobile-steps-layout" class="md:hidden">
+                <div id="mobile-steps-layout" class="block md:hidden">
                     <!-- Step 1: Workflow -->
-                    <div id="step-1" class="step-content animate-fade-in">
+                    <div id="step-1" class="step-content">
                         <div class="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 rounded-2xl shadow-xl border border-amber-200 hover:shadow-2xl transition-all duration-300">
                             <div class="flex items-center gap-3 mb-6">
                                 <div class="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
@@ -1467,6 +1465,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 const stepElement = document.getElementById(`step-${i}`);
                 if (stepElement) {
                     stepElement.classList.add('hidden');
+                    stepElement.style.opacity = '0';
+                    stepElement.style.transform = 'scale(0.95)';
                     stepElement.classList.remove('animate-fade-in');
                 }
             }
@@ -1476,6 +1476,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             if (currentStepElement) {
                 setTimeout(() => {
                     currentStepElement.classList.remove('hidden');
+                    currentStepElement.style.opacity = '1';
+                    currentStepElement.style.transform = 'scale(1)';
                     currentStepElement.classList.add('animate-fade-in');
                 }, 100);
             }
@@ -1490,22 +1492,30 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             updateNavigationButtons(step);
 
             // Update step counter
-            document.getElementById('step-counter').textContent = `Step ${step} of ${totalSteps}`;
+            const stepCounter = document.getElementById('step-counter');
+            if (stepCounter) {
+                stepCounter.textContent = `Step ${step} of ${totalSteps}`;
+            }
 
             // Hide validation message
-            document.getElementById('step-validation-message').classList.add('hidden');
+            const validationMessage = document.getElementById('step-validation-message');
+            if (validationMessage) {
+                validationMessage.classList.add('hidden');
+            }
         }
 
         function updateStepIndicators() {
             // Update main step indicators
             for (let i = 1; i <= totalSteps; i++) {
                 const indicator = document.getElementById(`step-${i}-indicator`);
-                const label = document.querySelector(`#step-${i}-indicator`).nextElementSibling;
+                const label = indicator ? indicator.nextElementSibling : null;
+
+                if (!indicator) continue;
 
                 if (i < currentStep) {
                     // Completed steps
                     indicator.className = `w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center justify-center text-sm font-bold step-indicator completed shadow-lg transform transition-all duration-300`;
-                    label.className = `mt-2 text-xs font-medium text-green-600 step-label`;
+                    if (label) label.className = `mt-2 text-xs font-medium text-green-600 step-label`;
                 } else if (i === currentStep) {
                     // Current step
                     const gradients = [
@@ -1515,25 +1525,30 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                         'from-purple-500 to-violet-600' // Step 4
                     ];
                     indicator.className = `w-10 h-10 rounded-full bg-gradient-to-r ${gradients[i-1]} text-white flex items-center justify-center text-sm font-bold step-indicator active shadow-lg transform scale-110 transition-all duration-300`;
-                    label.className = `mt-2 text-xs font-medium text-blue-600 step-label`;
+                    if (label) label.className = `mt-2 text-xs font-medium text-blue-600 step-label`;
                 } else {
                     // Future steps
                     indicator.className = `w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-sm font-bold step-indicator shadow-md transform transition-all duration-300`;
-                    label.className = `mt-2 text-xs font-medium text-gray-400 step-label`;
+                    if (label) label.className = `mt-2 text-xs font-medium text-gray-400 step-label`;
                 }
             }
         }
 
         function updateProgressBars(step) {
             const progress = ((step - 1) / (totalSteps - 1)) * 100;
-            document.getElementById('progress-bar').style.width = `${progress}%`;
-            document.getElementById('step-progress-bar').style.width = `${progress}%`;
+            const progressBar = document.getElementById('progress-bar');
+            const stepProgressBar = document.getElementById('step-progress-bar');
+
+            if (progressBar) progressBar.style.width = `${progress}%`;
+            if (stepProgressBar) stepProgressBar.style.width = `${progress}%`;
         }
 
         function updateNavigationButtons(step) {
             const prevBtn = document.getElementById('prev-step');
             const nextBtn = document.getElementById('next-step');
             const nextButtonText = document.getElementById('next-button-text');
+
+            if (!prevBtn || !nextBtn || !nextButtonText) return;
 
             // Previous button
             prevBtn.disabled = step === 1;
@@ -1575,31 +1590,33 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             const validationMessage = document.getElementById('step-validation-message');
             const validationText = document.getElementById('validation-text');
 
+            if (!validationMessage || !validationText) return true;
+
             // Basic validation for current step
             let isValid = true;
             let message = '';
 
             switch (currentStep) {
                 case 1:
-                    const date = document.getElementById('input_creation_date_mobile').value;
-                    const manager = document.getElementById('input_service_manager_mobile').value.trim();
+                    const date = document.getElementById('input_creation_date_mobile')?.value;
+                    const manager = document.getElementById('input_service_manager_mobile')?.value?.trim();
                     if (!date || !manager) {
                         isValid = false;
                         message = 'Please fill in the creation date and service manager.';
                     }
                     break;
                 case 2:
-                    const customerName = document.getElementById('input_customer_name_mobile').value.trim();
-                    const phone = document.getElementById('input_phone_number_mobile').value.trim();
+                    const customerName = document.getElementById('input_customer_name_mobile')?.value?.trim();
+                    const phone = document.getElementById('input_phone_number_mobile')?.value?.trim();
                     if (!customerName || !phone) {
                         isValid = false;
                         message = 'Please fill in the customer name and phone number.';
                     }
                     break;
                 case 3:
-                    const carMark = document.getElementById('input_car_mark_mobile').value.trim();
-                    const plateNumber = document.getElementById('input_plate_number_mobile').value.trim();
-                    const mileage = document.getElementById('input_mileage_mobile').value.trim();
+                    const carMark = document.getElementById('input_car_mark_mobile')?.value?.trim();
+                    const plateNumber = document.getElementById('input_plate_number_mobile')?.value?.trim();
+                    const mileage = document.getElementById('input_mileage_mobile')?.value?.trim();
                     if (!carMark || !plateNumber || !mileage) {
                         isValid = false;
                         message = 'Please fill in the car make/model, plate number, and mileage.';
@@ -1639,8 +1656,13 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         }
 
         function initializeMultiStep() {
+            // Check if we're on mobile (screen width < 768px)
+            const isMobile = window.innerWidth < 768;
+
             // Only initialize on mobile
-            if (window.innerWidth >= 768) return;
+            if (!isMobile) {
+                return;
+            }
 
             // Sync initial data
             syncDesktopToMobile();
@@ -1652,7 +1674,15 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             calculateTotals();
 
             // Set up navigation
-            document.getElementById('prev-step').onclick = prevStep;
+            const prevBtn = document.getElementById('prev-step');
+            if (prevBtn) prevBtn.onclick = prevStep;
+
+            const nextBtn = document.getElementById('next-step');
+            if (nextBtn) nextBtn.onclick = () => {
+                if (validateCurrentStep()) {
+                    nextStep();
+                }
+            };
 
             // Initialize first step
             currentStep = 1;
