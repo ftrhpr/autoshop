@@ -1060,12 +1060,15 @@ if (!empty($serverInvoice)) {
         }
 
         function handlePrint() {
-            const existingId = document.getElementById('existing_invoice_id');
-            if (existingId) {
-                window.location.href = 'print_invoice.php?id=' + existingId.value;
-            } else {
-                document.getElementById('print_after_save').value = '1';
+            // Set print flag so server will redirect to print view after saving/updating
+            document.getElementById('print_after_save').value = '1';
+
+            // Run validation/prepare logic. handleSave() calls prepareData() and returns false on validation failure.
+            if (handleSave()) {
                 document.getElementById('invoice-form').submit();
+            } else {
+                // Clear flag when validation fails to avoid accidental print after failed save
+                document.getElementById('print_after_save').value = '';
             }
         }
 
