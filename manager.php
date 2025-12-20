@@ -45,7 +45,7 @@ $invoices = $stmt->fetchAll();
                     <td class="px-4 py-2"><?php echo $invoice['created_at']; ?></td>
                     <td class="px-4 py-2">
                         <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-3">View</a>
-                        <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline">Print</a>
+                        <a href="index.php?print_id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline">Print</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

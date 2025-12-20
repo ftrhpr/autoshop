@@ -10,6 +10,49 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
+
+// Support loading a saved invoice into the editor/preview for printing (index.php?print_id=123)
+$serverInvoice = null;
+if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
+    $pid = (int)$_GET['print_id'];
+    $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ? LIMIT 1');
+    $stmt->execute([$pid]);
+    $inv = $stmt->fetch();
+    if ($inv) {
+        $inv_items = json_decode($inv['items'], true) ?: [];
+        $inv_customer = null;
+        if (!empty($inv['customer_id'])) {
+            $s = $pdo->prepare('SELECT * FROM customers WHERE id = ? LIMIT 1');
+            $s->execute([(int)$inv['customer_id']]);
+            $inv_customer = $s->fetch();
+        }
+        $sm_username = '';
+        if (!empty($inv['service_manager_id'])) {
+            $s = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+            $s->execute([(int)$inv['service_manager_id']]);
+            $sm = $s->fetch();
+            if ($sm) $sm_username = $sm['username'];
+        }
+        $serverInvoice = [
+            'id' => (int)$inv['id'],
+            'creation_date' => $inv['creation_date'],
+            'customer_name' => $inv['customer_name'],
+            'phone' => $inv['phone'],
+            'car_mark' => $inv['car_mark'],
+            'plate_number' => $inv['plate_number'],
+            'mileage' => $inv['mileage'],
+            'service_manager' => $inv['service_manager'],
+            'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
+            'items' => $inv_items,
+            'grand_total' => (float)$inv['grand_total'],
+            'parts_total' => (float)$inv['parts_total'],
+            'service_total' => (float)$inv['service_total'],
+            '_print' => true
+        ];
+        if ($inv_customer) $serverInvoice['customer'] = $inv_customer;
+        if (!empty($sm_username)) $serverInvoice['service_manager_username'] = $sm_username;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ka">
@@ -213,6 +256,12 @@ if (!isset($_SESSION['user_id'])) {
     </main>
 
     <!-- JS Logic -->
+<?php if (!empty($serverInvoice)): ?>
+    <script>
+        // Server-provided invoice for preview/print
+        window.serverInvoice = <?php echo json_encode($serverInvoice, JSON_UNESCAPED_UNICODE); ?>;
+    </script>
+<?php endif; ?>
     <script>
         // Store items state
         let rowCount = 0;
@@ -331,6 +380,17 @@ if (!isset($_SESSION['user_id'])) {
                         }).catch(e=>{});
                 });
             }
+
+            // If server supplied invoice data, populate and optionally print
+            if (window.serverInvoice) {
+                loadServerInvoice(window.serverInvoice);
+                if (window.serverInvoice._print) {
+                    setTimeout(() => {
+                        switchTab('preview');
+                        setTimeout(() => { window.print(); }, 250);
+                    }, 200);
+                }
+            }
         });
 
         function addItemRow() {
@@ -354,6 +414,36 @@ if (!isset($_SESSION['user_id'])) {
             `;
             tbody.appendChild(tr);
             renumberRows();
+        }
+
+        function loadServerInvoice(inv) {
+            // Fill fields
+            if (inv.creation_date) {
+                // Convert "YYYY-MM-DD HH:MM:SS" to datetime-local value "YYYY-MM-DDTHH:MM"
+                document.getElementById('input_creation_date').value = inv.creation_date.replace(' ', 'T').substring(0,16);
+            }
+            document.getElementById('input_service_manager').value = inv.service_manager || inv.service_manager_username || smDefault || '';
+            if (document.getElementById('input_service_manager_id')) document.getElementById('input_service_manager_id').value = inv.service_manager_id || '';
+
+            if (inv.customer_name) document.getElementById('input_customer_name').value = inv.customer_name;
+            if (inv.phone) document.getElementById('input_phone_number').value = inv.phone;
+            if (inv.car_mark) document.getElementById('input_car_mark').value = inv.car_mark;
+            if (inv.plate_number) document.getElementById('input_plate_number').value = inv.plate_number;
+            if (inv.mileage) document.getElementById('input_mileage').value = inv.mileage;
+            if (inv.customer && inv.customer.id) document.getElementById('input_customer_id').value = inv.customer.id;
+
+            // Replace existing rows with invoice items
+            document.querySelectorAll('.item-row').forEach(r => r.remove());
+            (inv.items || []).forEach(it => {
+                addItemRow();
+                const tr = document.querySelector('.item-row:last-child'); if (!tr) return;
+                tr.querySelector('.item-name').value = it.name || '';
+                tr.querySelector('.item-qty').value = it.qty || 1;
+                tr.querySelector('.item-price-part').value = it.price_part || 0;
+                tr.querySelector('.item-price-svc').value = it.price_svc || 0;
+                tr.querySelector('.item-tech').value = it.tech || '';
+            });
+            calculateTotals();
         }
 
         function removeRow(id) {
