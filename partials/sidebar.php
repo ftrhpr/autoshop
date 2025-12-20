@@ -53,6 +53,8 @@ function svgIcon($name){
                     <button id="notifButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </button>
+                    <button id="notifTestButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Test sound" aria-label="Test sound">🔊</button>
+                    <button id="notifMuteButton" class="ml-1 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Mute notifications" aria-label="Mute notifications">🔈</button>
                     <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
                         <source src="assets/sounds/notify.mp3" type="audio/mpeg">
                         <source src="assets/sounds/notify.ogg" type="audio/ogg">
@@ -285,8 +287,54 @@ function svgIcon($name){
         // clicking bell opens manager panel
         if (notifButton){ notifButton.addEventListener('click', ()=>{ window.location.href = 'manager.php'; }); }
 
+        // Mute/unmute and test controls
+        const notifTestButton = document.getElementById('notifTestButton');
+        const notifMuteButton = document.getElementById('notifMuteButton');
+        const audioEl = document.getElementById('notifAudio');
+        const MUTE_KEY = 'autoshop_notif_muted';
+        function isMuted(){ return localStorage.getItem(MUTE_KEY) === '1'; }
+        function setMuted(v){ localStorage.setItem(MUTE_KEY, v ? '1' : '0'); updateMuteUI(); }
+        function updateMuteUI(){ if (!notifMuteButton) return; notifMuteButton.textContent = isMuted() ? '🔇' : '🔈'; notifMuteButton.title = isMuted() ? 'Unmute notifications' : 'Mute notifications'; }
+        updateMuteUI();
+
+        async function checkFileExists(url){
+            try {
+                const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                return res.ok;
+            } catch (e){ return false; }
+        }
+
+        async function testAudio(){
+            try {
+                if (isMuted()){ showAnimatedNotification('Muted — unmute to hear sound', 0); return; }
+
+                // Prefer DOM audio; try to load a presented source so we can detect issues
+                if (audioEl){
+                    // quick diagnostics: check mp3 and ogg exist
+                    const mp3Ok = await checkFileExists('assets/sounds/notify.mp3');
+                    const oggOk = await checkFileExists('assets/sounds/notify.ogg');
+                    if (!mp3Ok && !oggOk){
+                        showAnimatedNotification('No notify.mp3/notify.ogg found — server fallback will be used', 0);
+                    }
+                    audioEl.currentTime = 0;
+                    await audioEl.play();
+                    showAnimatedNotification('Sound played', 0);
+                    return;
+                }
+                // otherwise fall back to WebAudio directly
+                playBeep();
+                showAnimatedNotification('Sound played (WebAudio fallback)', 0);
+            } catch (e){
+                console.warn('testAudio error', e);
+                showAnimatedNotification('Unable to play sound — check browser autoplay settings or file existence', 0);
+            }
+        }
+
+        if (notifTestButton) notifTestButton.addEventListener('click', testAudio);
+        if (notifMuteButton) notifMuteButton.addEventListener('click', ()=>{ setMuted(!isMuted()); });
+
         // Expose for console debugging
-        window.__invoiceNotifications = { poll, fetchLatestId };
+        window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
     })();
 </script>
 
