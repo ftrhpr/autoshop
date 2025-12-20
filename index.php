@@ -364,15 +364,15 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             <div class="mt-6 border-t border-gray-200 pt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-right">
                                 <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200">
                                     <p class="text-xs text-gray-600 uppercase font-medium mb-1">Parts Total</p>
-                                    <p class="font-bold text-lg text-gray-800" id="display_parts_total">0.00 ₾</p>
+                                    <p class="font-bold text-lg text-gray-800" id="display_parts_total"></p>
                                 </div>
                                 <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200">
                                     <p class="text-xs text-gray-600 uppercase font-medium mb-1">Service Total</p>
-                                    <p class="font-bold text-lg text-gray-800" id="display_service_total">0.00 ₾</p>
+                                    <p class="font-bold text-lg text-gray-800" id="display_service_total"></p>
                                 </div>
                                 <div class="bg-gradient-to-r from-green-50 to-emerald-100 p-4 rounded-lg border-2 border-green-200 hover:shadow-lg transition-all duration-200">
                                     <p class="text-xs text-green-700 uppercase font-medium mb-1">Grand Total</p>
-                                    <p class="font-bold text-xl text-green-800" id="display_grand_total">0.00 ₾</p>
+                                    <p class="font-bold text-xl text-green-800" id="display_grand_total"></p>
                                 </div>
                             </div>
                         </div>
@@ -554,15 +554,15 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             <div class="mt-6 border-t border-gray-200 pt-6 grid grid-cols-1 gap-4 text-right">
                                 <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200">
                                     <p class="text-xs text-gray-600 uppercase font-medium mb-1">Parts Total</p>
-                                    <p class="font-bold text-lg text-gray-800" id="display_parts_total_mobile">0.00 ₾</p>
+                                    <p class="font-bold text-lg text-gray-800" id="display_parts_total_mobile"></p>
                                 </div>
                                 <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200">
                                     <p class="text-xs text-gray-600 uppercase font-medium mb-1">Service Total</p>
-                                    <p class="font-bold text-lg text-gray-800" id="display_service_total_mobile">0.00 ₾</p>
+                                    <p class="font-bold text-lg text-gray-800" id="display_service_total_mobile"></p>
                                 </div>
                                 <div class="bg-gradient-to-r from-green-50 to-emerald-100 p-4 rounded-lg border-2 border-green-200">
                                     <p class="text-xs text-green-700 uppercase font-medium mb-1">Grand Total</p>
-                                    <p class="font-bold text-xl text-green-800" id="display_grand_total_mobile">0.00 ₾</p>
+                                    <p class="font-bold text-xl text-green-800" id="display_grand_total_mobile"></p>
                                 </div>
                             </div>
                         </div>
@@ -939,18 +939,18 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             const grandTotal = partTotal + svcTotal;
 
             // Update desktop totals
-            document.getElementById('display_parts_total').innerText = partTotal.toFixed(2);
-            document.getElementById('display_service_total').innerText = svcTotal.toFixed(2);
-            document.getElementById('display_grand_total').innerText = grandTotal.toFixed(2) + ' ₾';
+            document.getElementById('display_parts_total').innerText = partTotal > 0 ? partTotal.toFixed(2) + ' ₾' : '';
+            document.getElementById('display_service_total').innerText = svcTotal > 0 ? svcTotal.toFixed(2) + ' ₾' : '';
+            document.getElementById('display_grand_total').innerText = grandTotal > 0 ? grandTotal.toFixed(2) + ' ₾' : '';
 
             // Update mobile totals if they exist
             const mobilePartsTotal = document.getElementById('display_parts_total_mobile');
             const mobileServiceTotal = document.getElementById('display_service_total_mobile');
             const mobileGrandTotal = document.getElementById('display_grand_total_mobile');
             
-            if (mobilePartsTotal) mobilePartsTotal.innerText = partTotal.toFixed(2) + ' ₾';
-            if (mobileServiceTotal) mobileServiceTotal.innerText = svcTotal.toFixed(2) + ' ₾';
-            if (mobileGrandTotal) mobileGrandTotal.innerText = grandTotal.toFixed(2) + ' ₾';
+            if (mobilePartsTotal) mobilePartsTotal.innerText = partTotal > 0 ? partTotal.toFixed(2) + ' ₾' : '';
+            if (mobileServiceTotal) mobileServiceTotal.innerText = svcTotal > 0 ? svcTotal.toFixed(2) + ' ₾' : '';
+            if (mobileGrandTotal) mobileGrandTotal.innerText = grandTotal > 0 ? grandTotal.toFixed(2) + ' ₾' : '';
 
             return { partTotal, svcTotal, grandTotal };
         }
@@ -1099,7 +1099,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             tbody.appendChild(footerRow);
 
             // Update Grand Total Text
-            document.getElementById('out_grand_total').innerText = totals.grandTotal.toFixed(2);
+            document.getElementById('out_grand_total').innerText = totals.grandTotal > 0 ? totals.grandTotal.toFixed(2) : '';
         }
 
         function prepareData() {
