@@ -325,10 +325,15 @@ if (!isset($_SESSION['user_id'])) {
             <?php if (isset($_SESSION['username'])): ?>
                 const smInput = document.getElementById('input_service_manager');
                 const smIdInput = document.getElementById('input_service_manager_id');
+                const smDefault = <?php echo json_encode($_SESSION['username']); ?>;
+                const smDefaultId = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
                 if (smInput) {
-                    smInput.value = <?php echo json_encode($_SESSION['username']); ?>;
-                    if (smIdInput) smIdInput.value = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
+                    if (!smInput.value || smInput.value.trim() === '') smInput.value = smDefault;
+                    if (smIdInput && (!smIdInput.value || smIdInput.value == 0)) smIdInput.value = smDefaultId;
                 }
+            <?php else: ?>
+                const smDefault = '';
+                const smDefaultId = 0;
             <?php endif; ?>
 
             // API base for AJAX endpoints (handles subfolder installs)
@@ -637,6 +642,16 @@ if (!isset($_SESSION['user_id'])) {
             document.getElementById('hidden_parts_total').value = totals.partTotal.toFixed(2);
             document.getElementById('hidden_service_total').value = totals.svcTotal.toFixed(2);
             document.getElementById('hidden_grand_total').value = totals.grandTotal.toFixed(2);
+
+            // Ensure service manager is set (prevent empty)
+            const smEl = document.getElementById('input_service_manager');
+            const smIdEl = document.getElementById('input_service_manager_id');
+            if (smEl && (!smEl.value || smEl.value.trim() === '')) {
+                smEl.value = smDefault || '';
+            }
+            if (smIdEl && (!smIdEl.value || smIdEl.value == 0) && smDefaultId) {
+                smIdEl.value = smDefaultId;
+            }
 
             // Add hidden for items
             let form = document.getElementById('invoice-form');
