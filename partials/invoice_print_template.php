@@ -6,10 +6,10 @@ $serverItems = isset($items) && is_array($items);
 function esc($s){ return htmlspecialchars((string)$s); }
 ?>
 <div class="w-full overflow-x-auto pb-8 print:pb-0 print:overflow-visible flex justify-center bg-gray-200/50 p-4 rounded-lg print:bg-white print:p-0">
-    <div class="bg-white p-8 shadow-xl print-no-shadow w-[210mm] min-w-[210mm] min-h-[297mm] a4-container print:w-full print:max-w-none print:min-w-0 print:p-0 mx-auto box-border text-black relative">
-        
+    <div class="bg-white p-8 shadow-xl print-no-shadow w-[210mm] min-w-[210mm] min-h-[297mm] a4-container print:w-full print:max-w-none print:min-w-0 print:p-4 mx-auto box-border text-black relative">
+
         <!-- Header -->
-        <div class="grid grid-cols-2 mb-6 gap-8 items-start">
+        <div class="grid grid-cols-2 mb-4 gap-8 items-start">
             <div class="text-sm space-y-1">
                 <div class="mb-2 text-slate-800">
                     <img src="https://service.otoexpress.ge/wp-content/uploads/2023/08/cropped-otomotors.png" width="50%" alt="Logo">
@@ -28,7 +28,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
         <hr class="border-2 border-black mb-4" />
 
         <!-- Info Grid -->
-        <div class="grid grid-cols-2 gap-x-12 gap-y-2 mb-6 text-sm">
+        <div class="grid grid-cols-2 gap-x-12 gap-y-2 mb-4 text-sm">
             <!-- Left -->
             <div class="grid grid-cols-[150px_1fr] gap-2 items-center">
                 <div class="font-bold whitespace-nowrap">შემოსვლის დრო:</div>
@@ -90,7 +90,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
         </div>
 
         <!-- Table -->
-        <div class="mb-4">
+        <div class="mb-2">
 <?php if ($server && $serverItems):
     $computedParts = 0.0;
     $computedSvc = 0.0;
@@ -103,7 +103,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
     }
     $computedGrand = $computedParts + $computedSvc;
 endif; ?>
-            <table class="w-full text-[9px] border-collapse border border-black">
+            <table class="w-full text-[8px] border-collapse border border-black">
                 <thead>
                     <tr class="bg-gray-200 print:bg-gray-200">
                         <th class="border border-black p-0.5 w-8 text-center">#</th>
@@ -152,9 +152,9 @@ endif; ?>
                             echo "</tr>";
                         }
 
-                        // Fill empty rows up to 20 to fit one page
+                        // Fill empty rows up to 15 to fit one page
                         $rowsCount = count($items);
-                        $needed = max(0, 20 - $rowsCount);
+                        $needed = max(0, 15 - $rowsCount);
                         for ($j = 0; $j < $needed; $j++) {
                             echo "<tr>";
                             echo "<td class=\"border border-black p-0.5 text-center text-white\">.</td>";
@@ -183,7 +183,7 @@ endif; ?>
             </table>
 
             <!-- Grand Total -->
-            <div class="flex justify-end mt-2">
+            <div class="flex justify-end mt-1">
                 <div class="border border-black px-4 py-2 bg-yellow-100 print:bg-yellow-100 text-lg font-bold">
                     სულ გადასახდელი: <span id="out_grand_total"><?php $total = $server ? (float)($computedGrand ?? ($invoice['grand_total'] ?? 0)) : 0; echo $total > 0 ? number_format($total, 2) . ' ₾' : ''; ?></span>
                     <input type="text" class="border-b border-black bg-transparent text-lg font-bold w-24 ml-2 text-center" placeholder="____" />
@@ -192,14 +192,14 @@ endif; ?>
         </div>
 
         <!-- Legal Text -->
-        <div class="text-[9px] text-gray-600 space-y-2 mb-8 text-justify leading-tight">
+        <div class="text-[8px] text-gray-600 space-y-1 mb-4 text-justify leading-tight">
             <p><strong>შენიშვნა:</strong> კლიენტის მიერ მოწოდებული ნაწილის ხარისხზე და გამართულობაზე კომპანია არ აგებს პასუხს. მანქანის შეკეთებისას თუ კლიენტი გადაწყვეტს ნაწილის მოწოდებას, ვალდებულია ნაწილი მოაწოდოს სერვისს არაუგვიანეს 2 სამუშაო დღისა, წინააღმდეგ შემთხვევაში машина გადაინაცვლებს კომპანიის ავტოსადგომზე, რა შემთხვევაშიც მანქანის დგომის დღიური საფასური იქნება 10 ლარი. თუ შენიშვნის ველში გარანტიის ვადა არ არის მითითებული გარანტია არ ვრცელდება. წინამდებარე დოკუმენტზე ხელმოწერით კლიენტი ადასტურებს რომ კომპანიის მიმართ პრეტენზია არ გააჩნია.</p>
             <p><strong>საგარანტიო პირობები:</strong> 1. აალების სანთლების საგარანტიო ვადა განისაზღვრება კილომეტრაჟით, რომელიც შეადგენს 1000 კმ-ს. 2. სამუხრუჭე ხუნდების საგარანტიო ვადა განისაზღვრება მონტაჟიდან 7 დღის ვადით.</p>
-            <p class="italic mt-4">Oneclub: საიდან გაიგეთ ჩვენს შესახებ? ________________________</p>
+            <p class="italic mt-2">Oneclub: საიდან გაიგეთ ჩვენს შესახებ? ________________________</p>
         </div>
 
         <!-- Signatures -->
-        <div class="grid grid-cols-2 gap-20 mt-8 text-sm absolute bottom-12 w-full left-0 px-8 box-border">
+        <div class="grid grid-cols-2 gap-20 mt-4 text-sm">
             <div class="border-t border-black pt-2 text-center">მენეჯერის ხელმოწერა</div>
             <div class="border-t border-black pt-2 text-center">კლიენტის ხელმოწერა</div>
         </div>

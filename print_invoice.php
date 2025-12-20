@@ -51,20 +51,20 @@ $grandTotal = number_format((float)$invoice['grand_total'], 2);
     <style>
         /* Print Styles */
         @media print {
-            @page { margin: 0; size: A4; }
-            html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }
+            @page { margin: 5mm; size: A4; }
+            html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: visible; }
             .print-hidden { display: none !important; }
             .print-visible { display: block !important; }
             .print-no-shadow { box-shadow: none !important; }
             /* Exact A4 Table Styling */
             table { border-collapse: collapse !important; border-color: #000 !important; width: 100% !important; }
             td, th { border: 1px solid #000 !important; color: #000 !important; }
-            
+
             /* Compact padding for print to fit one page */
-            td { padding-top: 2px !important; padding-bottom: 2px !important; padding-left: 4px !important; padding-right: 4px !important; }
-            
-            /* Ensure container is exact A4 height */
-            .a4-container { height: 297mm !important; max-height: 297mm !important; overflow: hidden !important; }
+            td { padding-top: 1px !important; padding-bottom: 1px !important; padding-left: 2px !important; padding-right: 2px !important; }
+
+            /* Ensure container fits within printable area */
+            .a4-container { height: auto !important; max-height: none !important; overflow: visible !important; }
         }
     </style>
 </head>
