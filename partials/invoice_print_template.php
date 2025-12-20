@@ -103,17 +103,17 @@ function esc($s){ return htmlspecialchars((string)$s); }
     }
     $computedGrand = $computedParts + $computedSvc;
 endif; ?>
-            <table class="w-full text-xs border-collapse border border-black">
+            <table class="w-full text-[9px] border-collapse border border-black">
                 <thead>
                     <tr class="bg-gray-200 print:bg-gray-200">
-                        <th class="border border-black p-1 w-8 text-center">#</th>
-                        <th class="border border-black p-1 text-left">ნაწილის და სერვისის დასახელება</th>
-                        <th class="border border-black p-1 w-12 text-center">რაოდ.</th>
-                        <th class="border border-black p-1 w-20 text-right">ფასი ნაწილი</th>
-                        <th class="border border-black p-1 w-20 text-right">თანხა</th>
-                        <th class="border border-black p-1 w-20 text-right">ფასი სერვისი</th>
-                        <th class="border border-black p-1 w-20 text-right">თანხა</th>
-                        <th class="border border-black p-1 w-24 text-left">შემსრულებელი</th>
+                        <th class="border border-black p-0.5 w-8 text-center">#</th>
+                        <th class="border border-black p-0.5 text-left">ნაწილის და სერვისის დასახელება</th>
+                        <th class="border border-black p-0.5 w-12 text-center">რაოდ.</th>
+                        <th class="border border-black p-0.5 w-20 text-right">ფასი ნაწილი</th>
+                        <th class="border border-black p-0.5 w-20 text-right">თანხა</th>
+                        <th class="border border-black p-0.5 w-20 text-right">ფასი სერვისი</th>
+                        <th class="border border-black p-0.5 w-20 text-right">თანხა</th>
+                        <th class="border border-black p-0.5 w-24 text-left">შემსრულებელი</th>
                     </tr>
                 </thead>
                 <tbody <?php echo $server ? '' : 'id="preview-table-body"'; ?>>
@@ -141,30 +141,30 @@ endif; ?>
                             }
 
                             echo "<tr>";
-                            echo "<td class=\"border border-black p-1 text-center\">" . $i++ . "</td>";
-                            echo "<td class=\"border border-black p-1\">" . esc($name) . "</td>";
-                            echo "<td class=\"border border-black p-1 text-center\">" . $displayQty . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right\">" . $displayPPart . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalPart . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right\">" . $displayPSvc . "</td>";
-                            echo "<td class=\"border border-black p-1 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalSvc . "</td>";
-                            echo "<td class=\"border border-black p-1\">" . esc($tech) . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-center\">" . $i++ . "</td>";
+                            echo "<td class=\"border border-black p-0.5\">" . esc($name) . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-center\">" . $displayQty . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPPart . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalPart . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPSvc . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalSvc . "</td>";
+                            echo "<td class=\"border border-black p-0.5\">" . esc($tech) . "</td>";
                             echo "</tr>";
                         }
 
-                        // Fill empty rows up to 20 to match preview behaviour
+                        // Fill empty rows up to 10 to fit one page
                         $rowsCount = count($items);
-                        $needed = max(0, 20 - $rowsCount);
+                        $needed = max(0, 10 - $rowsCount);
                         for ($j = 0; $j < $needed; $j++) {
                             echo "<tr>";
-                            echo "<td class=\"border border-black p-1 text-center text-white\">.</td>";
-                            echo "<td class=\"border border-black p-1\"></td>";
-                            echo "<td class=\"border border-black p-1\"></td>";
-                            echo "<td class=\"border border-black p-1\"></td>";
-                            echo "<td class=\"border border-black p-1 bg-gray-50 print:bg-gray-50\"></td>";
-                            echo "<td class=\"border border-black p-1\"></td>";
-                            echo "<td class=\"border border-black p-1 bg-gray-50 print:bg-gray-50\"></td>";
-                            echo "<td class=\"border border-black p-1\"></td>";
+                            echo "<td class=\"border border-black p-0.5 text-center text-white\">.</td>";
+                            echo "<td class=\"border border-black p-0.5\"></td>";
+                            echo "<td class=\"border border-black p-0.5\"></td>";
+                            echo "<td class=\"border border-black p-0.5\"></td>";
+                            echo "<td class=\"border border-black p-0.5 bg-gray-50 print:bg-gray-50\"></td>";
+                            echo "<td class=\"border border-black p-0.5\"></td>";
+                            echo "<td class=\"border border-black p-0.5 bg-gray-50 print:bg-gray-50\"></td>";
+                            echo "<td class=\"border border-black p-0.5\"></td>";
                             echo "</tr>";
                         }
 
@@ -172,11 +172,11 @@ endif; ?>
                         $displayPartTotal = ($computedParts ?? 0) > 0 ? number_format($computedParts, 2) : '';
                         $displaySvcTotal = ($computedSvc ?? 0) > 0 ? number_format($computedSvc, 2) : '';
                         echo "<tr class=\"font-bold bg-gray-100 print:bg-gray-100\">";
-                        echo "<td class=\"border border-black p-2 text-right\" colSpan=\"4\">ჯამი:</td>";
-                        echo "<td class=\"border border-black p-2 text-right\">" . $displayPartTotal . "</td>";
-                        echo "<td class=\"border border-black p-2 text-right\">ჯამი:</td>";
-                        echo "<td class=\"border border-black p-2 text-right\">" . $displaySvcTotal . "</td>";
-                        echo "<td class=\"border border-black p-2 bg-gray-300 print:bg-gray-300\"></td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"4\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPartTotal . "</td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\">" . $displaySvcTotal . "</td>";
+                        echo "<td class=\"border border-black p-0.5 bg-gray-300 print:bg-gray-300\"></td>";
                         echo "</tr>";
                     endif; ?>
                 </tbody>
