@@ -226,13 +226,14 @@ if (!isset($_SESSION['user_id'])) {
             for(let i=0; i<4; i++) addItemRow();
             calculateTotals();
 
-            // Prefill service manager with current logged in user (use globals)
+            // Prefill service manager with current logged in user (force override)
             (function() {
                 const smInput = document.getElementById('input_service_manager');
                 const smIdInput = document.getElementById('input_service_manager_id');
                 if (smInput) {
-                    if (!smInput.value || smInput.value.trim() === '') smInput.value = smDefault || '';
-                    if (smIdInput && (!smIdInput.value || smIdInput.value == 0) && smDefaultId) smIdInput.value = smDefaultId;
+                    // Always set the visible input to the currently logged-in user
+                    smInput.value = smDefault || '';
+                    if (smIdInput) smIdInput.value = smDefaultId || '';
                 }
             })();
 
@@ -417,15 +418,11 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         function updatePreviewData() {
-            // Ensure service manager fallback is set if empty
+            // Force service manager to current logged-in user for preview
             const smInput = document.getElementById('input_service_manager');
             const smIdInput = document.getElementById('input_service_manager_id');
-            if (smInput && (!smInput.value || smInput.value.trim() === '')) {
-                smInput.value = smDefault || '';
-            }
-            if (smIdInput && (!smIdInput.value || smIdInput.value == 0) && smDefaultId) {
-                smIdInput.value = smDefaultId;
-            }
+            if (smInput) smInput.value = smDefault || '';
+            if (smIdInput) smIdInput.value = smDefaultId || '';
 
             // Map Inputs
             const map = {
@@ -553,15 +550,11 @@ if (!isset($_SESSION['user_id'])) {
             document.getElementById('hidden_service_total').value = totals.svcTotal.toFixed(2);
             document.getElementById('hidden_grand_total').value = totals.grandTotal.toFixed(2);
 
-            // Ensure service manager is set (prevent empty)
+            // Force service manager values before submission
             const smEl = document.getElementById('input_service_manager');
             const smIdEl = document.getElementById('input_service_manager_id');
-            if (smEl && (!smEl.value || smEl.value.trim() === '')) {
-                smEl.value = smDefault || '';
-            }
-            if (smIdEl && (!smIdEl.value || smIdEl.value == 0) && smDefaultId) {
-                smIdEl.value = smDefaultId;
-            }
+            if (smEl) smEl.value = smDefault || '';
+            if (smIdEl) smIdEl.value = smDefaultId || '';
 
             // Add hidden for items
             let form = document.getElementById('invoice-form');
