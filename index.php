@@ -381,12 +381,15 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             Photos
                         </h2>
                         <div class="flex gap-2 items-center mb-4">
-                            <button type="button" id="btn_take_photo" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Take Photo</button>
-                            <button type="button" id="btn_upload_photo" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300">Choose Existing</button>
-                            <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="hidden" capture="environment">
+                            <button type="button" id="btn_take_photo" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">📷 Take Photo</button>
+                            <button type="button" id="btn_upload_photo" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300 transition-colors">📁 Choose Files</button>
+                            <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="hidden">
                         </div>
-                        <div id="input_images_preview" class="flex gap-2 flex-wrap"></div>
-                        <p class="mt-2 text-xs text-gray-500">Upload vehicle photos. On mobile, use "Take Photo" to open camera.</p>
+                        <div id="input_images_preview" class="space-y-3"></div>
+                        <div class="mt-2 flex items-center justify-between">
+                            <p class="text-xs text-gray-500">Upload multiple vehicle photos (max 10MB each). On mobile, use camera for quick capture.</p>
+                            <span id="image_count" class="text-xs text-gray-400">0 images</span>
+                        </div>
                         <div class="mt-6 flex justify-end">
                             <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Skip to Review</button>
                         </div>
@@ -599,42 +602,134 @@ if (!empty($serverInvoice)) {
                 });
             }
 
-            // Image input preview
+            // Enhanced Image input preview with delete functionality
             const imgInput = document.getElementById('input_images');
             const imgPreview = document.getElementById('input_images_preview');
+            const imageCount = document.getElementById('image_count');
+            let selectedFiles = [];
+
             if (imgInput && imgPreview) {
                 // Click helpers for separate buttons
                 const btnTake = document.getElementById('btn_take_photo');
                 const btnUpload = document.getElementById('btn_upload_photo');
+
                 if (btnTake) btnTake.addEventListener('click', () => {
-                    // request camera capture
                     imgInput.setAttribute('capture', 'environment');
                     imgInput.click();
                 });
+
                 if (btnUpload) btnUpload.addEventListener('click', () => {
-                    // open file picker without forcing camera
                     imgInput.removeAttribute('capture');
                     imgInput.click();
                 });
 
+                // Drag and drop support
+                const photoSection = imgPreview.closest('.space-y-3')?.parentElement;
+                if (photoSection) {
+                    photoSection.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        photoSection.classList.add('bg-blue-50', 'border-blue-200');
+                    });
+
+                    photoSection.addEventListener('dragleave', (e) => {
+                        e.preventDefault();
+                        photoSection.classList.remove('bg-blue-50', 'border-blue-200');
+                    });
+
+                    photoSection.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        photoSection.classList.remove('bg-blue-50', 'border-blue-200');
+
+                        const files = Array.from(e.dataTransfer.files);
+                        const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+                        if (imageFiles.length > 0) {
+                            // Create a new DataTransfer to add to existing files
+                            const dt = new DataTransfer();
+                            selectedFiles.forEach(f => dt.items.add(f));
+                            imageFiles.forEach(f => dt.items.add(f));
+
+                            imgInput.files = dt.files;
+                            imgInput.dispatchEvent(new Event('change'));
+                        }
+                    });
+                }
+
                 imgInput.addEventListener('change', (ev) => {
-                    imgPreview.innerHTML = '';
                     const files = Array.from(imgInput.files || []);
-                    files.forEach(f => {
-                        if (!f.type.startsWith('image/')) return;
+                    selectedFiles = files;
+
+                    // Validate files
+                    const validFiles = files.filter(f => {
+                        if (!f.type.startsWith('image/')) {
+                            alert(`${f.name} is not an image file.`);
+                            return false;
+                        }
+                        if (f.size > 10 * 1024 * 1024) { // 10MB limit
+                            alert(`${f.name} is too large. Maximum size is 10MB.`);
+                            return false;
+                        }
+                        return true;
+                    });
+
+                    if (validFiles.length !== files.length) {
+                        // Re-filter the input
+                        const dt = new DataTransfer();
+                        validFiles.forEach(f => dt.items.add(f));
+                        imgInput.files = dt.files;
+                        selectedFiles = validFiles;
+                    }
+
+                    // Update preview
+                    imgPreview.innerHTML = '';
+                    selectedFiles.forEach((f, index) => {
+                        const container = document.createElement('div');
+                        container.className = 'relative inline-block';
+
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             const img = document.createElement('img');
                             img.src = e.target.result;
                             img.style.width = '120px';
-                            img.style.height = 'auto';
+                            img.style.height = '90px';
                             img.style.objectFit = 'cover';
-                            img.className = 'rounded border';
-                            imgPreview.appendChild(img);
+                            img.className = 'rounded-lg border border-gray-300 shadow-sm';
+
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.type = 'button';
+                            deleteBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors';
+                            deleteBtn.innerHTML = '×';
+                            deleteBtn.title = 'Remove image';
+                            deleteBtn.onclick = () => {
+                                selectedFiles.splice(index, 1);
+                                const dt = new DataTransfer();
+                                selectedFiles.forEach(f => dt.items.add(f));
+                                imgInput.files = dt.files;
+                                imgInput.dispatchEvent(new Event('change'));
+                            };
+
+                            container.appendChild(img);
+                            container.appendChild(deleteBtn);
+                            imgPreview.appendChild(container);
                         };
                         reader.readAsDataURL(f);
                     });
+
+                    // Update counter
+                    if (imageCount) {
+                        imageCount.textContent = `${selectedFiles.length} image${selectedFiles.length !== 1 ? 's' : ''}`;
+                    }
                 });
+            }
+
+            // Function to update image count
+            function updateImageCount() {
+                const imageCount = document.getElementById('image_count');
+                if (imageCount) {
+                    const preview = document.getElementById('input_images_preview');
+                    const existingImages = preview.querySelectorAll('img').length;
+                    imageCount.textContent = `${existingImages} image${existingImages !== 1 ? 's' : ''}`;
+                }
             }
 
             // If server supplied invoice data, populate and optionally print
@@ -791,19 +886,49 @@ if (!empty($serverInvoice)) {
             if (inv.mileage) document.getElementById('input_mileage').value = inv.mileage;
             if (inv.customer && inv.customer.id) document.getElementById('input_customer_id').value = inv.customer.id;
 
-            // Render existing images (if server provided)
+            // Render existing images (if server provided) with delete functionality
             if (inv.images && Array.isArray(inv.images) && inv.images.length > 0) {
                 const preview = document.getElementById('input_images_preview');
                 preview.innerHTML = '';
-                inv.images.forEach(src => {
+                inv.images.forEach((src, index) => {
+                    const container = document.createElement('div');
+                    container.className = 'relative inline-block';
+
                     const img = document.createElement('img');
                     img.src = src;
                     img.style.width = '120px';
-                    img.style.height = 'auto';
+                    img.style.height = '90px';
                     img.style.objectFit = 'cover';
-                    img.className = 'rounded border';
-                    preview.appendChild(img);
+                    img.className = 'rounded-lg border border-gray-300 shadow-sm';
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.title = 'Remove existing image';
+                    deleteBtn.onclick = () => {
+                        if (confirm('Remove this existing image from the invoice?')) {
+                            // Mark for deletion by adding to a hidden field
+                            let deletedImages = JSON.parse(document.getElementById('deleted_images')?.value || '[]');
+                            deletedImages.push(index);
+                            if (!document.getElementById('deleted_images')) {
+                                const hidden = document.createElement('input');
+                                hidden.type = 'hidden';
+                                hidden.name = 'deleted_images';
+                                hidden.id = 'deleted_images';
+                                document.querySelector('form').appendChild(hidden);
+                            }
+                            document.getElementById('deleted_images').value = JSON.stringify(deletedImages);
+                            container.remove();
+                            updateImageCount();
+                        }
+                    };
+
+                    container.appendChild(img);
+                    container.appendChild(deleteBtn);
+                    preview.appendChild(container);
                 });
+                updateImageCount();
             }
 
             // Replace existing rows with invoice items

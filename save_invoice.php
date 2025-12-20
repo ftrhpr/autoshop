@@ -194,29 +194,98 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $invoice_id = $pdo->lastInsertId();
     }
 
-    // Process uploaded images (if any)
+    // Handle deleted existing images
+    if (!empty($_POST['deleted_images'])) {
+        $deletedIndices = json_decode($_POST['deleted_images'], true) ?: [];
+        if (!empty($deletedIndices)) {
+            try {
+                // Fetch current images
+                $stmt = $pdo->prepare('SELECT images FROM invoices WHERE id = ? LIMIT 1');
+                $stmt->execute([$invoice_id]);
+                $row = $stmt->fetch();
+                $currentImages = $row && !empty($row['images']) ? json_decode($row['images'], true) : [];
+
+                // Remove images at specified indices and delete files
+                $indicesToDelete = array_unique(array_map('intval', $deletedIndices));
+                sort($indicesToDelete, SORT_DESC); // Delete from highest index first
+
+                foreach ($indicesToDelete as $index) {
+                    if (isset($currentImages[$index])) {
+                        $imagePath = $currentImages[$index];
+                        // Delete file from filesystem
+                        $fullPath = __DIR__ . '/' . $imagePath;
+                        if (file_exists($fullPath)) {
+                            @unlink($fullPath);
+                        }
+                        // Remove from array
+                        unset($currentImages[$index]);
+                    }
+                }
+
+                // Re-index array
+                $currentImages = array_values($currentImages);
+
+                // Update database
+                $stmt = $pdo->prepare('UPDATE invoices SET images = ? WHERE id = ?');
+                $stmt->execute([json_encode($currentImages, JSON_UNESCAPED_UNICODE), $invoice_id]);
+
+            } catch (Exception $e) {
+                error_log('Failed to delete existing images for invoice ' . $invoice_id . ': ' . $e->getMessage());
+            }
+        }
+    }
     if (!empty($_FILES['images'])) {
         $uploaded = $_FILES['images'];
         $stored = [];
         $uploadDir = __DIR__ . '/uploads/invoices/' . $invoice_id;
         if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
 
-        // Normalize structure
+        // Normalize structure and validate
         $fileCount = is_array($uploaded['name']) ? count($uploaded['name']) : 0;
+        $maxFiles = 20; // Maximum 20 images per invoice
+        $maxFileSize = 10 * 1024 * 1024; // 10MB per file
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+        if ($fileCount > $maxFiles) {
+            error_log("Too many files uploaded for invoice $invoice_id: $fileCount");
+            $fileCount = $maxFiles; // Process only first 20
+        }
+
         for ($i = 0; $i < $fileCount; $i++) {
             if (empty($uploaded['name'][$i])) continue;
-            if ($uploaded['error'][$i] !== UPLOAD_ERR_OK) continue;
+
+            // Validate file
+            if ($uploaded['error'][$i] !== UPLOAD_ERR_OK) {
+                error_log("Upload error for file $i in invoice $invoice_id: " . $uploaded['error'][$i]);
+                continue;
+            }
+
+            if ($uploaded['size'][$i] > $maxFileSize) {
+                error_log("File too large for invoice $invoice_id: " . $uploaded['size'][$i]);
+                continue;
+            }
+
+            if (!in_array($uploaded['type'][$i], $allowedTypes)) {
+                error_log("Invalid file type for invoice $invoice_id: " . $uploaded['type'][$i]);
+                continue;
+            }
+
             $tmp = $uploaded['tmp_name'][$i];
             $orig = basename($uploaded['name'][$i]);
-            // Sanitize filename
-            $ext = pathinfo($orig, PATHINFO_EXTENSION);
+
+            // Sanitize filename and prevent conflicts
+            $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
             $base = preg_replace('/[^A-Za-z0-9_-]/', '_', pathinfo($orig, PATHINFO_FILENAME));
             $filename = $base . '_' . time() . '_' . $i . '.' . $ext;
+
             $dest = $uploadDir . DIRECTORY_SEPARATOR . $filename;
+
             if (move_uploaded_file($tmp, $dest)) {
-                // store relative path for web
+                // Store relative path for web access
                 $rel = 'uploads/invoices/' . $invoice_id . '/' . $filename;
                 $stored[] = $rel;
+            } else {
+                error_log("Failed to move uploaded file for invoice $invoice_id: $orig");
             }
         }
 
@@ -227,11 +296,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $stmt->execute([$invoice_id]);
                 $row = $stmt->fetch();
                 $existingImages = $row && !empty($row['images']) ? json_decode($row['images'], true) : [];
+
+                // Merge new images with existing ones
                 $merged = array_values(array_filter(array_merge($existingImages ?: [], $stored)));
+
+                // Limit total images to prevent database bloat
+                if (count($merged) > 50) {
+                    $merged = array_slice($merged, 0, 50);
+                }
+
                 $stmt = $pdo->prepare('UPDATE invoices SET images = ? WHERE id = ?');
                 $stmt->execute([json_encode($merged, JSON_UNESCAPED_UNICODE), $invoice_id]);
             } catch (PDOException $e) {
-                // If column doesn't exist or update fails, log and continue
                 error_log('Failed to save uploaded images for invoice ' . $invoice_id . ': ' . $e->getMessage());
             }
         }

@@ -95,10 +95,27 @@ $items = json_decode($invoice['items'], true);
                     <?php $imgs = json_decode($invoice['images'], true) ?: []; ?>
                     <?php if ($imgs): ?>
                         <div class="mt-4">
-                            <h3 class="font-semibold mb-2">Photos</h3>
-                            <div class="flex gap-2 flex-wrap">
-                                <?php foreach ($imgs as $img): ?>
-                                    <a href="<?php echo htmlspecialchars($img); ?>" target="_blank"><img src="<?php echo htmlspecialchars($img); ?>" class="w-32 h-auto object-cover rounded border" /></a>
+                            <h3 class="font-semibold mb-2 flex items-center justify-between">
+                                Photos
+                                <?php if (count($imgs) > 0): ?>
+                                    <span class="text-sm text-gray-500"><?php echo count($imgs); ?> image<?php echo count($imgs) !== 1 ? 's' : ''; ?></span>
+                                <?php endif; ?>
+                            </h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                <?php foreach ($imgs as $index => $img): ?>
+                                    <div class="relative group">
+                                        <a href="<?php echo htmlspecialchars($img); ?>" target="_blank" class="block">
+                                            <img src="<?php echo htmlspecialchars($img); ?>" class="w-full h-24 object-cover rounded-lg border border-gray-200 hover:border-blue-300 transition-colors" />
+                                        </a>
+                                        <?php if (isset($_SESSION['user_id'])): ?>
+                                            <button type="button"
+                                                    onclick="deleteImage(<?php echo $invoice['id']; ?>, <?php echo $index; ?>, this)"
+                                                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all"
+                                                    title="Delete image">
+                                                ×
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 <?php endforeach; ?>
                             </div>
                         </div>
@@ -107,5 +124,58 @@ $items = json_decode($invoice['items'], true);
             </div>
         </div>
     </div>
+
+    <script>
+        function deleteImage(invoiceId, imageIndex, buttonElement) {
+            if (!confirm('Are you sure you want to delete this image?')) {
+                return;
+            }
+
+            // Disable button during request
+            buttonElement.disabled = true;
+            buttonElement.textContent = '...';
+
+            fetch('delete_image.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    invoice_id: invoiceId,
+                    image_index: imageIndex
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the image container
+                    buttonElement.closest('.relative').remove();
+                    // Update counter if it exists
+                    const counter = document.querySelector('h3 span');
+                    if (counter) {
+                        const currentCount = parseInt(counter.textContent);
+                        if (currentCount > 1) {
+                            counter.textContent = `${currentCount - 1} images`;
+                        } else {
+                            // Hide the entire photos section if no images left
+                            const photosSection = buttonElement.closest('.mt-4');
+                            if (photosSection) {
+                                photosSection.style.display = 'none';
+                            }
+                        }
+                    }
+                } else {
+                    alert('Failed to delete image: ' + (data.error || 'Unknown error'));
+                    buttonElement.disabled = false;
+                    buttonElement.textContent = '×';
+                }
+            })
+            .catch(error => {
+                alert('Error deleting image: ' + error.message);
+                buttonElement.disabled = false;
+                buttonElement.textContent = '×';
+            });
+        }
+    </script>
 </body>
 </html>
