@@ -1,57 +1,90 @@
 <?php
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Set default timezone to Tbilisi
 date_default_timezone_set('Asia/Tbilisi');
 // Get current date in format required for datetime-local input (YYYY-MM-DDTHH:MM)
 $currentDate = date('Y-m-d\TH:i');
 
-require 'config.php';
+// Debug: Check if PHP is working
+echo "<!-- PHP is working. Current time: " . date('Y-m-d H:i:s') . " -->";
+
+try {
+    require 'config.php';
+    // Debug: Test database connection
+    $pdo->query('SELECT 1');
+    echo "<!-- Database connection successful -->";
+} catch (Exception $e) {
+    echo "<!-- Database connection failed: " . htmlspecialchars($e->getMessage()) . " -->";
+    die("Database connection failed: " . htmlspecialchars($e->getMessage()));
+}
 
 if (!isset($_SESSION['user_id'])) {
+    echo "<!-- User not logged in, redirecting to login.php -->";
     header('Location: login.php');
     exit;
 }
+echo "<!-- User is logged in with ID: " . $_SESSION['user_id'] . " -->";
 
 // Support loading a saved invoice into the editor/preview for printing (index.php?print_id=123)
 $serverInvoice = null;
+$invoiceNotFound = false;
 if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
     $pid = (int)$_GET['print_id'];
-    $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ? LIMIT 1');
-    $stmt->execute([$pid]);
-    $inv = $stmt->fetch();
-    if ($inv) {
-        $inv_items = json_decode($inv['items'], true) ?: [];
-        $inv_customer = null;
-        if (!empty($inv['customer_id'])) {
-            $s = $pdo->prepare('SELECT * FROM customers WHERE id = ? LIMIT 1');
-            $s->execute([(int)$inv['customer_id']]);
-            $inv_customer = $s->fetch();
+    echo "<!-- Processing print_id: $pid -->";
+    try {
+        $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ? LIMIT 1');
+        $stmt->execute([$pid]);
+        $inv = $stmt->fetch();
+        if ($inv) {
+            $inv_items = json_decode($inv['items'], true) ?: [];
+            $inv_customer = null;
+            if (!empty($inv['customer_id'])) {
+                $s = $pdo->prepare('SELECT * FROM customers WHERE id = ? LIMIT 1');
+                $s->execute([(int)$inv['customer_id']]);
+                $inv_customer = $s->fetch();
+            }
+            $sm_username = '';
+            if (!empty($inv['service_manager_id'])) {
+                $s = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+                $s->execute([(int)$inv['service_manager_id']]);
+                $sm = $s->fetch();
+                if ($sm) $sm_username = $sm['username'];
+            }
+            $serverInvoice = [
+                'id' => (int)$inv['id'],
+                'creation_date' => $inv['creation_date'],
+                'customer_name' => $inv['customer_name'],
+                'phone' => $inv['phone'],
+                'car_mark' => $inv['car_mark'],
+                'plate_number' => $inv['plate_number'],
+                'mileage' => $inv['mileage'],
+                'service_manager' => $inv['service_manager'],
+                'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
+                'items' => $inv_items,
+                'grand_total' => (float)$inv['grand_total'],
+                'parts_total' => (float)$inv['parts_total'],
+                'service_total' => (float)$inv['service_total'],
+                '_print' => true
+            ];
+            if ($inv_customer) $serverInvoice['customer'] = $inv_customer;
+            if (!empty($sm_username)) $serverInvoice['service_manager_username'] = $sm_username;
+            echo "<!-- Invoice loaded successfully -->";
+        } else {
+            $invoiceNotFound = true;
+            echo "<!-- Invoice with ID $pid not found in database -->";
+            error_log("Invoice with ID $pid not found");
         }
-        $sm_username = '';
-        if (!empty($inv['service_manager_id'])) {
-            $s = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
-            $s->execute([(int)$inv['service_manager_id']]);
-            $sm = $s->fetch();
-            if ($sm) $sm_username = $sm['username'];
-        }
-        $serverInvoice = [
-            'id' => (int)$inv['id'],
-            'creation_date' => $inv['creation_date'],
-            'customer_name' => $inv['customer_name'],
-            'phone' => $inv['phone'],
-            'car_mark' => $inv['car_mark'],
-            'plate_number' => $inv['plate_number'],
-            'mileage' => $inv['mileage'],
-            'service_manager' => $inv['service_manager'],
-            'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
-            'items' => $inv_items,
-            'grand_total' => (float)$inv['grand_total'],
-            'parts_total' => (float)$inv['parts_total'],
-            'service_total' => (float)$inv['service_total'],
-            '_print' => true
-        ];
-        if ($inv_customer) $serverInvoice['customer'] = $inv_customer;
-        if (!empty($sm_username)) $serverInvoice['service_manager_username'] = $sm_username;
+    } catch (Exception $e) {
+        error_log("Database error loading invoice $pid: " . $e->getMessage());
+        $invoiceNotFound = true;
+        echo "<!-- Database error loading invoice: " . htmlspecialchars($e->getMessage()) . " -->";
     }
+} else {
+    echo "<!-- No valid print_id parameter provided -->";
 }
 ?>
 <!DOCTYPE html>
@@ -180,6 +213,26 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                     </h1>
                     <p class="mt-2 text-gray-600">Create and manage auto shop invoices with ease.</p>
                 </div>
+
+                <?php if ($invoiceNotFound): ?>
+                <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">
+                                Invoice Not Found
+                            </h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>The invoice with ID <?php echo htmlspecialchars($_GET['print_id']); ?> could not be found. It may have been deleted or the ID may be incorrect.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Floating Action Buttons - Bottom Sticky -->
                 <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-4 py-3 z-50 print-hidden shadow-lg">
@@ -473,7 +526,14 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
     <script>
         // Server-provided invoice for preview/print
         window.serverInvoice = <?php echo json_encode($serverInvoice, JSON_UNESCAPED_UNICODE); ?>;
+        console.log('Server invoice loaded:', window.serverInvoice);
     </script>
+<?php else: ?>
+    <?php if (isset($_GET['print_id'])): ?>
+        <script>
+            console.log('No server invoice found for print_id: <?php echo htmlspecialchars($_GET['print_id']); ?>');
+        </script>
+    <?php endif; ?>
 <?php endif; ?>
     <script>
         // Store items state
@@ -619,6 +679,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
             // If server supplied invoice data, populate and optionally print
             if (window.serverInvoice) {
+                console.log('Found server invoice, loading...');
                 loadServerInvoice(window.serverInvoice);
                 if (window.serverInvoice._print) {
                     setTimeout(() => {
@@ -626,6 +687,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                         setTimeout(() => { window.print(); }, 250);
                     }, 200);
                 }
+            } else {
+                console.log('No server invoice found');
             }
         });
 
@@ -653,6 +716,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         }
 
         function loadServerInvoice(inv) {
+            console.log('Loading server invoice:', inv);
             // Fill fields
             if (inv.creation_date) {
                 // Convert "YYYY-MM-DD HH:MM:SS" to datetime-local value "YYYY-MM-DDTHH:MM"
