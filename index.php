@@ -831,21 +831,6 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 return false;
             }
 
-            // Check if there are any items
-            const itemRows = document.querySelectorAll('.item-row');
-            let hasValidItem = false;
-            itemRows.forEach(row => {
-                const name = row.querySelector('.item-name').value.trim();
-                if (name) {
-                    hasValidItem = true;
-                }
-            });
-
-            if (!hasValidItem) {
-                alert('Please add at least one service or part item.');
-                return false;
-            }
-
             return prepareData();
         }
     </script>
