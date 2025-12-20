@@ -438,6 +438,31 @@ $resultsCount = count($invoices);
 
                 findInitialLastId();
                 setInterval(pollNew, pollingInterval);
+
+                // Listen for SSE / DOM events for real-time notifications
+                document.addEventListener('invoiceNotification', (e) => {
+                    const inv = e.detail;
+                    // If it matches the current filters, insert it (use existing buildRow logic)
+                    // Convert to format expected by buildRow (ensure fields exist)
+                    const invoice = {
+                        id: inv.invoice_id,
+                        customer_name: inv.customer_name,
+                        phone: inv.phone || '',
+                        car_mark: inv.car_mark || '',
+                        plate_number: inv.plate_number || '',
+                        vin: inv.vin || '',
+                        mileage: inv.mileage || '',
+                        sm_username: inv.sm_username || '',
+                        grand_total: inv.grand_total || 0,
+                        created_at: inv.created_at || '',
+                        unread: 1
+                    };
+                    const row = buildRow(invoice);
+                    tbody.insertBefore(row, tbody.firstChild);
+                    const cb = row.querySelector('.fina-checkbox'); if (cb) attachFinaHandler(cb);
+                    const view = row.querySelector('.view-link'); if (view) attachViewHandler(view);
+                    // keep persistent highlight (unread)
+                });
             })();
         });
     </script>
