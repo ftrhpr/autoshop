@@ -85,6 +85,7 @@ $items = json_decode($invoice['items'], true);
                 <p><strong>Parts Total:</strong> <?php echo $invoice['parts_total']; ?> ₾</p>
                 <p><strong>Service Total:</strong> <?php echo $invoice['service_total']; ?> ₾</p>
                 <p class="text-xl font-bold"><strong>Grand Total:</strong> <?php echo $invoice['grand_total']; ?> ₾</p>
+                <p class="mt-4"><a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="px-3 py-2 bg-yellow-400 text-slate-900 rounded">Print Invoice</a></p>
             </div>
         </div>
     </div>
