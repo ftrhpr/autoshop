@@ -833,6 +833,11 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
             return prepareData();
         }
+
+        function handlePrint() {
+            document.getElementById('print_after_save').value = '1';
+            document.getElementById('invoice-form').submit();
+        }
     </script>
 </body>
 </html>
