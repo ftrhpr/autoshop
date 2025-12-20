@@ -132,6 +132,19 @@ foreach ($invoices as $invoice) {
         .invoice-highlight:hover {
             background-color: #fde68a !important;
         }
+        .invoice-fina {
+            background-color: #dcfce7; /* light green */
+            border-left: 4px solid #16a34a;
+        }
+        .invoice-fina:hover {
+            background-color: #bbf7d0 !important;
+        }
+        .invoice-seen {
+            background-color: white;
+        }
+        .invoice-seen:hover {
+            background-color: #f9fafb !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen overflow-x-hidden font-sans antialiased">
@@ -226,7 +239,7 @@ foreach ($invoices as $invoice) {
                 </thead>
                 <tbody>
                     <?php foreach ($invoices as $invoice): ?>
-                    <tr class="hover:bg-gray-50 <?php echo in_array($invoice['id'], $recentInvoiceIds) ? 'invoice-recent' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
+                    <tr class="hover:bg-gray-50 <?php echo in_array($invoice['id'], $recentInvoiceIds) ? 'invoice-recent' : ''; ?> <?php echo (!empty($invoice['opened_in_fina'])) ? 'invoice-fina' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
                         <td class="px-2 md:px-4 py-2"><?php echo $invoice['id']; ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
@@ -442,6 +455,13 @@ foreach ($invoices as $invoice) {
                         const invoiceId = this.dataset.invoiceId;
                         const isChecked = this.checked;
 
+                        // Update row styling immediately
+                        if (isChecked) {
+                            row.classList.add('invoice-fina');
+                        } else {
+                            row.classList.remove('invoice-fina');
+                        }
+
                         this.disabled = true;
                         this.style.opacity = '0.5';
 
@@ -454,11 +474,23 @@ foreach ($invoices as $invoice) {
                         .then(data => {
                             if (!data.success) {
                                 this.checked = !isChecked;
+                                // Revert row styling
+                                if (!isChecked) {
+                                    row.classList.add('invoice-fina');
+                                } else {
+                                    row.classList.remove('invoice-fina');
+                                }
                                 alert('Failed to update FINA status: ' + (data.error || 'Unknown error'));
                             }
                         })
                         .catch(error => {
                             this.checked = !isChecked;
+                            // Revert row styling
+                            if (!isChecked) {
+                                row.classList.add('invoice-fina');
+                            } else {
+                                row.classList.remove('invoice-fina');
+                            }
                             alert('Error updating FINA status: ' + error.message);
                         })
                         .finally(() => {
@@ -474,9 +506,10 @@ foreach ($invoices as $invoice) {
                     newInvoiceIds.delete(invoiceId);
                     row.classList.remove('invoice-new', 'invoice-recent');
                     row.classList.add('invoice-highlight');
-                    // Remove highlight after 30 seconds
+                    // Remove highlight after 30 seconds and add seen class
                     setTimeout(() => {
                         row.classList.remove('invoice-highlight');
+                        row.classList.add('invoice-seen');
                     }, 30000);
                 } else {
                     // Even if not in newInvoiceIds, still mark as seen for cross-tab communication
@@ -484,6 +517,7 @@ foreach ($invoices as $invoice) {
                     row.classList.add('invoice-highlight');
                     setTimeout(() => {
                         row.classList.remove('invoice-highlight');
+                        row.classList.add('invoice-seen');
                     }, 30000);
                 }
 
@@ -538,6 +572,12 @@ foreach ($invoices as $invoice) {
                                 row.classList.add('invoice-new');
                                 newInvoiceIds.add(invoiceId);
                             }
+                        } else {
+                            // Mark as seen if already viewed
+                            const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                            if (row) {
+                                row.classList.add('invoice-seen');
+                            }
                         }
                     });
                 } catch (e) {
@@ -549,6 +589,17 @@ foreach ($invoices as $invoice) {
             function setupExistingRowEventListeners() {
                 document.querySelectorAll('tbody tr[data-invoice-id]').forEach(row => {
                     setupRowEventListeners(row);
+
+                    // Check if this invoice has been seen and apply styling
+                    const invoiceId = parseInt(row.getAttribute('data-invoice-id'));
+                    try {
+                        const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                        if (seenInvoices.includes(invoiceId) && !row.classList.contains('invoice-recent') && !row.classList.contains('invoice-new')) {
+                            row.classList.add('invoice-seen');
+                        }
+                    } catch (e) {
+                        // Ignore sessionStorage errors
+                    }
                 });
             }
 
