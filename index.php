@@ -399,12 +399,23 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             // API base for AJAX endpoints (handles subfolder installs)
             const apiBase = '<?php $appRoot = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'); if (basename($appRoot) === 'admin') $appRoot = dirname($appRoot); echo $appRoot === '/' ? '' : $appRoot; ?>';
 
-            // Auto-fill customer fields when plate number loses focus
+            // Auto-fill customer fields when plate number loses focus (only if fields are empty)
             const plateInput = document.getElementById('input_plate_number');
             if (plateInput) {
                 plateInput.addEventListener('blur', () => {
                     const plate = plateInput.value.trim();
                     if (!plate) return;
+
+                    // Only auto-fill if customer fields are empty
+                    const customerName = document.getElementById('input_customer_name').value.trim();
+                    const phoneNumber = document.getElementById('input_phone_number').value.trim();
+                    const customerId = document.getElementById('input_customer_id').value;
+
+                    if (customerName || phoneNumber || customerId) {
+                        // Customer info already filled, don't overwrite
+                        return;
+                    }
+
                     fetch(apiBase + '/admin/api_customers.php?plate=' + encodeURIComponent(plate))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
@@ -475,11 +486,22 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 });
             }
 
-            // Attach phone lookup (exact match)
+            // Attach phone lookup (exact match) - only if other fields are empty
             const ph = document.getElementById('input_phone_number');
             if (ph) {
                 ph.addEventListener('blur', () => {
                     const val = ph.value.trim(); if (!val) return;
+
+                    // Only auto-fill if customer fields are empty
+                    const customerName = document.getElementById('input_customer_name').value.trim();
+                    const plateNumber = document.getElementById('input_plate_number').value.trim();
+                    const customerId = document.getElementById('input_customer_id').value;
+
+                    if (customerName || plateNumber || customerId) {
+                        // Customer info already filled, don't overwrite
+                        return;
+                    }
+
                     fetch(apiBase + '/admin/api_customers.php?phone=' + encodeURIComponent(val))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
