@@ -1099,7 +1099,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             tbody.appendChild(footerRow);
 
             // Update Grand Total Text
-            document.getElementById('out_grand_total').innerText = totals.grandTotal > 0 ? totals.grandTotal.toFixed(2) : '';
+            document.getElementById('out_grand_total').innerText = totals.grandTotal > 0 ? totals.grandTotal.toFixed(2) + ' ₾' : '';
         }
 
         function prepareData() {
