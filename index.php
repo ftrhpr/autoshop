@@ -3,6 +3,13 @@
 date_default_timezone_set('Asia/Tbilisi');
 // Get current date in format required for datetime-local input (YYYY-MM-DDTHH:MM)
 $currentDate = date('Y-m-d\TH:i');
+
+require 'config.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="ka">
@@ -60,10 +67,19 @@ $currentDate = date('Y-m-d\TH:i');
                     <circle cx="17" cy="17" r="2" />
                 </svg>
                 <span class="text-xl font-bold">AutoShop PHP</span>
-            </div>
+                <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <a href="admin.php" class="text-yellow-400 hover:text-yellow-300 ml-4">Admin</a>
+                <?php elseif ($_SESSION['role'] === 'manager'): ?>
+                    <a href="manager.php" class="text-green-400 hover:text-green-300 ml-4">Manager</a>
+                <?php endif; ?>
+                <a href="logout.php" class="text-red-400 hover:text-red-300 ml-4">Logout</a>
             <div class="flex w-full md:w-auto gap-2 overflow-x-auto pb-1 md:pb-0">
                 <button onclick="switchTab('edit')" id="btn-edit" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-active">Edit Details</button>
                 <button onclick="switchTab('preview')" id="btn-preview" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-inactive">Preview Invoice</button>
+                <button type="submit" form="invoice-form" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 bg-green-600 rounded-md hover:bg-green-500 flex items-center justify-center gap-2 font-semibold shadow-sm active:scale-95 transition-all text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17,21 17,13 7,13 7,21"></polyline><polyline points="7,3 7,8 15,8"></polyline></svg>
+                    Save
+                </button>
                 <button onclick="handlePrint()" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-500 flex items-center justify-center gap-2 font-semibold shadow-sm active:scale-95 transition-all text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                     Print
@@ -76,7 +92,17 @@ $currentDate = date('Y-m-d\TH:i');
         
         <!-- ================= EDIT MODE ================= -->
         <div id="edit-mode" class="block print-hidden animate-fade-in">
-            <form id="invoice-form" onsubmit="return false;">
+            <form id="invoice-form" action="save_invoice.php" method="post" onsubmit="return prepareData()">
+                <input type="hidden" name="creation_date" id="hidden_creation_date">
+                <input type="hidden" name="service_manager" id="hidden_service_manager">
+                <input type="hidden" name="customer_name" id="hidden_customer_name">
+                <input type="hidden" name="phone_number" id="hidden_phone_number">
+                <input type="hidden" name="car_mark" id="hidden_car_mark">
+                <input type="hidden" name="plate_number" id="hidden_plate_number">
+                <input type="hidden" name="mileage" id="hidden_mileage">
+                <input type="hidden" name="parts_total" id="hidden_parts_total">
+                <input type="hidden" name="service_total" id="hidden_service_total">
+                <input type="hidden" name="grand_total" id="hidden_grand_total">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                     
                     <!-- Left Column: Inputs -->
@@ -512,6 +538,37 @@ $currentDate = date('Y-m-d\TH:i');
 
             // Update Grand Total Text
             document.getElementById('out_grand_total').innerText = totals.grandTotal.toFixed(2);
+        }
+
+        function prepareData() {
+            // Update hidden fields
+            document.getElementById('hidden_creation_date').value = document.getElementById('input_creation_date').value;
+            document.getElementById('hidden_service_manager').value = document.getElementById('input_service_manager').value;
+            document.getElementById('hidden_customer_name').value = document.getElementById('input_customer_name').value;
+            document.getElementById('hidden_phone_number').value = document.getElementById('input_phone_number').value;
+            document.getElementById('hidden_car_mark').value = document.getElementById('input_car_mark').value;
+            document.getElementById('hidden_plate_number').value = document.getElementById('input_plate_number').value;
+            document.getElementById('hidden_mileage').value = document.getElementById('input_mileage').value;
+            const totals = calculateTotals();
+            document.getElementById('hidden_parts_total').value = totals.partTotal.toFixed(2);
+            document.getElementById('hidden_service_total').value = totals.svcTotal.toFixed(2);
+            document.getElementById('hidden_grand_total').value = totals.grandTotal.toFixed(2);
+
+            // Add hidden for items
+            let form = document.getElementById('invoice-form');
+            let index = 0;
+            document.querySelectorAll('.item-row').forEach(row => {
+                let name = row.querySelector('.item-name').value;
+                if (name.trim() !== '') {
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_name_${index}" value="${name}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_qty_${index}" value="${row.querySelector('.item-qty').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_part_${index}" value="${row.querySelector('.item-price-part').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_svc_${index}" value="${row.querySelector('.item-price-svc').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_${index}" value="${row.querySelector('.item-tech').value}">`);
+                    index++;
+                }
+            });
+            return true;
         }
 
         function handlePrint() {
