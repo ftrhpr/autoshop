@@ -323,6 +323,10 @@ foreach ($invoices as $invoice) {
                 });
             });
 
+            // Live invoice updates
+            initializeLiveUpdates();
+        });
+
         function initializeLiveUpdates() {
             console.log('Initializing live updates...');
             let lastTimestamp = null;
