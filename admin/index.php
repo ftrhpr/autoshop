@@ -6,20 +6,41 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// Handle user creation (with auditing)
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_user'])) {
-    $username = trim($_POST['username']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $role = $_POST['role'];
+// Handle invoice deletion
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_invoice'])) {
+    $invoiceId = (int)$_POST['invoice_id'];
 
-    $stmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
-    $stmt->execute([$username, $password, $role]);
-    $success = 'User created successfully';
+    // Check if user has permission to manage invoices
+    $hasPermission = false;
+    if ($_SESSION['role'] === 'admin') {
+        $hasPermission = true;
+    } else {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON rp.permission_id = p.id WHERE rp.role = ? AND p.name = 'manage_invoices'");
+        $stmt->execute([$_SESSION['role']]);
+        $hasPermission = $stmt->fetchColumn() > 0;
+    }
 
-    // Log audit
-    $actor = $_SESSION['user_id'] ?? null;
-    $stmt = $pdo->prepare("INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, 'create_user', ?, ?)");
-    $stmt->execute([$actor, "created user={$username}, role={$role}", $_SERVER['REMOTE_ADDR'] ?? '']);
+    if (!$hasPermission) {
+        die('Permission denied');
+    }
+
+    // Get invoice details for audit log
+    $stmt = $pdo->prepare('SELECT customer_name, grand_total FROM invoices WHERE id = ?');
+    $stmt->execute([$invoiceId]);
+    $invoice = $stmt->fetch();
+
+    if ($invoice) {
+        // Delete the invoice
+        $stmt = $pdo->prepare('DELETE FROM invoices WHERE id = ?');
+        $stmt->execute([$invoiceId]);
+
+        // Log audit
+        $actor = $_SESSION['user_id'] ?? null;
+        $stmt = $pdo->prepare("INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, 'delete_invoice', ?, ?)");
+        $stmt->execute([$actor, "deleted invoice ID={$invoiceId}, customer={$invoice['customer_name']}, total={$invoice['grand_total']}", $_SERVER['REMOTE_ADDR'] ?? '']);
+
+        $deleteSuccess = 'Invoice deleted successfully';
+    }
 }
 
 // Analytics summary (Pro feature)
@@ -160,6 +181,7 @@ $invoices = $stmt->fetchAll();
                     </div>
 
                     <?php if (isset($success)) echo "<p class='text-green-500 mb-4'>$success</p>"; ?>
+                    <?php if (isset($deleteSuccess)) echo "<p class='text-green-500 mb-4'>$deleteSuccess</p>"; ?>
 
                     <form method="post" class="bg-gray-50 p-4 rounded mb-4">
                         <h4 class="font-semibold mb-2">Create New User</h4>
@@ -225,6 +247,7 @@ $invoices = $stmt->fetchAll();
                                     <th class="text-left px-2 py-2">Customer</th>
                                     <th class="text-left px-2 py-2">Total</th>
                                     <th class="text-left px-2 py-2">Created</th>
+                                    <th class="text-left px-2 py-2">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -234,6 +257,12 @@ $invoices = $stmt->fetchAll();
                                     <td class="px-2 py-2"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
                                     <td class="px-2 py-2"><?php echo $invoice['grand_total']; ?> ₾</td>
                                     <td class="px-2 py-2"><?php echo $invoice['created_at']; ?></td>
+                                    <td class="px-2 py-2">
+                                        <form method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this invoice? This action cannot be undone.');">
+                                            <input type="hidden" name="invoice_id" value="<?php echo $invoice['id']; ?>">
+                                            <button type="submit" name="delete_invoice" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                                        </form>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
