@@ -160,6 +160,13 @@ $totalPages = (int)ceil($total / $perPage);
                         <input type="file" name="csv_file" accept=".csv" class="block mb-2">
                         <button type="submit" class="mt-1 bg-green-600 text-white px-4 py-2 rounded">Upload & Import</button>
                     </form>
+
+                    <form method="post" action="import_customers_raw.php" class="bg-white p-4 rounded border mt-4">
+                        <h4 class="font-semibold mb-2">Import Customers (Raw Text)</h4>
+                        <p class="text-xs text-gray-500 mb-2">Paste raw text with one customer per line: full_name,phone (e.g., John Doe,+995555000000). Required: full_name, phone. Import will insert new customers or update existing ones by phone.</p>
+                        <textarea name="raw_data" rows="6" placeholder="John Doe,+995555000000&#10;Jane Smith,+995555111111" class="w-full px-2 py-2 border rounded mb-2"></textarea>
+                        <button type="submit" class="mt-1 bg-green-600 text-white px-4 py-2 rounded">Import Raw Data</button>
+                    </form>
                 </div>
 
                 <div>
