@@ -10,6 +10,9 @@ if (!isset($_SESSION['user_id'])) {
 $id = $_GET['id'] ?? null;
 $plate = $_GET['plate'] ?? null;
 $q = $_GET['q'] ?? null;
+$phone = $_GET['phone'] ?? null;
+
+header('Content-Type: application/json; charset=utf-8');
 
 if ($id) {
     $stmt = $pdo->prepare('SELECT * FROM customers WHERE id = ? LIMIT 1');

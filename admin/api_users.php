@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 $q = $_GET['q'] ?? '';
 $q = trim($q);
 
+header('Content-Type: application/json; charset=utf-8');
 if ($q === '') {
     // return small list of users
     $stmt = $pdo->query('SELECT id, username FROM users ORDER BY username LIMIT 20');

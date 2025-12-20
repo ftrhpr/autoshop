@@ -331,14 +331,17 @@ if (!isset($_SESSION['user_id'])) {
                 }
             <?php endif; ?>
 
+            // API base for AJAX endpoints (handles subfolder installs)
+            const apiBase = '<?php $appRoot = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'); if (basename($appRoot) === 'admin') $appRoot = dirname($appRoot); echo $appRoot === '/' ? '' : $appRoot; ?>';
+
             // Auto-fill customer fields when plate number loses focus
             const plateInput = document.getElementById('input_plate_number');
             if (plateInput) {
                 plateInput.addEventListener('blur', () => {
                     const plate = plateInput.value.trim();
                     if (!plate) return;
-                    fetch('admin/api_customers.php?plate=' + encodeURIComponent(plate))
-                        .then(r => r.json())
+                    fetch(apiBase + '/admin/api_customers.php?plate=' + encodeURIComponent(plate))
+                        .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
                             document.getElementById('input_customer_name').value = data.full_name || '';
@@ -370,7 +373,9 @@ if (!isset($_SESSION['user_id'])) {
                     if (!q) { box.innerHTML = ''; return; }
                     try {
                         const res = await fetch(endpoint + encodeURIComponent(q));
+                        if (!res.ok) { box.innerHTML = ''; return; }
                         const list = await res.json();
+                        if (!Array.isArray(list)) { box.innerHTML = ''; return; }
                         box.innerHTML = list.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
                         box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
                             const item = JSON.parse(el.getAttribute('data-json'));
@@ -388,7 +393,7 @@ if (!isset($_SESSION['user_id'])) {
             // Attach service manager typeahead
             const sm = document.getElementById('input_service_manager');
             if (sm) {
-                attachTypeahead(sm, 'admin/api_users.php?q=', u => u.username, (it) => {
+                attachTypeahead(sm, apiBase + '/admin/api_users.php?q=', u => u.username, (it) => {
                     sm.value = it.username;
                     const hid = document.getElementById('input_service_manager_id'); if (hid) hid.value = it.id;
                 });
@@ -397,7 +402,7 @@ if (!isset($_SESSION['user_id'])) {
             // Attach customer name typeahead
             const cn = document.getElementById('input_customer_name');
             if (cn) {
-                attachTypeahead(cn, 'admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
+                attachTypeahead(cn, apiBase + '/admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
                     cn.value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
                     document.getElementById('input_plate_number').value = it.plate_number || '';
@@ -410,8 +415,8 @@ if (!isset($_SESSION['user_id'])) {
             if (ph) {
                 ph.addEventListener('blur', () => {
                     const val = ph.value.trim(); if (!val) return;
-                    fetch('admin/api_customers.php?phone=' + encodeURIComponent(val))
-                        .then(r => r.json())
+                    fetch(apiBase + '/admin/api_customers.php?phone=' + encodeURIComponent(val))
+                        .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
                             document.getElementById('input_customer_name').value = data.full_name || '';
