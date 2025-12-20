@@ -57,39 +57,15 @@ if (!isset($_SESSION['user_id'])) {
 <body class="bg-gray-100 font-sans text-gray-800 pb-20 md:pb-0">
     <?php include 'partials/sidebar.php'; ?>
 
-    <!-- NAVIGATION -->
-    <nav class="bg-slate-800 text-white p-4 shadow-md print-hidden sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
-            <div class="flex items-center gap-2">
-                <!-- Car Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                    <circle cx="7" cy="17" r="2" />
-                    <circle cx="17" cy="17" r="2" />
-                </svg>
-                <span class="text-xl font-bold">AutoShop PHP</span>
-                <?php if ($_SESSION['role'] === 'admin'): ?>
-                    <a href="admin/index.php" class="text-yellow-400 hover:text-yellow-300 ml-4">Admin</a>
-                <?php elseif ($_SESSION['role'] === 'manager'): ?>
-                    <a href="manager.php" class="text-green-400 hover:text-green-300 ml-4">Manager</a>
-                <?php endif; ?>
-                <a href="logout.php" class="text-red-400 hover:text-red-300 ml-4">Logout</a>
-            <div class="flex w-full md:w-auto gap-2 overflow-x-auto pb-1 md:pb-0">
-                <button onclick="switchTab('edit')" id="btn-edit" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-active">Edit Details</button>
-                <button onclick="switchTab('preview')" id="btn-preview" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-inactive">Preview Invoice</button>
-                <button type="submit" form="invoice-form" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 bg-green-600 rounded-md hover:bg-green-500 flex items-center justify-center gap-2 font-semibold shadow-sm active:scale-95 transition-all text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17,21 17,13 7,13 7,21"></polyline><polyline points="7,3 7,8 15,8"></polyline></svg>
-                    Save
-                </button>
-                <button onclick="handlePrint()" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-500 flex items-center justify-center gap-2 font-semibold shadow-sm active:scale-95 transition-all text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                    Print
-                </button>
-            </div>
-        </div>
-    </nav>
+
 
     <main class="max-w-7xl mx-auto p-4 md:p-8 print:p-0 print:max-w-none">
+        <div class="mb-4 print-hidden flex justify-end gap-2">
+            <button onclick="switchTab('edit')" id="btn-edit" class="px-4 py-2 rounded-md transition-colors tab-active">Edit Details</button>
+            <button onclick="switchTab('preview')" id="btn-preview" class="px-4 py-2 rounded-md transition-colors tab-inactive">Preview Invoice</button>
+            <button type="submit" form="invoice-form" class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-500 text-white">Save</button>
+            <button onclick="handlePrint()" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-500 text-white">Print</button>
+        </div>
         
         <!-- ================= EDIT MODE ================= -->
         <div id="edit-mode" class="block print-hidden animate-fade-in">

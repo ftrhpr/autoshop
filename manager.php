@@ -20,15 +20,6 @@ $invoices = $stmt->fetchAll();
 </head>
 <body class="bg-gray-100">
     <?php include 'partials/sidebar.php'; ?>
-    <nav class="bg-green-600 text-white p-4">
-        <div class="container mx-auto flex justify-between">
-            <h1 class="text-xl font-bold">Manager Panel</h1>
-            <div>
-                <a href="index.php" class="mr-4">Invoice Generator</a>
-                <a href="logout.php">Logout</a>
-            </div>
-        </div>
-    </nav>
 
     <div class="container mx-auto p-6">
         <h2 class="text-2xl font-bold mb-6">Invoice Management</h2>
