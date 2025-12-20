@@ -49,27 +49,27 @@ $grandTotal = number_format((float)$invoice['grand_total'], 2);
     <title>Print Invoice #<?php echo $invoice['id']; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Print Styles */
         @media print {
             @page { margin: 0; size: A4; }
             html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }
             .print-hidden { display: none !important; }
+            .print-visible { display: block !important; }
+            .print-no-shadow { box-shadow: none !important; }
+            /* Exact A4 Table Styling */
+            table { border-collapse: collapse !important; border-color: #000 !important; width: 100% !important; }
+            td, th { border: 1px solid #000 !important; color: #000 !important; }
+            
+            /* Compact padding for print to fit one page */
+            td { padding-top: 2px !important; padding-bottom: 2px !important; padding-left: 4px !important; padding-right: 4px !important; }
+            
+            /* Ensure container is exact A4 height */
             .a4-container { height: 297mm !important; max-height: 297mm !important; overflow: hidden !important; }
         }
-        table { border-collapse: collapse; width: 100%; }
-        td, th { border: 1px solid #000; }
     </style>
 </head>
 <body class="bg-white text-black">
-<?php include 'partials/invoice_print_template.php'; ?>            <p><strong>შენიშვნა:</strong> კლიენტის მიერ მოწოდებული ნაწილის ხარისხზე და გამართულობაზე კომპანია არ აგებს პასუხს. მანქანის შეკეთებისას თუ კლიენტი გადაწყვეტს ნაწილის მოწოდებას, ვალდებულია ნაწილი მოაწოდოს სერვისს არაუგვიანეს 2 სამუშაო დღისა, წინააღმდეგ შემთხვევაში მანქანა გადაინაცვლებს კომპანიის ავტოსადგომზე, რა შემთხვევაშიც მანქანის დგომის დღიური საფასური იქნება 10 ლარი. თუ შენიშვნის ველში გარანტიის ვადა არ არის მითითებული გარანტია არ ვრცელდება. წინამდებარე დოკუმენტზე ხელმოწერით კლიენტი ადასტურებს რომ კომპანიის მიმართ პრეტენზია არ გააჩნია.</p>
-            <p><strong>საგარანტიო პირობები:</strong> 1. აალების სანთლების საგარანტიო ვადა განისაზღვრება კილომეტრაჟით, რომელიც შეადგენს 1000 კმ-ს. 2. სამუხრუჭე ხუნდების საგარანტიო ვადა განისაზღვრება მონტაჟიდან 7 დღის ვადით.</p>
-            <p class="italic mt-4">Oneclub: საიდან გაიგეთ ჩვენს შესახებ? ________________________</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-20 mt-8 text-sm absolute bottom-12 w-full left-0 px-8 box-border">
-            <div class="border-t border-black pt-2 text-center">მენეჯერის ხელმოწერა</div>
-            <div class="border-t border-black pt-2 text-center">კლიენტის ხელმოწერა</div>
-        </div>
-    </div>
+<?php include 'partials/invoice_print_template.php'; ?>
 
     <script>
         // Auto print when loaded
