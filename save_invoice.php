@@ -101,8 +101,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $invoice_id = $pdo->lastInsertId();
 
-    // Redirect to view or back
-    header('Location: view_invoice.php?id=' . $invoice_id);
+    // Redirect based on flag
+    if (!empty($data['print_after_save'])) {
+        header('Location: print_invoice.php?id=' . $invoice_id);
+    } else {
+        header('Location: view_invoice.php?id=' . $invoice_id);
+    }
     exit;
 }
 ?>

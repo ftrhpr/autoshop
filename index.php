@@ -123,6 +123,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 <input type="hidden" name="parts_total" id="hidden_parts_total">
                 <input type="hidden" name="service_total" id="hidden_service_total">
                 <input type="hidden" name="grand_total" id="hidden_grand_total">
+                <input type="hidden" name="print_after_save" id="print_after_save">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                     
                     <!-- Left Column: Inputs -->
@@ -671,10 +672,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         }
 
         function handlePrint() {
-            switchTab('preview');
-            setTimeout(() => {
-                window.print();
-            }, 100);
+            document.getElementById('print_after_save').value = '1';
+            document.getElementById('invoice-form').submit();
         }
     </script>
 </body>
