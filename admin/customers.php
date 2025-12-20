@@ -113,6 +113,27 @@ $totalPages = (int)ceil($total / $perPage);
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
             <h2 class="text-2xl font-bold mb-4">Customers</h2>
             <?php if (isset($success)): ?><div class="text-green-600 mb-3"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
+            <?php if (isset($_SESSION['import_summary'])): ?>
+                <?php $s = $_SESSION['import_summary']; unset($_SESSION['import_summary']); ?>
+                <?php if (isset($s['error'])): ?>
+                    <div class="text-red-600 mb-3"><?php echo htmlspecialchars($s['error']); ?></div>
+                <?php else: ?>
+                    <div class="bg-green-50 border-l-4 border-green-400 p-3 mb-3">
+                        <div class="font-semibold">Import Summary</div>
+                        <div>Inserted: <?php echo (int)($s['inserted'] ?? 0); ?>, Updated: <?php echo (int)($s['updated'] ?? 0); ?>, Failed: <?php echo (int)($s['failed'] ?? 0); ?></div>
+                        <?php if (!empty($s['failures'])): ?>
+                            <details class="mt-2 text-sm text-red-700">
+                                <summary>View failures (<?php echo count($s['failures']); ?>)</summary>
+                                <ul class="list-disc pl-4 mt-2">
+                                    <?php foreach ($s['failures'] as $f): ?>
+                                        <li><?php echo htmlspecialchars($f); ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </details>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
 
             <form method="get" class="mb-4 flex gap-2">
                 <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search plate or name" class="px-3 py-2 border rounded w-full">
@@ -130,6 +151,14 @@ $totalPages = (int)ceil($total / $perPage);
                         <input type="text" name="car_mark" placeholder="Car Mark" class="w-full px-2 py-2 border rounded mb-2">
                         <textarea name="notes" placeholder="Notes" class="w-full px-2 py-2 border rounded mb-2"></textarea>
                         <button type="submit" name="create_customer" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Create</button>
+                    </form>
+
+                    <form method="post" action="import_customers.php" enctype="multipart/form-data" class="bg-white p-4 rounded border mt-4">
+                        <h4 class="font-semibold mb-2">Import Customers (CSV)</h4>
+                        <p class="text-xs text-gray-500 mb-2">Download the template and fill it. The import will insert new customers or update existing ones by plate number.</p>
+                        <a href="customers_import_template.csv" class="inline-block mb-2 text-blue-500 hover:underline">Download CSV template</a>
+                        <input type="file" name="csv_file" accept=".csv" class="block mb-2">
+                        <button type="submit" class="mt-1 bg-green-600 text-white px-4 py-2 rounded">Upload & Import</button>
                     </form>
                 </div>
 
