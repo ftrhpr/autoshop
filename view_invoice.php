@@ -41,7 +41,13 @@ $items = json_decode($invoice['items'], true);
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div>
                     <p><strong>Creation Date:</strong> <?php echo $invoice['creation_date']; ?></p>
-                    <p><strong>Service Manager:</strong> <?php echo htmlspecialchars($invoice['service_manager']); ?></p>
+                    <?php if (!empty($invoice['service_manager_id'])) {
+                        $stmt = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+                        $stmt->execute([(int)$invoice['service_manager_id']]);
+                        $smu = $stmt->fetch();
+                    }
+                    ?>
+                    <p><strong>Service Manager:</strong> <?php echo htmlspecialchars($invoice['service_manager']); ?><?php echo !empty($smu['username']) ? ' ('.$smu['username'].')' : ''; ?></p>
                     <p><strong>Customer:</strong> <?php echo htmlspecialchars($invoice['customer_name']); ?></p>
                     <p><strong>Phone:</strong> <?php echo htmlspecialchars($invoice['phone']); ?></p>
                 </div>

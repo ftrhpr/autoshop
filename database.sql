@@ -28,6 +28,7 @@ CREATE TABLE invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     creation_date DATETIME NOT NULL,
     service_manager VARCHAR(100),
+    service_manager_id INT NULL,
     customer_id INT NULL,
     customer_name VARCHAR(100),
     phone VARCHAR(20),
@@ -41,7 +42,8 @@ CREATE TABLE invoices (
     created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id),
-    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+    FOREIGN KEY (service_manager_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Insert default admin user

@@ -81,10 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $serviceManagerName = $_SESSION['username'];
     }
 
-    $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, customer_id, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $data['creation_date'],
         $serviceManagerName,
+        !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
         $customer_id,
         $data['customer_name'],
         $data['phone_number'],
