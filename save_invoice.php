@@ -148,9 +148,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    $vin = trim($data['vin'] ?? '');
+
     if ($existing_id) {
-        // Update existing invoice
-        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, customer_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
+        // Update existing invoice (include VIN)
+        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, customer_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
@@ -160,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $data['phone_number'],
             $data['car_mark'],
             $data['plate_number'],
+            $vin,
             $data['mileage'],
             json_encode($items),
             $finalPartsTotal,
@@ -169,8 +172,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         ]);
         $invoice_id = $existing_id;
     } else {
-        // Insert new invoice
-        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        // Insert new invoice (include VIN)
+        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
@@ -180,6 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $data['phone_number'],
             $data['car_mark'],
             $data['plate_number'],
+            $vin,
             $data['mileage'],
             json_encode($items),
             $finalPartsTotal,
@@ -188,6 +192,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['user_id']
         ]);
         $invoice_id = $pdo->lastInsertId();
+    }
+
+    // Process uploaded images (if any)
+    if (!empty($_FILES['images'])) {
+        $uploaded = $_FILES['images'];
+        $stored = [];
+        $uploadDir = __DIR__ . '/uploads/invoices/' . $invoice_id;
+        if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+
+        // Normalize structure
+        $fileCount = is_array($uploaded['name']) ? count($uploaded['name']) : 0;
+        for ($i = 0; $i < $fileCount; $i++) {
+            if (empty($uploaded['name'][$i])) continue;
+            if ($uploaded['error'][$i] !== UPLOAD_ERR_OK) continue;
+            $tmp = $uploaded['tmp_name'][$i];
+            $orig = basename($uploaded['name'][$i]);
+            // Sanitize filename
+            $ext = pathinfo($orig, PATHINFO_EXTENSION);
+            $base = preg_replace('/[^A-Za-z0-9_-]/', '_', pathinfo($orig, PATHINFO_FILENAME));
+            $filename = $base . '_' . time() . '_' . $i . '.' . $ext;
+            $dest = $uploadDir . DIRECTORY_SEPARATOR . $filename;
+            if (move_uploaded_file($tmp, $dest)) {
+                // store relative path for web
+                $rel = 'uploads/invoices/' . $invoice_id . '/' . $filename;
+                $stored[] = $rel;
+            }
+        }
+
+        if (!empty($stored)) {
+            try {
+                // Fetch existing images
+                $stmt = $pdo->prepare('SELECT images FROM invoices WHERE id = ? LIMIT 1');
+                $stmt->execute([$invoice_id]);
+                $row = $stmt->fetch();
+                $existingImages = $row && !empty($row['images']) ? json_decode($row['images'], true) : [];
+                $merged = array_values(array_filter(array_merge($existingImages ?: [], $stored)));
+                $stmt = $pdo->prepare('UPDATE invoices SET images = ? WHERE id = ?');
+                $stmt->execute([json_encode($merged, JSON_UNESCAPED_UNICODE), $invoice_id]);
+            } catch (PDOException $e) {
+                // If column doesn't exist or update fails, log and continue
+                error_log('Failed to save uploaded images for invoice ' . $invoice_id . ': ' . $e->getMessage());
+            }
+        }
     }
 
     // Redirect based on flag

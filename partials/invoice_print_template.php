@@ -58,6 +58,13 @@ function esc($s){ return htmlspecialchars((string)$s); }
                 <?php else: ?>
                     <div class="border-b border-black px-2 h-6 flex items-center font-mono uppercase" id="out_plate_number"></div>
                 <?php endif; ?>
+
+                <div class="font-bold whitespace-nowrap">VIN:</div>
+                <?php if ($server): ?>
+                    <div class="border-b border-black px-2 h-6 flex items-center font-mono"><?php echo esc($invoice['vin'] ?: ($customer['vin'] ?? '')); ?></div>
+                <?php else: ?>
+                    <div class="border-b border-black px-2 h-6 flex items-center font-mono" id="out_vin"></div>
+                <?php endif; ?>
             </div>
 
             <!-- Right -->
@@ -94,6 +101,31 @@ function esc($s){ return htmlspecialchars((string)$s); }
         <div class="mb-4 text-sm">
             <div class="font-bold whitespace-nowrap">შენიშვნები:</div>
             <div class="border border-black px-2 py-1 mt-1 bg-gray-50 print:bg-gray-50"><?php echo nl2br(esc($customer['notes'])); ?></div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Photos -->
+        <?php if ($server && !empty($invoice['images'])): ?>
+        <div class="mb-4">
+            <div class="font-bold whitespace-nowrap mb-2">ფოტოები:</div>
+            <div class="flex gap-2 flex-wrap">
+                <?php
+                $imgs = [];
+                if (!empty($invoice['images'])) {
+                    if (is_array($invoice['images'])) $imgs = $invoice['images'];
+                    else $imgs = json_decode($invoice['images'], true) ?: [];
+                }
+                foreach ($imgs as $img) {
+                    $src = htmlspecialchars($img);
+                    echo "<img src=\"$src\" style=\"width:140px;object-fit:cover;\" class=\"rounded border\" />";
+                }
+                ?>
+            </div>
+        </div>
+        <?php elseif (!$server): ?>
+        <div class="mb-4" id="out_images_container">
+            <div class="font-bold whitespace-nowrap mb-2">ფოტოები:</div>
+            <div id="out_images" class="flex gap-2 flex-wrap"></div>
         </div>
         <?php endif; ?>
 

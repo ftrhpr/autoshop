@@ -60,10 +60,12 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 'phone' => $inv['phone'],
                 'car_mark' => $inv['car_mark'],
                 'plate_number' => $inv['plate_number'],
+                'vin' => $inv['vin'] ?? '',
                 'mileage' => $inv['mileage'],
                 'service_manager' => $inv['service_manager'],
                 'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
                 'items' => $inv_items,
+                'images' => !empty($inv['images']) ? json_decode($inv['images'], true) : [],
                 'grand_total' => (float)$inv['grand_total'],
                 'parts_total' => (float)$inv['parts_total'],
                 'service_total' => (float)$inv['service_total'],
@@ -334,13 +336,14 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         
         <!-- ================= EDIT MODE ================= -->
         <div id="edit-mode" class="block print-hidden animate-fade-in">
-            <form id="invoice-form" action="save_invoice.php" method="post" onsubmit="return handleSave()" role="form" aria-label="Invoice form">
+            <form id="invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data" onsubmit="return handleSave()" role="form" aria-label="Invoice form">
                 <input type="hidden" name="creation_date" id="hidden_creation_date">
                 <input type="hidden" name="service_manager" id="hidden_service_manager">
                 <input type="hidden" name="customer_name" id="hidden_customer_name">
                 <input type="hidden" name="phone_number" id="hidden_phone_number">
                 <input type="hidden" name="car_mark" id="hidden_car_mark">
                 <input type="hidden" name="plate_number" id="hidden_plate_number">
+                <input type="hidden" name="vin" id="hidden_vin">
                 <input type="hidden" name="mileage" id="hidden_mileage">
                 <input type="hidden" name="parts_total" id="hidden_parts_total">
                 <input type="hidden" name="service_total" id="hidden_service_total">
@@ -464,6 +467,21 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                         <p id="plate-help" class="mt-1 text-xs text-gray-500">License plate in Georgian format.</p>
                                     </div>
                                     <div>
+                                        <label for="input_vin" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
+                                            </svg>
+                                            VIN
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" id="input_vin" placeholder="Vehicle VIN" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 p-3 border text-base pl-10 transition-all duration-200" aria-describedby="vin-help">
+                                            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
+                                            </svg>
+                                        </div>
+                                        <p id="vin-help" class="mt-1 text-xs text-gray-500">Optional: VIN number for the vehicle.</p>
+                                    </div>
+                                    <div>
                                         <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                                             <svg class="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -480,6 +498,13 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-xl shadow-lg border border-gray-200 mt-4">
+                            <h3 class="text-sm font-semibold mb-2">Photos (ფოტოები)</h3>
+                            <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="block w-full">
+                            <div id="input_images_preview" class="mt-3 flex gap-2 flex-wrap"></div>
+                            <p class="mt-1 text-xs text-gray-500">Upload vehicle photos (JPG/PNG). Images will be attached to the invoice.</p>
                         </div>
                     </div>
 
@@ -723,6 +748,30 @@ if (!empty($serverInvoice)) {
                 });
             }
 
+            // Image input preview
+            const imgInput = document.getElementById('input_images');
+            const imgPreview = document.getElementById('input_images_preview');
+            if (imgInput && imgPreview) {
+                imgInput.addEventListener('change', (ev) => {
+                    imgPreview.innerHTML = '';
+                    const files = Array.from(imgInput.files || []);
+                    files.forEach(f => {
+                        if (!f.type.startsWith('image/')) return;
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.style.width = '120px';
+                            img.style.height = 'auto';
+                            img.style.objectFit = 'cover';
+                            img.className = 'rounded border';
+                            imgPreview.appendChild(img);
+                        };
+                        reader.readAsDataURL(f);
+                    });
+                });
+            }
+
             // If server supplied invoice data, populate and optionally print
             if (window.serverInvoice) {
                 loadServerInvoice(window.serverInvoice);
@@ -766,8 +815,24 @@ if (!empty($serverInvoice)) {
             if (inv.phone) document.getElementById('input_phone_number').value = inv.phone;
             if (inv.car_mark) document.getElementById('input_car_mark').value = inv.car_mark;
             if (inv.plate_number) document.getElementById('input_plate_number').value = inv.plate_number;
+            if (inv.vin) document.getElementById('input_vin').value = inv.vin || '';
             if (inv.mileage) document.getElementById('input_mileage').value = inv.mileage;
             if (inv.customer && inv.customer.id) document.getElementById('input_customer_id').value = inv.customer.id;
+
+            // Render existing images (if server provided)
+            if (inv.images && Array.isArray(inv.images) && inv.images.length > 0) {
+                const preview = document.getElementById('input_images_preview');
+                preview.innerHTML = '';
+                inv.images.forEach(src => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.style.width = '120px';
+                    img.style.height = 'auto';
+                    img.style.objectFit = 'cover';
+                    img.className = 'rounded border';
+                    preview.appendChild(img);
+                });
+            }
 
             // Replace existing rows with invoice items
             document.querySelectorAll('.item-row').forEach(r => r.remove());
@@ -871,7 +936,8 @@ if (!empty($serverInvoice)) {
                 'input_plate_number': 'out_plate_number',
                 'input_phone_number': 'out_phone_number',
                 'input_mileage': 'out_mileage',
-                'input_service_manager': 'out_service_manager'
+                'input_service_manager': 'out_service_manager',
+                'input_vin': 'out_vin'
             };
 
             for(const [inId, outId] of Object.entries(map)) {
@@ -884,6 +950,27 @@ if (!empty($serverInvoice)) {
             const totals = calculateTotals();
             const tbody = document.getElementById('preview-table-body');
             tbody.innerHTML = ''; // Clear
+
+            // Render VIN and images for client-side preview
+            const outImages = document.getElementById('out_images');
+            if (outImages) outImages.innerHTML = '';
+            const imgInput = document.getElementById('input_images');
+            if (imgInput && imgInput.files && imgInput.files.length > 0 && outImages) {
+                Array.from(imgInput.files).forEach(f => {
+                    if (!f.type.startsWith('image/')) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '120px';
+                        img.style.height = 'auto';
+                        img.style.objectFit = 'cover';
+                        img.className = 'rounded border mr-2 mb-2';
+                        outImages.appendChild(img);
+                    };
+                    reader.readAsDataURL(f);
+                });
+            }
 
             const rows = document.querySelectorAll('.item-row');
             let index = 1;
@@ -991,6 +1078,7 @@ if (!empty($serverInvoice)) {
             document.getElementById('hidden_phone_number').value = phoneNumber;
             document.getElementById('hidden_car_mark').value = carMark;
             document.getElementById('hidden_plate_number').value = plateNumber;
+            document.getElementById('hidden_vin').value = document.getElementById('input_vin') ? document.getElementById('input_vin').value : '';
             document.getElementById('hidden_mileage').value = mileage;
             
             const totals = calculateTotals();
