@@ -493,13 +493,7 @@ $resultsCount = count($invoices);
                 console.warn('Error checking seen invoices on load', e);
             }
 
-            // Expose markAsSeen function for cross-window communication
-            window.__liveInvoices.markAsSeen = function(invoiceId) {
-                const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
-                if (row) {
-                    markInvoiceAsSeen(invoiceId, row);
-                }
-            };
+
 
             function updateResultsCount() {
                 const tableBody = document.querySelector('tbody');
@@ -526,7 +520,17 @@ $resultsCount = count($invoices);
             });
 
             // Expose for debugging
-            window.__liveInvoices = { pollForUpdates, fetchLatestTimestamp, newInvoiceIds };
+            window.__liveInvoices = {
+                pollForUpdates,
+                fetchLatestTimestamp,
+                newInvoiceIds,
+                markAsSeen: function(invoiceId) {
+                    const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                    if (row) {
+                        markInvoiceAsSeen(invoiceId, row);
+                    }
+                }
+            };
         }
     </script>
 </body>
