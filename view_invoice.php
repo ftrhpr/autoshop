@@ -55,6 +55,7 @@ $items = json_decode($invoice['items'], true);
                 <div>
                     <p><strong>Car:</strong> <?php echo htmlspecialchars($invoice['car_mark']); ?></p>
                     <p><strong>Plate:</strong> <?php echo htmlspecialchars($invoice['plate_number']); ?></p>
+                    <p><strong>VIN:</strong> <?php echo htmlspecialchars($invoice['vin'] ?? ''); ?></p>
                     <p><strong>Mileage:</strong> <?php echo htmlspecialchars($invoice['mileage']); ?></p>
                 </div>
             </div>
@@ -89,6 +90,20 @@ $items = json_decode($invoice['items'], true);
                 <p><strong>Service Total:</strong> <?php echo $invoice['service_total']; ?> ₾</p>
                 <p class="text-xl font-bold"><strong>Grand Total:</strong> <?php echo $invoice['grand_total']; ?> ₾</p>
                 <p class="mt-4"><a href="index.php?print_id=<?php echo $invoice['id']; ?>" target="_blank" class="px-3 py-2 bg-yellow-400 text-slate-900 rounded">Print Invoice</a></p>
+
+                <?php if (!empty($invoice['images'])): ?>
+                    <?php $imgs = json_decode($invoice['images'], true) ?: []; ?>
+                    <?php if ($imgs): ?>
+                        <div class="mt-4">
+                            <h3 class="font-semibold mb-2">Photos</h3>
+                            <div class="flex gap-2 flex-wrap">
+                                <?php foreach ($imgs as $img): ?>
+                                    <a href="<?php echo htmlspecialchars($img); ?>" target="_blank"><img src="<?php echo htmlspecialchars($img); ?>" class="w-32 h-auto object-cover rounded border" /></a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
