@@ -18,9 +18,65 @@ if (isset($_POST['delete_invoice'])) {
     $success = 'Invoice deleted successfully';
 }
 
-// Fetch invoices
-$stmt = $pdo->query("SELECT * FROM invoices ORDER BY created_at DESC");
+// Build filters from GET params (search form)
+$filters = [];
+$params = [];
+
+$q = trim($_GET['q'] ?? '');
+if ($q !== '') {
+    $filters[] = '(i.customer_name LIKE ? OR i.plate_number LIKE ? OR i.vin LIKE ? OR i.customer_name LIKE ?)';
+    $params[] = "%$q%";
+    $params[] = "%$q%";
+    $params[] = "%$q%";
+    $params[] = "%$q%";
+}
+$plate = trim($_GET['plate'] ?? '');
+if ($plate !== '') {
+    $filters[] = 'i.plate_number LIKE ?';
+    $params[] = "%$plate%";
+}
+$vin = trim($_GET['vin'] ?? '');
+if ($vin !== '') {
+    $filters[] = 'i.vin LIKE ?';
+    $params[] = "%$vin%";
+}
+$sm = trim($_GET['sm'] ?? '');
+if ($sm !== '') {
+    $filters[] = 'u.username LIKE ?';
+    $params[] = "%$sm%";
+}
+$dateFrom = trim($_GET['date_from'] ?? '');
+if ($dateFrom !== '') {
+    // Expect YYYY-MM-DD
+    $filters[] = 'i.creation_date >= ?';
+    $params[] = $dateFrom . ' 00:00:00';
+}
+$dateTo = trim($_GET['date_to'] ?? '');
+if ($dateTo !== '') {
+    $filters[] = 'i.creation_date <= ?';
+    $params[] = $dateTo . ' 23:59:59';
+}
+$minTotal = trim($_GET['min_total'] ?? '');
+if ($minTotal !== '' && is_numeric($minTotal)) {
+    $filters[] = 'i.grand_total >= ?';
+    $params[] = (float)$minTotal;
+}
+$maxTotal = trim($_GET['max_total'] ?? '');
+if ($maxTotal !== '' && is_numeric($maxTotal)) {
+    $filters[] = 'i.grand_total <= ?';
+    $params[] = (float)$maxTotal;
+}
+
+// Compose SQL
+$sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
+if (!empty($filters)) {
+    $sql .= ' WHERE ' . implode(' AND ', $filters);
+}
+$sql .= ' ORDER BY i.created_at DESC LIMIT 1000';
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $invoices = $stmt->fetchAll();
+$resultsCount = count($invoices);
 ?>
 
 <!DOCTYPE html>
@@ -43,13 +99,64 @@ $invoices = $stmt->fetchAll();
             </div>
         <?php endif; ?>
 
+        
+        <!-- Filters -->
+        <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div class="md:col-span-3 text-sm text-gray-600 mb-1">Showing <?php echo $resultsCount; ?> result(s)</div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600">Search</label>
+                <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="Customer, plate, VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600">Service Manager</label>
+                <input type="text" name="sm" value="<?php echo htmlspecialchars($_GET['sm'] ?? ''); ?>" placeholder="Manager username" class="mt-1 block w-full rounded border-gray-200 p-2" />
+            </div>
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600">Date From</label>
+                    <input type="date" name="date_from" value="<?php echo htmlspecialchars($_GET['date_from'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600">Date To</label>
+                    <input type="date" name="date_to" value="<?php echo htmlspecialchars($_GET['date_to'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600">Plate</label>
+                <input type="text" name="plate" value="<?php echo htmlspecialchars($_GET['plate'] ?? ''); ?>" placeholder="Plate..." class="mt-1 block w-full rounded border-gray-200 p-2" />
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600">VIN</label>
+                <input type="text" name="vin" value="<?php echo htmlspecialchars($_GET['vin'] ?? ''); ?>" placeholder="VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
+            </div>
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600">Min Total</label>
+                    <input type="number" step="0.01" name="min_total" value="<?php echo htmlspecialchars($_GET['min_total'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600">Max Total</label>
+                    <input type="number" step="0.01" name="max_total" value="<?php echo htmlspecialchars($_GET['max_total'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
+                </div>
+            </div>
+            <div class="md:col-span-3 flex gap-2">
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Apply</button>
+                <a href="manager.php" class="px-4 py-2 bg-gray-200 rounded">Reset</a>
+            </div>
+        </form>
+
         <div class="overflow-x-auto">
-            <table class="bg-white rounded-lg shadow-md w-full min-w-[600px] text-sm">
+            <table class="bg-white rounded-lg shadow-md w-full min-w-[700px] text-sm">
                 <thead>
                     <tr class="bg-gray-200">
                         <th class="px-2 md:px-4 py-2 text-left">ID</th>
                         <th class="px-2 md:px-4 py-2 text-left">Customer</th>
+                        <th class="px-2 md:px-4 py-2 text-left">Phone</th>
                         <th class="px-2 md:px-4 py-2 text-left">Car</th>
+                        <th class="px-2 md:px-4 py-2 text-left">Plate</th>
+                        <th class="px-2 md:px-4 py-2 text-left">VIN</th>
+                        <th class="px-2 md:px-4 py-2 text-left">Mileage</th>
+                        <th class="px-2 md:px-4 py-2 text-left">Service Manager</th>
                         <th class="px-2 md:px-4 py-2 text-right">Total</th>
                         <th class="px-2 md:px-4 py-2 text-left">Created At</th>
                         <th class="px-2 md:px-4 py-2 text-center">Actions</th>
@@ -60,7 +167,12 @@ $invoices = $stmt->fetchAll();
                     <tr class="hover:bg-gray-50">
                         <td class="px-2 md:px-4 py-2"><?php echo $invoice['id']; ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['car_mark']); ?></td>
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['plate_number']); ?></td>
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo htmlspecialchars($invoice['vin'] ?? ''); ?></td>
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['mileage']); ?></td>
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo htmlspecialchars($invoice['sm_username'] ?? ''); ?></td>
                         <td class="px-2 md:px-4 py-2 text-right"><?php echo $invoice['grand_total']; ?> ₾</td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo $invoice['created_at']; ?></td>
                         <td class="px-2 md:px-4 py-2 text-center">
@@ -76,6 +188,10 @@ $invoices = $stmt->fetchAll();
                 </tbody>
             </table>
         </div>
+
+        <?php if ($resultsCount === 0): ?>
+            <div class="mt-4 text-sm text-gray-500">No invoices match the current filters.</div>
+        <?php endif; ?>
     </div>
 </body>
 </html>
