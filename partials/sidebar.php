@@ -53,6 +53,7 @@ function svgIcon($name){
                     <button id="notifButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </button>
+                    <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
                     <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
                 </div>
                 <?php endif; ?>
@@ -125,34 +126,54 @@ function svgIcon($name){
         })();
 
         function playBeep(){
+            // Prefer a DOM audio element when available (better compatibility on some mobile browsers)
             try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                const ctx = new AudioCtx();
-                const now = ctx.currentTime;
-                // Two short tones for a pleasant notification
-                const tones = [880, 660];
-                tones.forEach((freq, i) => {
-                    const o = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    o.type = 'sine';
-                    o.frequency.value = freq;
-                    o.connect(g);
-                    g.connect(ctx.destination);
-                    g.gain.setValueAtTime(0.0001, now + i*0.12);
-                    g.gain.exponentialRampToValueAtTime(0.12, now + i*0.12 + 0.02);
-                    g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.12 + 0.10);
-                    o.start(now + i*0.12);
-                    o.stop(now + i*0.12 + 0.11);
-                });
-            } catch (e) {
-                // If WebAudio fails (browsers or autoplay restriction), try an <audio> fallback if possible
+                const audioEl = document.getElementById('notifAudio');
+                if (audioEl){
+                    audioEl.currentTime = 0;
+                    const p = audioEl.play();
+                    if (p && typeof p.then === 'function'){
+                        p.catch(()=>{
+                            // If play() is rejected (autoplay policy), fall back to WebAudio
+                            tryWebAudio();
+                        });
+                    }
+                    return;
+                }
+            } catch (e) { console.warn('notifAudio play error', e); }
+
+            // WebAudio fallback
+            function tryWebAudio(){
                 try {
-                    const fallback = new Audio();
-                    // Tiny generated WAV base64 (very short click) - data URI kept minimal; if not supported, it will silently fail
-                    fallback.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
-                    fallback.play().catch(()=>{});
-                } catch (err) { console.warn('Audio fallback failed', err); }
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioCtx();
+                    const now = ctx.currentTime;
+                    // Two short tones for a pleasant notification
+                    const tones = [880, 660];
+                    tones.forEach((freq, i) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sine';
+                        o.frequency.value = freq;
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        g.gain.setValueAtTime(0.0001, now + i*0.12);
+                        g.gain.exponentialRampToValueAtTime(0.12, now + i*0.12 + 0.02);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.12 + 0.10);
+                        o.start(now + i*0.12);
+                        o.stop(now + i*0.12 + 0.11);
+                    });
+                } catch (e) {
+                    // Final fallback: small embedded WAV via Audio object
+                    try {
+                        const fallback = new Audio();
+                        fallback.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+                        fallback.play().catch(()=>{});
+                    } catch (err) { console.warn('Audio fallback failed', err); }
+                }
             }
+
+            tryWebAudio();
         }
 
         function ensureNotifContainer(){
