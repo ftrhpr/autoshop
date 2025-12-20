@@ -75,10 +75,18 @@ if ($finaStatus !== '') {
     }
 }
 
-// Compose SQL (include unread flag for current user)
-$sql = 'SELECT i.*, u.username AS sm_username, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?)';
-// Add current user id at start of params for the notification join
-array_unshift($params, $_SESSION['user_id']);
+// Compose SQL with graceful fallback if invoice_notifications table missing
+$hasNotifications = (bool)$pdo->query("SHOW TABLES LIKE 'invoice_notifications'")->fetch();
+if ($hasNotifications) {
+    // include unread flag for current user
+    $sql = 'SELECT i.*, u.username AS sm_username, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?)';
+    // Add current user id at start of params for the notification join
+    array_unshift($params, $_SESSION['user_id']);
+} else {
+    // fallback: no unread flag
+    $sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
+}
+
 if (!empty($filters)) {
     $sql .= ' WHERE ' . implode(' AND ', $filters);
 }

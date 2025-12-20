@@ -27,6 +27,13 @@ function sendEvent($name, $data){
 echo "retry: 5000\n\n";
 @ob_flush(); @flush();
 
+// If notifications table missing, send an error event and exit gracefully
+$hasNotifications = (bool)$pdo->query("SHOW TABLES LIKE 'invoice_notifications'")->fetch();
+if (!$hasNotifications){
+    sendEvent('error', ['message' => 'invoice_notifications table missing']);
+    exit;
+}
+
 while (!connection_aborted()) {
     try {
         // fetch new notifications for this user

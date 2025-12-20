@@ -42,10 +42,15 @@ try {
         elseif ($finaStatus === 'not_opened') { $filters[] = 'i.opened_in_fina = 0'; }
     }
 
-    // Include unread flag for the current user
-    $sql = 'SELECT i.*, u.username AS sm_username, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?)';
-    // current user id must be the first param for the notification join
-    array_unshift($params, $_SESSION['user_id']);
+    // Include unread flag for the current user if notification table exists
+    $hasNotifications = (bool)$pdo->query("SHOW TABLES LIKE 'invoice_notifications'")->fetch();
+    if ($hasNotifications){
+        $sql = 'SELECT i.*, u.username AS sm_username, (CASE WHEN n.seen_at IS NULL THEN 1 ELSE 0 END) AS unread FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id LEFT JOIN invoice_notifications n ON (n.invoice_id = i.id AND n.user_id = ?)';
+        array_unshift($params, $_SESSION['user_id']);
+    } else {
+        $sql = 'SELECT i.*, u.username AS sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id';
+    }
+
     if (!empty($filters)) { $sql .= ' WHERE ' . implode(' AND ', $filters); }
     $sql .= ' ORDER BY i.id ASC LIMIT 100';
 
