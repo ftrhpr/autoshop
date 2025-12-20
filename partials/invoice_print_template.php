@@ -97,7 +97,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
         </div>
 
         <!-- Customer Notes -->
-        <?php if ($server && !empty($customer['notes'])): ?>
+        <?php if ($server && $customer && !empty($customer['notes'])): ?>
         <div class="mb-4 text-sm">
             <div class="font-bold whitespace-nowrap">შენიშვნები:</div>
             <div class="border border-black px-2 py-1 mt-1 bg-gray-50 print:bg-gray-50"><?php echo nl2br(esc($customer['notes'])); ?></div>

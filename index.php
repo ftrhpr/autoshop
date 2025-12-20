@@ -615,7 +615,7 @@ if (!empty($serverInvoice)) {
                         return;
                     }
 
-                    fetch(apiBase + '/admin/api_customers.php?plate=' + encodeURIComponent(plate))
+                    fetch('./admin/api_customers.php?plate=' + encodeURIComponent(plate))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
@@ -670,7 +670,7 @@ if (!empty($serverInvoice)) {
             // Attach service manager typeahead
             const sm = document.getElementById('input_service_manager');
             if (sm) {
-                attachTypeahead(sm, apiBase + '/admin/api_users.php?q=', u => u.username, (it) => {
+                attachTypeahead(sm, './admin/api_users.php?q=', u => u.username, (it) => {
                     sm.value = it.username;
                     const hid = document.getElementById('input_service_manager_id'); if (hid) hid.value = it.id;
                 });
@@ -679,7 +679,7 @@ if (!empty($serverInvoice)) {
             // Attach customer name typeahead
             const cn = document.getElementById('input_customer_name');
             if (cn) {
-                attachTypeahead(cn, apiBase + '/admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
+                attachTypeahead(cn, './admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
                     cn.value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
                     document.getElementById('input_plate_number').value = it.plate_number || '';
@@ -703,7 +703,7 @@ if (!empty($serverInvoice)) {
                         return;
                     }
 
-                    fetch(apiBase + '/admin/api_customers.php?phone=' + encodeURIComponent(val))
+                    fetch('./admin/api_customers.php?phone=' + encodeURIComponent(val))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
