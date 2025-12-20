@@ -341,6 +341,25 @@ if (!isset($_SESSION['user_id'])) {
         document.addEventListener('DOMContentLoaded', () => {
             for(let i=0; i<4; i++) addItemRow();
             calculateTotals();
+
+            // Auto-fill customer fields when plate number loses focus
+            const plateInput = document.getElementById('input_plate_number');
+            if (plateInput) {
+                plateInput.addEventListener('blur', () => {
+                    const plate = plateInput.value.trim();
+                    if (!plate) return;
+                    fetch('admin/api_customers.php?plate=' + encodeURIComponent(plate))
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data) return;
+                            document.getElementById('input_customer_name').value = data.full_name || '';
+                            document.getElementById('input_phone_number').value = data.phone || '';
+                            document.getElementById('input_car_mark').value = data.car_mark || '';
+                        }).catch(e => {
+                            // ignore errors
+                        });
+                });
+            }
         });
 
         function addItemRow() {

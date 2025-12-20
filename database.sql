@@ -9,10 +9,26 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Customers table
+CREATE TABLE customers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(200),
+    phone VARCHAR(32),
+    email VARCHAR(150),
+    plate_number VARCHAR(20) UNIQUE NOT NULL,
+    car_mark VARCHAR(100),
+    notes TEXT,
+    last_service_at DATETIME NULL,
+    created_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
 CREATE TABLE invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     creation_date DATETIME NOT NULL,
     service_manager VARCHAR(100),
+    customer_id INT NULL,
     customer_name VARCHAR(100),
     phone VARCHAR(20),
     car_mark VARCHAR(100),
@@ -24,7 +40,8 @@ CREATE TABLE invoices (
     grand_total DECIMAL(10,2) DEFAULT 0,
     created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id)
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
 );
 
 -- Insert default admin user
@@ -79,10 +96,11 @@ INSERT INTO permissions (name, label, description) VALUES
 ('view_logs', 'View Audit Logs', 'Allow viewing admin audit logs'),
 ('manage_users', 'Manage Users', 'Create and modify user accounts'),
 ('manage_invoices', 'Manage Invoices', 'Create/Edit invoices'),
-('view_charts', 'View Analytics', 'Access dashboard charts');
+('view_charts', 'View Analytics', 'Access dashboard charts'),
+('manage_customers', 'Manage Customers', 'Create/Edit/Delete customers');
 
--- Assign defaults: admins get all, managers get invoice and chart access
+-- Assign defaults: admins get all, managers get invoice, chart and customer access
 INSERT INTO role_permissions (role, permission_id)
 SELECT 'admin', id FROM permissions;
 INSERT INTO role_permissions (role, permission_id)
-SELECT 'manager', id FROM permissions WHERE name IN ('manage_invoices', 'view_charts');
+SELECT 'manager', id FROM permissions WHERE name IN ('manage_invoices', 'view_charts', 'manage_customers');
