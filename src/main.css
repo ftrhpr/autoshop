@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+.tab-active { @apply bg-yellow-500 text-slate-900 font-semibold shadow-md; }
+.tab-inactive { @apply bg-white text-gray-700 border border-gray-300; }
+.tab-inactive:hover { @apply bg-gray-50 border-gray-400; }
+
+/* Print Styles */
+@media print {
+    @page { margin: 0; size: A4; }
+    html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }
+    .print-hidden { display: none !important; }
+    .print-visible { display: block !important; }
+    .print-no-shadow { box-shadow: none !important; }
+    /* Exact A4 Table Styling */
+    table { border-collapse: collapse !important; border-color: #000 !important; width: 100% !important; }
+    td, th { border: 1px solid #000 !important; color: #000 !important; }
+
+    /* Compact padding for print to fit one page */
+    td { padding-top: 2px !important; padding-bottom: 2px !important; padding-left: 4px !important; padding-right: 4px !important; }
+
+    /* Ensure container is exact A4 height */
+    .a4-container { height: 297mm !important; max-height: 297mm !important; overflow: hidden !important; }
+}
+
+/* Progress bar animations */
+#progress-bar, #step-progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* FAB animations */
+@keyframes slideInFAB {
+    from {
+        opacity: 0;
+        transform: translateY(100px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.fab-button {
+    animation: slideInFAB 0.6s ease-out forwards;
+}
+
+.fab-button:nth-child(1) { animation-delay: 0.1s; }
+.fab-button:nth-child(2) { animation-delay: 0.2s; }
+.fab-button:nth-child(3) { animation-delay: 0.3s; }
+.fab-button:nth-child(4) { animation-delay: 0.4s; }
+
+.fab-primary {
+    animation: slideInFAB 0.6s ease-out forwards;
+    animation-delay: 0.4s;
+}

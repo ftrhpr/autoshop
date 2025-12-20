@@ -62,17 +62,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
     <title>Auto Shop Manager - Invoice</title>
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    animation: { 'fade-in': 'fadeIn 0.5s ease-in-out' },
-                    keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } } }
-                }
-            }
-        }
-    </script>
+    <link href="./dist/output.css" rel="stylesheet">
     <style>
         /* Print Styles */
         @media print {
@@ -738,8 +728,6 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         function switchTab(tab) {
             const editMode = document.getElementById('edit-mode');
             const previewMode = document.getElementById('preview-mode');
-            const btnEdit = document.getElementById('btn-edit');
-            const btnPreview = document.getElementById('btn-preview');
             const fabEdit = document.getElementById('fab-edit');
             const fabPreview = document.getElementById('fab-preview');
 
@@ -747,25 +735,19 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 editMode.classList.remove('hidden');
                 previewMode.classList.add('hidden');
                 previewMode.classList.remove('flex');
-                
-                btnEdit.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-active shadow-sm";
-                btnPreview.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-inactive";
-                
-                // Update FAB buttons
-                fabEdit.className = "w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group ring-4 ring-blue-300";
-                fabPreview.className = "w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group";
+
+                // Update FAB buttons - Edit active
+                fabEdit.className = "fab-button w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-300 flex items-center justify-center group ring-4 ring-blue-300";
+                fabPreview.className = "fab-button w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-300 flex items-center justify-center group";
             } else {
                 updatePreviewData();
                 editMode.classList.add('hidden');
                 previewMode.classList.remove('hidden');
                 previewMode.classList.add('flex');
 
-                btnEdit.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-inactive";
-                btnPreview.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-active shadow-sm";
-                
-                // Update FAB buttons
-                fabEdit.className = "w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group";
-                fabPreview.className = "w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group ring-4 ring-purple-300";
+                // Update FAB buttons - Preview active
+                fabEdit.className = "fab-button w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-300 flex items-center justify-center group";
+                fabPreview.className = "fab-button w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-300 flex items-center justify-center group ring-4 ring-purple-300";
             }
         }
 
