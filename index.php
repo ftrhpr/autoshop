@@ -120,7 +120,52 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         #step-validation-message {
             animation: slideInRight 0.3s ease-out;
         }
-    </style>
+        /* Floating Action Button Styles */
+        .fab-button {
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideInFAB 0.6s ease-out;
+        }
+
+        .fab-button:hover {
+            backdrop-filter: blur(15px);
+        }
+
+        @keyframes slideInFAB {
+            from {
+                opacity: 0;
+                transform: translateX(100px) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .fab-button:nth-child(1) { animation-delay: 0.1s; }
+        .fab-button:nth-child(2) { animation-delay: 0.2s; }
+        .fab-button:nth-child(3) { animation-delay: 0.3s; }
+        .fab-button:nth-child(4) { animation-delay: 0.4s; }
+
+        /* Pulse animation for primary action */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); }
+            40%, 50% { opacity: 1; }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        .fab-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: inherit;
+            animation: pulse-ring 2s infinite;
+            transform: translate(-50%, -50%);
+        }    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen font-sans text-gray-800 antialiased overflow-x-hidden">
     <?php include 'partials/sidebar.php'; ?>
@@ -145,7 +190,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                     </h1>
                     <p class="mt-2 text-gray-600">Create and manage auto shop invoices with ease.</p>
                 </div>
-                <div class="mt-4 sm:mt-0 flex gap-3">
+                <div class="mt-4 sm:mt-0 flex gap-3 print-hidden">
                     <button onclick="switchTab('edit')" id="btn-edit" class="inline-flex items-center px-4 py-2 rounded-lg transition-all tab-active shadow-sm">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -171,6 +216,70 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                         </svg>
                         Print
                     </button>
+                </div>
+
+                <!-- Floating Action Buttons -->
+                <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-50 print-hidden">
+                    <!-- Edit Details FAB -->
+                    <div class="group relative">
+                        <button onclick="switchTab('edit')" id="fab-edit" class="fab-button w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        <div class="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                            <div class="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-lg">
+                                Edit Details
+                                <div class="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-800"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Invoice FAB -->
+                    <div class="group relative">
+                        <button onclick="switchTab('preview')" id="fab-preview" class="fab-button w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                        <div class="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                            <div class="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-lg">
+                                Preview Invoice
+                                <div class="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-800"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save FAB -->
+                    <div class="group relative">
+                        <button type="submit" form="invoice-form" class="fab-button fab-primary w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group ring-4 ring-white relative overflow-hidden">
+                            <svg class="w-7 h-7 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </button>
+                        <div class="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                            <div class="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-lg">
+                                Save Invoice
+                                <div class="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-800"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Print FAB -->
+                    <div class="group relative">
+                        <button onclick="handlePrint()" class="w-14 h-14 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                            </svg>
+                        </button>
+                        <div class="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                            <div class="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap shadow-lg">
+                                Print Invoice
+                                <div class="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-800"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -656,22 +765,32 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             const previewMode = document.getElementById('preview-mode');
             const btnEdit = document.getElementById('btn-edit');
             const btnPreview = document.getElementById('btn-preview');
+            const fabEdit = document.getElementById('fab-edit');
+            const fabPreview = document.getElementById('fab-preview');
 
             if (tab === 'edit') {
                 editMode.classList.remove('hidden');
                 previewMode.classList.add('hidden');
                 previewMode.classList.remove('flex');
                 
-                btnEdit.className = "flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-active";
-                btnPreview.className = "flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-inactive";
+                btnEdit.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-active shadow-sm";
+                btnPreview.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-inactive";
+                
+                // Update FAB buttons
+                fabEdit.className = "w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group ring-4 ring-blue-300";
+                fabPreview.className = "w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group";
             } else {
                 updatePreviewData();
                 editMode.classList.add('hidden');
                 previewMode.classList.remove('hidden');
                 previewMode.classList.add('flex');
 
-                btnEdit.className = "flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-inactive";
-                btnPreview.className = "flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md transition-colors tab-active";
+                btnEdit.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-inactive";
+                btnPreview.className = "inline-flex items-center px-4 py-2 rounded-lg transition-all tab-active shadow-sm";
+                
+                // Update FAB buttons
+                fabEdit.className = "w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group";
+                fabPreview.className = "w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 flex items-center justify-center group ring-4 ring-purple-300";
             }
         }
 
