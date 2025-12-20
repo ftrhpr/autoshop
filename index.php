@@ -141,8 +141,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-600 mb-1">Service Manager (სერვისის მენეჯერი)</label>
-                                    <input type="text" id="input_service_manager" placeholder="Manager Name" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 p-3 border text-base">
-                                    <input type="hidden" id="input_service_manager_id" name="service_manager_id">
+                                    <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 p-3 border text-base">
+                                    <input type="hidden" id="input_service_manager_id" name="service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
                                 </div>
                             </div>
                         </div>
