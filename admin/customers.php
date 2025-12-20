@@ -186,7 +186,7 @@ $totalPages = (int)ceil($total / $perPage);
                                 <tr>
                                     <th class="px-2 py-2 text-left">Plate</th>
                                     <th class="px-2 py-2 text-left">Name</th>
-                                    <th class="px-2 py-2 text-left hidden sm:table-cell">Phone</th>
+                                    <th class="px-2 py-2 text-left">Phone</th>
                                     <th class="px-2 py-2">Actions</th>
                                 </tr>
                             </thead>
@@ -195,7 +195,7 @@ $totalPages = (int)ceil($total / $perPage);
                                 <tr class="border-t">
                                     <td class="px-2 py-2"><?php echo htmlspecialchars($c['plate_number']); ?></td>
                                     <td class="px-2 py-2"><?php echo htmlspecialchars($c['full_name']); ?></td>
-                                    <td class="px-2 py-2 hidden sm:table-cell"><?php echo htmlspecialchars($c['phone']); ?></td>
+                                    <td class="px-2 py-2"><?php echo htmlspecialchars($c['phone']); ?></td>
                                     <td class="px-2 py-2">
                                         <button onclick="prefill(<?php echo $c['id']; ?>)" class="px-2 py-1 bg-gray-200 rounded text-xs">Edit</button>
                                         <form method="post" style="display:inline-block" onsubmit="return confirm('Delete?');">
