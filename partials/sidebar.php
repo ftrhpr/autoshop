@@ -77,6 +77,28 @@ function svgIcon($name){
         </nav>
 
         <div class="p-4 border-t border-slate-700">
+            <?php if (isset($_SESSION['username'])): ?>
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-sm text-slate-300">
+                    Logged in as: <strong><?php echo htmlspecialchars($_SESSION['username']); ?></strong>
+                </div>
+                <!-- Notification Bell -->
+                <div class="relative" id="notification-bell">
+                    <button onclick="toggleNotifications()" class="text-slate-300 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span id="notification-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                    </button>
+                    <div id="notification-dropdown" class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-50 hidden">
+                        <div class="py-2 text-gray-700">
+                            <div class="px-4 py-2 font-semibold">Notifications</div>
+                            <div id="notification-list" class="max-h-64 overflow-y-auto">
+                                <!-- Notifications will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
         </div>
     </div>
@@ -85,12 +107,78 @@ function svgIcon($name){
 <!-- Mobile overlay and toggle -->
 <button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>
 
+<audio id="notification-sound" src="<?php echo $appRoot; ?>/assets/notification.mp3" preload="auto"></audio>
+
 <script>
     const sidebar = document.getElementById('site-sidebar');
     const toggle = document.getElementById('sidebarToggle');
     const closeBtn = document.getElementById('closeSidebar');
     if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
     if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+
+    function toggleNotifications() {
+        document.getElementById('notification-dropdown').classList.toggle('hidden');
+    }
+
+    function fetchNotifications() {
+        fetch('<?php echo $appRoot; ?>/admin/api_notifications.php?action=get_unread')
+            .then(response => response.json())
+            .then(data => {
+                const countEl = document.getElementById('notification-count');
+                const listEl = document.getElementById('notification-list');
+                const sound = document.getElementById('notification-sound');
+                
+                if (data.length > 0) {
+                    const currentCount = parseInt(countEl.textContent, 10);
+                    if (data.length > currentCount) {
+                        sound.play().catch(e => console.error("Audio play failed:", e));
+                    }
+
+                    countEl.textContent = data.length;
+                    countEl.classList.remove('hidden');
+                    listEl.innerHTML = '';
+
+                    data.forEach(notification => {
+                        const item = document.createElement('a');
+                        item.href = `<?php echo $appRoot; ?>/view_invoice.php?id=${notification.invoice_id}`;
+                        item.className = 'block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100';
+                        item.textContent = notification.message;
+                        item.onclick = (e) => {
+                            e.preventDefault();
+                            markAsRead(notification.id, item.href);
+                        };
+                        listEl.appendChild(item);
+                    });
+                } else {
+                    countEl.classList.add('hidden');
+                    listEl.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">No new notifications</div>';
+                }
+            })
+            .catch(error => console.error('Error fetching notifications:', error));
+    }
+
+    function markAsRead(id, redirectUrl) {
+        const formData = new FormData();
+        formData.append('id', id);
+
+        fetch('<?php echo $appRoot; ?>/admin/api_notifications.php?action=mark_as_read', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = redirectUrl;
+            }
+        })
+        .catch(error => console.error('Error marking notification as read:', error));
+    }
+
+    // Fetch notifications every 30 seconds
+    setInterval(fetchNotifications, 30000);
+    // Initial fetch
+    fetchNotifications();
+
 </script>
 
 <style>

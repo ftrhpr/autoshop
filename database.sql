@@ -106,3 +106,15 @@ INSERT INTO role_permissions (role, permission_id)
 SELECT 'admin', id FROM permissions;
 INSERT INTO role_permissions (role, permission_id)
 SELECT 'manager', id FROM permissions WHERE name IN ('manage_invoices', 'view_charts', 'manage_customers');
+
+-- Notifications Table
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    invoice_id INT NULL,
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+);
