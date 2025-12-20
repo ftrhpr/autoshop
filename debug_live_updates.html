@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Updates Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Live Updates Debug Tool</h1>
+
+    <div id="results"></div>
+
+    <button onclick="testAPIConnection()">Test API Connection</button>
+    <button onclick="testAuthentication()">Test Authentication</button>
+    <button onclick="testPolling()">Test Polling</button>
+    <button onclick="checkSessionStorage()">Check Session Storage</button>
+    <button onclick="clearSessionStorage()">Clear Session Storage</button>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        async function testAPIConnection() {
+            addResult('Testing API connection...', 'info');
+            try {
+                const response = await fetch('api_live_invoices.php', { cache: 'no-store' });
+                addResult(`API responded with status: ${response.status}`, response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`API response: ${JSON.stringify(data, null, 2)}`, data.success ? 'success' : 'error');
+                } else {
+                    const text = await response.text();
+                    addResult(`API error response: ${text}`, 'error');
+                }
+            } catch (error) {
+                addResult(`API connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuthentication() {
+            addResult('Testing authentication...', 'info');
+            try {
+                // Check if we're logged in by looking for session indicators
+                const response = await fetch('api_live_invoices.php', { cache: 'no-store' });
+                const data = await response.json();
+
+                if (response.status === 403) {
+                    addResult('Authentication failed: Not logged in as manager/admin', 'error');
+                    addResult('Please log in as a manager or admin user', 'info');
+                } else if (data.success) {
+                    addResult('Authentication successful: User has access to live updates', 'success');
+                } else {
+                    addResult(`Authentication check failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Authentication test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPolling() {
+            addResult('Testing polling mechanism...', 'info');
+            try {
+                // First get the latest timestamp
+                const initResponse = await fetch('api_live_invoices.php', { cache: 'no-store' });
+                const initData = await initResponse.json();
+
+                if (!initData.success) {
+                    addResult('Failed to get initial timestamp', 'error');
+                    return;
+                }
+
+                addResult(`Initial timestamp: ${initData.latest_timestamp}`, 'info');
+
+                // Wait a moment then poll
+                setTimeout(async () => {
+                    const pollResponse = await fetch(`api_live_invoices.php?last_timestamp=${encodeURIComponent(initData.latest_timestamp)}`, { cache: 'no-store' });
+                    const pollData = await pollResponse.json();
+
+                    addResult(`Poll response: ${JSON.stringify(pollData, null, 2)}`, pollData.success ? 'success' : 'error');
+                }, 1000);
+
+            } catch (error) {
+                addResult(`Polling test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function checkSessionStorage() {
+            addResult('Checking session storage...', 'info');
+            try {
+                const seenInvoices = sessionStorage.getItem('seen_invoices');
+                if (seenInvoices) {
+                    const parsed = JSON.parse(seenInvoices);
+                    addResult(`Seen invoices: ${parsed.join(', ')}`, 'info');
+                } else {
+                    addResult('No seen invoices in session storage', 'info');
+                }
+            } catch (error) {
+                addResult(`Session storage check failed: ${error.message}`, 'error');
+            }
+        }
+
+        function clearSessionStorage() {
+            addResult('Clearing session storage...', 'info');
+            try {
+                sessionStorage.removeItem('seen_invoices');
+                addResult('Session storage cleared', 'success');
+            } catch (error) {
+                addResult(`Failed to clear session storage: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run some tests on load
+        window.addEventListener('load', () => {
+            addResult('Debug tool loaded. Click buttons to test functionality.', 'info');
+        });
+    </script>
+</body>
+</html>
