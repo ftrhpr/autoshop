@@ -15,4 +15,21 @@ try {
 
 // Start session
 session_start();
+
+// Permission helpers
+function roleHasPermission(PDO $pdo, string $role, string $permissionName): bool {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role = ? AND p.name = ?");
+    $stmt->execute([$role, $permissionName]);
+    return (int)$stmt->fetchColumn() > 0;
+}
+
+function currentUserCan(string $permissionName): bool {
+    global $pdo;
+    if (!isset($_SESSION['role'])) return false;
+    $role = $_SESSION['role'];
+    // admin shortcut
+    if ($role === 'admin') return true;
+    return roleHasPermission($pdo, $role, $permissionName);
+}
+
 ?>

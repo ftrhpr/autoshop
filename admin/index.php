@@ -27,6 +27,19 @@ $totalUsers = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
 $totalInvoices = (int)$pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
 $totalRevenue = (float)$pdo->query('SELECT IFNULL(SUM(grand_total),0) FROM invoices')->fetchColumn();
 
+// Chart data (last 6 months)
+$stmt = $pdo->prepare("SELECT DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as invoices_count, IFNULL(SUM(grand_total),0) as revenue FROM invoices WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY period ORDER BY period");
+$stmt->execute();
+$chartRows = $stmt->fetchAll();
+$chartLabels = [];
+$chartInvoices = [];
+$chartRevenue = [];
+foreach ($chartRows as $r) {
+    $chartLabels[] = $r['period'];
+    $chartInvoices[] = (int)$r['invoices_count'];
+    $chartRevenue[] = (float)$r['revenue'];
+}
+
 // User search & pagination
 $search = trim($_GET['search'] ?? '');
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -99,6 +112,41 @@ $invoices = $stmt->fetchAll();
                 <div class="text-yellow-500 font-bold text-xl">●</div>
             </div>
         </div>
+
+        <!-- Chart -->
+        <div class="bg-white p-4 rounded shadow mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-bold">Revenue (last 6 months)</h3>
+                <div>
+                    <a href="permissions.php" class="px-3 py-2 bg-gray-200 rounded">Roles & Permissions</a>
+                </div>
+            </div>
+            <canvas id="revenueChart" height="100"></canvas>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            const labels = <?php echo json_encode($chartLabels); ?>;
+            const revenueData = <?php echo json_encode($chartRevenue); ?>;
+            const invoicesData = <?php echo json_encode($chartInvoices); ?>;
+
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Revenue ₾', data: revenueData, backgroundColor: 'rgba(234,179,8,0.9)' },
+                        { label: 'Invoices', data: invoicesData, backgroundColor: 'rgba(59,130,246,0.8)' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        </script>
 
         <div class="flex flex-col md:flex-row gap-6">
             <div class="md:w-1/2">

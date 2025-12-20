@@ -1,7 +1,7 @@
 <?php
 require '../config.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !currentUserCan('view_logs')) {
     header('Location: ../login.php');
     exit;
 }

@@ -55,3 +55,34 @@ CREATE TABLE audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
+-- Permissions & role mappings (for Pro features)
+CREATE TABLE permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    label VARCHAR(150) NOT NULL,
+    description TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE role_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    role VARCHAR(50) NOT NULL,
+    permission_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+);
+
+-- Seed basic permissions
+INSERT INTO permissions (name, label, description) VALUES
+('export_csv', 'Export Invoices CSV', 'Allow exporting invoices as CSV'),
+('view_logs', 'View Audit Logs', 'Allow viewing admin audit logs'),
+('manage_users', 'Manage Users', 'Create and modify user accounts'),
+('manage_invoices', 'Manage Invoices', 'Create/Edit invoices'),
+('view_charts', 'View Analytics', 'Access dashboard charts');
+
+-- Assign defaults: admins get all, managers get invoice and chart access
+INSERT INTO role_permissions (role, permission_id)
+SELECT 'admin', id FROM permissions;
+INSERT INTO role_permissions (role, permission_id)
+SELECT 'manager', id FROM permissions WHERE name IN ('manage_invoices', 'view_charts');
