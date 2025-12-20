@@ -29,7 +29,7 @@ if (empty($validLines)) {
     exit;
 }
 
-$maxRows = 2000; // safety limit
+$maxRows = 50000; // safety limit
 $inserted = 0;
 $updated = 0;
 $failed = 0;
