@@ -85,6 +85,15 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $invoices = $stmt->fetchAll();
 $resultsCount = count($invoices);
+
+// Identify recent invoices (created within last 2 hours) for highlighting
+$recentThreshold = date('Y-m-d H:i:s', strtotime('-2 hours'));
+$recentInvoiceIds = [];
+foreach ($invoices as $invoice) {
+    if ($invoice['created_at'] > $recentThreshold) {
+        $recentInvoiceIds[] = $invoice['id'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -107,6 +116,13 @@ $resultsCount = count($invoices);
         }
         .invoice-new:hover {
             background-color: #fef3c7 !important;
+        }
+        .invoice-recent {
+            background-color: #fef3c7;
+            border-left: 4px solid #fbbf24;
+        }
+        .invoice-recent:hover {
+            background-color: #fde68a !important;
         }
         .invoice-highlight {
             background-color: #fef3c7;
@@ -210,7 +226,7 @@ $resultsCount = count($invoices);
                 </thead>
                 <tbody>
                     <?php foreach ($invoices as $invoice): ?>
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50 <?php echo in_array($invoice['id'], $recentInvoiceIds) ? 'invoice-recent' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
                         <td class="px-2 md:px-4 py-2"><?php echo $invoice['id']; ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
@@ -480,6 +496,29 @@ $resultsCount = count($invoices);
                 }
             });
 
+            // Get recent invoice IDs from PHP
+            const recentInvoiceIds = <?php echo json_encode($recentInvoiceIds); ?>;
+
+            // Initialize recent invoices as "new" unless already seen
+            function initializeRecentInvoices() {
+                try {
+                    const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                    const seenSet = new Set(seenInvoices);
+
+                    recentInvoiceIds.forEach(invoiceId => {
+                        if (!seenSet.has(invoiceId)) {
+                            const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                            if (row) {
+                                row.classList.add('invoice-new');
+                                newInvoiceIds.add(invoiceId);
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Error initializing recent invoices', e);
+                }
+            }
+
             // Check for already seen invoices on load
             try {
                 const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
@@ -514,6 +553,7 @@ $resultsCount = count($invoices);
             }
 
             // Initialize
+            initializeRecentInvoices(); // Mark recent invoices as new
             fetchLatestTimestamp().then(() => {
                 pollForUpdates();
                 pollingTimer = setInterval(pollForUpdates, pollingInterval);

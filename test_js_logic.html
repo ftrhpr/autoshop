@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Logic Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>JavaScript Logic Test for Live Updates</h1>
+
+    <div id="results"></div>
+
+    <table id="invoiceTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Plate</th>
+                <th>Total</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr data-invoice-id="1">
+                <td>1</td>
+                <td>John Doe</td>
+                <td>ABC-123</td>
+                <td>100 ₾</td>
+                <td>2024-01-01 10:00:00</td>
+                <td><button onclick="viewInvoice(1)">View</button></td>
+            </tr>
+            <tr data-invoice-id="2">
+                <td>2</td>
+                <td>Jane Smith</td>
+                <td>DEF-456</td>
+                <td>200 ₾</td>
+                <td>2024-01-01 11:00:00</td>
+                <td><button onclick="viewInvoice(2)">View</button></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button onclick="testInitialization()">Test Initialization</button>
+    <button onclick="testNewInvoice()">Add New Invoice</button>
+    <button onclick="testMarkAsSeen()">Mark Invoice 1 as Seen</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <button onclick="simulatePolling()">Simulate Polling</button>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        let newInvoiceIds = new Set();
+        let lastTimestamp = null;
+
+        // Mock recent invoice IDs from PHP
+        const recentInvoiceIds = [1, 2];
+
+        function addResult(message, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        function initializeRecentInvoices() {
+            try {
+                const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                const seenSet = new Set(seenInvoices);
+
+                recentInvoiceIds.forEach(invoiceId => {
+                    if (!seenSet.has(invoiceId)) {
+                        const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                        if (row) {
+                            row.classList.add('invoice-new');
+                            newInvoiceIds.add(invoiceId);
+                            addResult(`Marked invoice #${invoiceId} as new`, true);
+                        }
+                    }
+                });
+            } catch (e) {
+                addResult(`Error initializing recent invoices: ${e.message}`, false);
+            }
+        }
+
+        function markInvoiceAsSeen(invoiceId) {
+            if (newInvoiceIds.has(invoiceId)) {
+                newInvoiceIds.delete(invoiceId);
+                const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
+                if (row) {
+                    row.classList.remove('invoice-new');
+                    row.classList.add('invoice-highlight');
+                    addResult(`Marked invoice #${invoiceId} as seen`, true);
+                    // Remove highlight after 30 seconds
+                    setTimeout(() => {
+                        row.classList.remove('invoice-highlight');
+                        addResult(`Removed highlight from invoice #${invoiceId}`, true);
+                    }, 30000);
+                }
+            }
+        }
+
+        function handleNewInvoices(newInvoices) {
+            const tableBody = document.querySelector('tbody');
+            if (!tableBody) return;
+
+            newInvoices.forEach(invoice => {
+                const newRow = document.createElement('tr');
+                newRow.setAttribute('data-invoice-id', invoice.id);
+                newRow.innerHTML = `
+                    <td>${invoice.id}</td>
+                    <td>${invoice.customer_name || ''}</td>
+                    <td>${invoice.plate_number || ''}</td>
+                    <td>${invoice.grand_total || 0} ₾</td>
+                    <td>${invoice.created_at}</td>
+                    <td><button onclick="viewInvoice(${invoice.id})">View</button></td>
+                `;
+
+                // Insert at the top
+                if (tableBody.firstChild) {
+                    tableBody.insertBefore(newRow, tableBody.firstChild);
+                } else {
+                    tableBody.appendChild(newRow);
+                }
+
+                newRow.classList.add('invoice-new');
+                newInvoiceIds.add(invoice.id);
+                addResult(`Added new invoice #${invoice.id}`, true);
+            });
+        }
+
+        function viewInvoice(invoiceId) {
+            markInvoiceAsSeen(invoiceId);
+            // Update sessionStorage
+            let seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+            if (!seenInvoices.includes(invoiceId)) {
+                seenInvoices.push(invoiceId);
+                sessionStorage.setItem('seen_invoices', JSON.stringify(seenInvoices));
+            }
+        }
+
+        function testInitialization() {
+            clearResults();
+            addResult('Testing initialization...', true);
+            initializeRecentInvoices();
+        }
+
+        function testNewInvoice() {
+            const newInvoice = {
+                id: Date.now(),
+                customer_name: 'Test Customer',
+                plate_number: 'TEST-' + Math.floor(Math.random() * 1000),
+                grand_total: Math.floor(Math.random() * 500) + 50,
+                created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+            };
+            addResult('Adding new invoice...', true);
+            handleNewInvoices([newInvoice]);
+        }
+
+        function testMarkAsSeen() {
+            addResult('Marking invoice 1 as seen...', true);
+            viewInvoice(1);
+        }
+
+        function clearStorage() {
+            sessionStorage.removeItem('seen_invoices');
+            newInvoiceIds.clear();
+            // Remove all classes
+            document.querySelectorAll('tr').forEach(row => {
+                row.classList.remove('invoice-new', 'invoice-highlight');
+            });
+            addResult('Storage and classes cleared', true);
+        }
+
+        function simulatePolling() {
+            addResult('Simulating polling response...', true);
+            const mockInvoices = [
+                {
+                    id: Date.now() + 1,
+                    customer_name: 'Polled Customer 1',
+                    plate_number: 'POLL-001',
+                    grand_total: 150,
+                    created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                },
+                {
+                    id: Date.now() + 2,
+                    customer_name: 'Polled Customer 2',
+                    plate_number: 'POLL-002',
+                    grand_total: 250,
+                    created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                }
+            ];
+            handleNewInvoices(mockInvoices);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            addResult('Page loaded, initializing...', true);
+            initializeRecentInvoices();
+        });
+    </script>
+</body>
+</html>

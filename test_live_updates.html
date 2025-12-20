@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Updates Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Live Updates Test</h1>
+
+    <div id="results"></div>
+
+    <button onclick="testInitialization()">Test Initialization</button>
+    <button onclick="testPolling()">Test Polling</button>
+    <button onclick="testMarkAsSeen()">Test Mark as Seen</button>
+    <button onclick="clearSessionStorage()">Clear Session Storage</button>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(message, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = message;
+            resultsDiv.appendChild(div);
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        function testInitialization() {
+            clearResults();
+            addResult('Testing initialization...');
+
+            try {
+                // Simulate recent invoice IDs from PHP
+                const recentInvoiceIds = [1, 2, 3]; // Mock data
+
+                // Test the initialization logic
+                const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                const seenSet = new Set(seenInvoices);
+
+                let newCount = 0;
+                recentInvoiceIds.forEach(invoiceId => {
+                    if (!seenSet.has(invoiceId)) {
+                        newCount++;
+                    }
+                });
+
+                addResult(`Initialization successful. ${newCount} invoices would be marked as new.`, true);
+            } catch (e) {
+                addResult(`Initialization failed: ${e.message}`, false);
+            }
+        }
+
+        function testPolling() {
+            clearResults();
+            addResult('Testing polling...');
+
+            // Mock API response
+            const mockResponse = {
+                success: true,
+                latest_timestamp: '2024-01-01 12:00:00',
+                new_count: 2,
+                invoices: [
+                    { id: 4, customer_name: 'Test Customer 1', plate_number: 'TEST-123', grand_total: 150, created_at: '2024-01-01 12:00:00' },
+                    { id: 5, customer_name: 'Test Customer 2', plate_number: 'TEST-456', grand_total: 200, created_at: '2024-01-01 12:05:00' }
+                ]
+            };
+
+            try {
+                // Test handling new invoices
+                if (mockResponse.success && mockResponse.new_count > 0) {
+                    addResult(`Would add ${mockResponse.new_count} new invoices to the table.`, true);
+                    mockResponse.invoices.forEach(invoice => {
+                        addResult(`Invoice #${invoice.id}: ${invoice.customer_name} - ${invoice.plate_number}`, true);
+                    });
+                } else {
+                    addResult('No new invoices to add.', true);
+                }
+            } catch (e) {
+                addResult(`Polling test failed: ${e.message}`, false);
+            }
+        }
+
+        function testMarkAsSeen() {
+            clearResults();
+            addResult('Testing mark as seen...');
+
+            try {
+                // Simulate marking invoice as seen
+                const invoiceId = 1;
+                let seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+
+                if (!seenInvoices.includes(invoiceId)) {
+                    seenInvoices.push(invoiceId);
+                    sessionStorage.setItem('seen_invoices', JSON.stringify(seenInvoices));
+                    addResult(`Marked invoice #${invoiceId} as seen.`, true);
+                } else {
+                    addResult(`Invoice #${invoiceId} was already seen.`, true);
+                }
+            } catch (e) {
+                addResult(`Mark as seen failed: ${e.message}`, false);
+            }
+        }
+
+        function clearSessionStorage() {
+            clearResults();
+            try {
+                sessionStorage.removeItem('seen_invoices');
+                addResult('Session storage cleared.', true);
+            } catch (e) {
+                addResult(`Clear session storage failed: ${e.message}`, false);
+            }
+        }
+
+        // Run initialization test on load
+        window.addEventListener('load', () => {
+            addResult('Test page loaded successfully.', true);
+        });
+    </script>
+</body>
+</html>
