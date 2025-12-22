@@ -633,6 +633,17 @@ if (!empty($serverInvoice)) {
                 });
             }
 
+            // Attach plate number typeahead
+            const pn = document.getElementById('input_plate_number');
+            if (pn) {
+                attachTypeahead(pn, './admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
+                    pn.value = it.plate_number || '';
+                    document.getElementById('input_customer_name').value = it.full_name || '';
+                    document.getElementById('input_phone_number').value = it.phone || '';
+                    const cid = document.getElementById('input_customer_id'); if (cid) cid.value = it.id;
+                });
+            }
+
             // Attach phone lookup (exact match) - only if other fields are empty
             const ph = document.getElementById('input_phone_number');
             if (ph) {
