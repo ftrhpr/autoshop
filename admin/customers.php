@@ -124,8 +124,18 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $offset = ($page - 1) * $perPage;
 
+$sort = $_GET['sort'] ?? 'created_at';
+$order = strtoupper($_GET['order'] ?? 'DESC');
+
+// Validate sort
+$validSorts = ['full_name', 'phone', 'email', 'vehicle_count', 'created_at'];
+if (!in_array($sort, $validSorts)) $sort = 'created_at';
+if (!in_array($order, ['ASC', 'DESC'])) $order = 'DESC';
+
+$orderBy = "c.$sort $order";
+
 if ($search) {
-    $stmt = $pdo->prepare('SELECT c.*, GROUP_CONCAT(v.plate_number SEPARATOR ", ") AS vehicles, COUNT(v.id) AS vehicle_count FROM customers c LEFT JOIN vehicles v ON v.customer_id = c.id WHERE c.full_name LIKE ? OR c.phone LIKE ? OR v.plate_number LIKE ? GROUP BY c.id ORDER BY c.created_at DESC LIMIT ? OFFSET ?');
+    $stmt = $pdo->prepare("SELECT c.*, GROUP_CONCAT(v.plate_number SEPARATOR ', ') AS vehicles, COUNT(v.id) AS vehicle_count FROM customers c LEFT JOIN vehicles v ON v.customer_id = c.id WHERE c.full_name LIKE ? OR c.phone LIKE ? OR v.plate_number LIKE ? GROUP BY c.id ORDER BY $orderBy LIMIT ? OFFSET ?");
     $stmt->bindValue(1, "%$search%", PDO::PARAM_STR);
     $stmt->bindValue(2, "%$search%", PDO::PARAM_STR);
     $stmt->bindValue(3, "%$search%", PDO::PARAM_STR);
@@ -137,7 +147,7 @@ if ($search) {
     $countStmt->execute(["%$search%","%$search%","%$search%"]);
     $total = (int)$countStmt->fetchColumn();
 } else {
-    $stmt = $pdo->prepare('SELECT c.*, GROUP_CONCAT(v.plate_number SEPARATOR ", ") AS vehicles, COUNT(v.id) AS vehicle_count FROM customers c LEFT JOIN vehicles v ON v.customer_id = c.id GROUP BY c.id ORDER BY c.created_at DESC LIMIT ? OFFSET ?');
+    $stmt = $pdo->prepare("SELECT c.*, GROUP_CONCAT(v.plate_number SEPARATOR ', ') AS vehicles, COUNT(v.id) AS vehicle_count FROM customers c LEFT JOIN vehicles v ON v.customer_id = c.id GROUP BY c.id ORDER BY $orderBy LIMIT ? OFFSET ?");
     $stmt->bindValue(1, (int)$perPage, PDO::PARAM_INT);
     $stmt->bindValue(2, (int)$offset, PDO::PARAM_INT);
     $stmt->execute();
@@ -146,6 +156,16 @@ if ($search) {
 
 $customers = $stmt->fetchAll();
 $totalPages = (int)ceil($total / $perPage);
+
+function sortLink($column, $label) {
+    global $sort, $order, $search;
+    $newOrder = ($sort === $column && $order === 'ASC') ? 'DESC' : 'ASC';
+    $params = ['sort' => $column, 'order' => $newOrder];
+    if ($search) $params['search'] = $search;
+    $query = http_build_query($params);
+    $arrow = ($sort === $column) ? ($order === 'ASC' ? ' ↑' : ' ↓') : '';
+    return "<a href='?$query' class='hover:text-blue-600'>$label$arrow</a>";
+}
 
 ?>
 
@@ -170,16 +190,16 @@ $totalPages = (int)ceil($total / $perPage);
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
                     <li><a href="index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
                     <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
-                    <li aria-current="page">Vehicles</li>
+                    <li aria-current="page">Customers</li>
                 </ol>
             </nav>
             <h1 class="text-4xl font-bold text-gray-900 flex items-center">
                 <svg class="w-10 h-10 mr-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
-                Customer Management
+                Customer & Vehicle Management
             </h1>
-            <p class="mt-2 text-gray-600">Manage your vehicle database, import data, and view vehicle details.</p>
+            <p class="mt-2 text-gray-600">Manage customers, their vehicles, and import data efficiently.</p>
         </header>
         <div class="h-full overflow-hidden">
             <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; Back</a>
@@ -257,97 +277,6 @@ $totalPages = (int)ceil($total / $perPage);
             </form>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 max-h-[60vh]">
-                        <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Vehicles list">
-                            <caption class="sr-only">List of vehicles with their details and actions</caption>
-                            <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">
-                                <tr>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col">Name</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Phone</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Email</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Vehicles</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700 w-1/5" scope="col">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($customers as $c): ?>
-                                <tr class="border-t border-gray-200 hover:bg-blue-50 transition">
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['full_name']); ?></td>
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['phone']); ?></td>
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['email']); ?></td>
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['vehicles'] ?? '—'); ?><?php echo $c['vehicle_count'] ? ' (' . intval($c['vehicle_count']) . ')' : ''; ?></td>
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4 flex flex-col gap-1 sm:flex-row sm:gap-2">
-                                        <button type="button" onclick="prefillCustomer(<?php echo $c['id']; ?>)" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none" aria-label="Edit customer <?php echo htmlspecialchars($c['full_name']); ?>">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                            </svg>
-                                            Edit
-                                        </button>
-                                        <a href="?search=<?php echo urlencode($c['full_name']); ?>" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none">Manage vehicles</a>
-                                        <form method="post" style="display:inline-block" onsubmit="return confirm('Delete customer?');" class="flex-1 sm:flex-none">
-                                            <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
-                                            <button type="submit" name="delete_customer" class="inline-flex items-center justify-center w-full px-2 py-1 sm:px-3 sm:py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-md text-xs font-medium transition" aria-label="Delete customer <?php echo htmlspecialchars($c['full_name']); ?>">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                </svg>
-                                                Delete
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    <?php if ($totalPages > 1): ?>
-                    <nav class="mt-6 flex flex-wrap gap-2 items-center justify-center" aria-label="Pagination">
-                        <?php
-                        $searchParam = $search ? '&search=' . urlencode($search) : '';
-                        $prevPage = $page - 1;
-                        $nextPage = $page + 1;
-                        ?>
-                        <?php if ($page > 1): ?>
-                        <a href="?page=<?php echo $prevPage; ?><?php echo $searchParam; ?>" class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition" aria-label="Go to previous page">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                            Prev
-                        </a>
-                        <?php endif; ?>
-
-                        <?php if ($totalPages <= 7): ?>
-                            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                            <a href="?page=<?php echo $i; ?><?php echo $searchParam; ?>" class="inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium transition <?php echo $i === $page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'; ?>" aria-label="Go to page <?php echo $i; ?>" <?php echo $i === $page ? 'aria-current="page"' : ''; ?>><?php echo $i; ?></a>
-                            <?php endfor; ?>
-                        <?php else: ?>
-                            <a href="?page=1<?php echo $searchParam; ?>" class="inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium transition <?php echo 1 === $page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'; ?>" aria-label="Go to page 1" <?php echo 1 === $page ? 'aria-current="page"' : ''; ?>>1</a>
-                            <?php if ($page > 4): ?>
-                            <span class="px-2 text-gray-500" aria-hidden="true">...</span>
-                            <?php endif; ?>
-                            <?php for ($i = max(2, $page - 2); $i <= min($totalPages - 1, $page + 2); $i++): ?>
-                            <a href="?page=<?php echo $i; ?><?php echo $searchParam; ?>" class="inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium transition <?php echo $i === $page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'; ?>" aria-label="Go to page <?php echo $i; ?>" <?php echo $i === $page ? 'aria-current="page"' : ''; ?>><?php echo $i; ?></a>
-                            <?php endfor; ?>
-                            <?php if ($page < $totalPages - 3): ?>
-                            <span class="px-2 text-gray-500" aria-hidden="true">...</span>
-                            <?php endif; ?>
-                            <a href="?page=<?php echo $totalPages; ?><?php echo $searchParam; ?>" class="inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium transition <?php echo $totalPages === $page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'; ?>" aria-label="Go to page <?php echo $totalPages; ?>" <?php echo $totalPages === $page ? 'aria-current="page"' : ''; ?>><?php echo $totalPages; ?></a>
-                        <?php endif; ?>
-
-                        <?php if ($page < $totalPages): ?>
-                        <a href="?page=<?php echo $nextPage; ?><?php echo $searchParam; ?>" class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition" aria-label="Go to next page">
-                            Next
-                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </a>
-                        <?php endif; ?>
-                    </nav>
-                    <?php endif; ?>
-                </div>
-
                 <div class="space-y-6">
                     <form method="post" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-lg border border-blue-200">
                         <h3 class="font-bold text-lg mb-4 text-blue-800 flex items-center">
@@ -445,15 +374,15 @@ $totalPages = (int)ceil($total / $perPage);
                 </div>
 
                 <div>
-                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 max-h-[60vh]">
+                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 max-h-96">
                         <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Vehicles list">
                             <caption class="sr-only">List of vehicles with their details and actions</caption>
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">
                                 <tr>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col">Name</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Phone</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Email</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Vehicles</th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col"><?php echo sortLink('full_name', 'Name'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('phone', 'Phone'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('email', 'Email'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('vehicle_count', 'Vehicles'); ?></th>
                                     <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700 w-1/5" scope="col">Actions</th>
                                 </tr>
                             </thead>
