@@ -30,6 +30,11 @@ if ($q !== '') {
     $params[] = "%$q%";
     $params[] = "%$q%";
 }
+$plate = trim($_GET['plate'] ?? '');
+if ($plate !== '') {
+    $filters[] = 'i.plate_number LIKE ?';
+    $params[] = "%$plate%";
+}
 $vin = trim($_GET['vin'] ?? '');
 if ($vin !== '') {
     $filters[] = 'i.vin LIKE ?';
@@ -164,7 +169,7 @@ $resultsCount = count($invoices);
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-600">Search</label>
-                <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="Plate, VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
+                <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="Customer, plate, VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-600">Service Manager</label>
@@ -179,6 +184,10 @@ $resultsCount = count($invoices);
                     <label class="block text-xs font-medium text-gray-600">Date To</label>
                     <input type="date" name="date_to" value="<?php echo htmlspecialchars($_GET['date_to'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
                 </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600">Plate</label>
+                <input type="text" name="plate" value="<?php echo htmlspecialchars($_GET['plate'] ?? ''); ?>" placeholder="Plate..." class="mt-1 block w-full rounded border-gray-200 p-2" />
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-600">VIN</label>
@@ -214,8 +223,9 @@ $resultsCount = count($invoices);
                     <tr class="bg-gray-200">
                         <th class="px-2 md:px-4 py-2 text-left">ID</th>
                         <th class="px-2 md:px-4 py-2 text-left">Customer</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Plate</th>
+                        <th class="px-2 md:px-4 py-2 text-left">Phone</th>
                         <th class="px-2 md:px-4 py-2 text-left">Car</th>
+                        <th class="px-2 md:px-4 py-2 text-left">Plate</th>
                         <th class="px-2 md:px-4 py-2 text-left">VIN</th>
                         <th class="px-2 md:px-4 py-2 text-left">Mileage</th>
                         <th class="px-2 md:px-4 py-2 text-left">Service Manager</th>
@@ -232,7 +242,7 @@ $resultsCount = count($invoices);
                         <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['car_mark']); ?></td>
-
+                        <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['plate_number']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo htmlspecialchars($invoice['vin'] ?? ''); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['mileage']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo htmlspecialchars($invoice['sm_username'] ?? ''); ?></td>
@@ -537,7 +547,7 @@ $resultsCount = count($invoices);
                     <td class="px-2 md:px-4 py-2 truncate max-w-[150px]">${escapeHtml(invoice.customer_name || '')}</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.phone || '')}</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.car_mark || '')}</td>
-
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.plate_number || '')}</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${escapeHtml(invoice.vin || '')}</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.mileage || '')}</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${escapeHtml(invoice.sm_username || '')}</td>

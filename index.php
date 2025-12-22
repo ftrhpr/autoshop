@@ -642,6 +642,29 @@ if (!empty($serverInvoice)) {
                     document.getElementById('input_phone_number').value = it.phone || '';
                     const cid = document.getElementById('input_customer_id'); if (cid) cid.value = it.id;
                 });
+
+                // Auto-fill on blur if exact plate match
+                pn.addEventListener('blur', () => {
+                    const val = pn.value.trim(); if (!val) return;
+
+                    // Only auto-fill if customer fields are empty (except plate)
+                    const customerName = document.getElementById('input_customer_name').value.trim();
+                    const customerId = document.getElementById('input_customer_id').value;
+
+                    if (customerName || customerId) {
+                        // Customer info already filled, don't overwrite
+                        return;
+                    }
+
+                    fetch('./admin/api_customers.php?plate=' + encodeURIComponent(val))
+                        .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
+                        .then(data => {
+                            if (!data) return;
+                            document.getElementById('input_customer_name').value = data.full_name || '';
+                            document.getElementById('input_phone_number').value = data.phone || '';
+                            const cid = document.getElementById('input_customer_id'); if (cid) cid.value = data.id;
+                        }).catch(e=>{});
+                });
             }
 
             // Attach phone lookup (exact match) - only if other fields are empty

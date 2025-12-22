@@ -99,10 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         // If no customer name, customer_id remains null (invoice without customer)
     }
-    
-    // Set customer_name to plate_number as the main identifier
-    $customer_name = strtoupper(trim($data['plate_number'] ?? ''));
-    
     // Resolve service manager display name when a user id is provided
     $serviceManagerName = $data['service_manager'] ?? '';
     if (!empty($data['service_manager_id'])) {
