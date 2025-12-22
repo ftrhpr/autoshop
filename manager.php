@@ -91,6 +91,12 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $invoices = $stmt->fetchAll();
 $resultsCount = count($invoices);
+
+// Get recent invoice IDs (created in last 24 hours)
+$recentInvoiceIds = [];
+$stmt = $pdo->prepare('SELECT id FROM invoices WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)');
+$stmt->execute();
+$recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 ?>
 
 <!DOCTYPE html>
