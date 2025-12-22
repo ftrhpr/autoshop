@@ -24,109 +24,59 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    // Handle customer - always create new customer if none selected
-    $customer_id = null;
-    $was_selected = !empty($data['customer_id']);
+    // Handle vehicle - find or create for existing customer
+    $vehicle_id = null;
+    $was_selected = !empty($data['vehicle_id']);
     if ($was_selected) {
-        $customer_id = (int)$data['customer_id'];
-        // Verify the customer still exists
-        $stmt = $pdo->prepare('SELECT full_name, phone, plate_number, car_mark FROM customers WHERE id = ? LIMIT 1');
-        $stmt->execute([$customer_id]);
+        $vehicle_id = (int)$data['vehicle_id'];
+        // Verify the vehicle still exists
+        $stmt = $pdo->prepare('SELECT v.id FROM vehicles v WHERE v.id = ? LIMIT 1');
+        $stmt->execute([$vehicle_id]);
         $existing = $stmt->fetch();
         if (!$existing) {
-            error_log("Selected customer ID $customer_id no longer exists");
-            throw new Exception('The selected customer no longer exists. Please select a different customer or create a new one.');
+            error_log("Selected vehicle ID $vehicle_id no longer exists");
+            throw new Exception('The selected vehicle no longer exists. Please select a different vehicle.');
         }
-        // If any info changed, treat as new customer
-        $currentName = trim($existing['full_name']);
-        $newName = trim($data['customer_name']);
-        $currentPhone = preg_replace('/\s+/', '', trim($existing['phone']));
-        $newPhone = preg_replace('/\s+/', '', trim($data['phone_number']));
-        $currentPlate = strtoupper(trim($existing['plate_number']));
-        $newPlate = strtoupper(trim($data['plate_number'] ?? ''));
-        $currentCar = trim($existing['car_mark']);
-        $newCar = trim($data['car_mark']);
-        if ($currentName !== $newName || $currentPhone !== $newPhone || $currentPlate !== $newPlate || $currentCar !== $newCar) {
-            $customer_id = null; // Will create new below
-        }
-        // No update for existing customer
     }
 
     // Now handle creation if needed
-    if ($customer_id === null) {
+    if ($vehicle_id === null) {
         $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
         if (trim($data['customer_name']) !== '' && !empty($plateNumber)) {
-            if ($was_selected) {
-                // Create new customer directly since selected was changed
-                $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
-                $stmt->execute([
-                    $data['customer_name'],
-                    $data['phone_number'],
-                    $plateNumber,
-                    $data['car_mark'],
-                    $_SESSION['user_id']
-                ]);
-                $customer_id = $pdo->lastInsertId();
-                error_log("Created new customer ID $customer_id because selected was changed");
+            // Check if vehicle with this plate number already exists
+            $stmt = $pdo->prepare('SELECT v.id, v.customer_id FROM vehicles v WHERE v.plate_number = ? LIMIT 1');
+            $stmt->execute([$plateNumber]);
+            $existingVehicle = $stmt->fetch();
+
+            if ($existingVehicle) {
+                // Use existing vehicle
+                $vehicle_id = $existingVehicle['id'];
+                error_log("Used existing vehicle ID $vehicle_id for plate $plateNumber");
             } else {
-                // Check if vehicle with this plate number already exists
-                $stmt = $pdo->prepare('SELECT customer_id FROM vehicles WHERE plate_number = ? LIMIT 1');
-                $stmt->execute([$plateNumber]);
-                $existingVehicle = $stmt->fetch();
+                // Find customer by name and phone
+                $stmt = $pdo->prepare('SELECT id FROM customers WHERE full_name = ? AND phone = ? LIMIT 1');
+                $stmt->execute([trim($data['customer_name']), trim($data['phone_number'])]);
+                $existingCustomer = $stmt->fetch();
 
-                if ($existingVehicle) {
-                    // Use existing customer
-                    $customer_id = $existingVehicle['customer_id'];
-                    error_log("Used existing customer ID $customer_id for plate $plateNumber");
+                if ($existingCustomer) {
+                    // Add new vehicle to existing customer
+                    $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
+                    $stmt->execute([
+                        $existingCustomer['id'],
+                        $plateNumber,
+                        $data['car_mark'],
+                        $data['vin'] ?? '',
+                        $data['mileage'] ?? ''
+                    ]);
+                    $vehicle_id = $pdo->lastInsertId();
+                    error_log("Added new vehicle ID $vehicle_id for existing customer ID {$existingCustomer['id']}, plate $plateNumber");
                 } else {
-                    // Check if customer exists by name and phone
-                    $stmt = $pdo->prepare('SELECT id FROM customers WHERE full_name = ? AND phone = ? LIMIT 1');
-                    $stmt->execute([trim($data['customer_name']), trim($data['phone_number'])]);
-                    $existingCustomer = $stmt->fetch();
-
-                    if ($existingCustomer) {
-                        // Add new vehicle to existing customer
-                        $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
-                        $stmt->execute([
-                            $existingCustomer['id'],
-                            $plateNumber,
-                            $data['car_mark'],
-                            $data['vin'] ?? '',
-                            $data['mileage'] ?? ''
-                        ]);
-                        $customer_id = $existingCustomer['id'];
-                        error_log("Added new vehicle for existing customer ID $customer_id, plate $plateNumber");
-                    } else {
-                        // Create new customer
-                        $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
-                        $stmt->execute([
-                            $data['customer_name'],
-                            $data['phone_number'],
-                            $plateNumber,
-                            $data['car_mark'],
-                            $_SESSION['user_id']
-                        ]);
-                        $customer_id = $pdo->lastInsertId();
-
-                        // Create vehicle
-                        $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
-                        $stmt->execute([
-                            $customer_id,
-                            $plateNumber,
-                            $data['car_mark'],
-                            $data['vin'] ?? '',
-                            $data['mileage'] ?? ''
-                        ]);
-                        error_log("Created new customer ID $customer_id for plate $plateNumber");
-                    }
+                    throw new Exception('Customer not found. Please ensure the customer exists or contact admin to add the customer first.');
                 }
             }
-        } elseif (trim($data['customer_name']) !== '') {
-            // Customer name provided but no plate number - this should not happen due to frontend validation
-            error_log("Attempted to save customer without plate number: " . json_encode($data));
-            throw new Exception('Plate number is required when creating a new customer. Please refresh the page and try again.');
+        } else {
+            throw new Exception('Please select a vehicle or provide customer name, phone, and plate number.');
         }
-        // If no customer name, customer_id remains null (invoice without customer)
     }
     // Resolve service manager display name when a user id is provided
     $serviceManagerName = $data['service_manager'] ?? '';
@@ -167,13 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $finalServiceTotal = ($providedServiceTotal !== null && abs($providedServiceTotal - $serviceTotal) < 0.01) ? $providedServiceTotal : $serviceTotal;
     $finalGrandTotal = ($providedGrandTotal !== null && abs($providedGrandTotal - $grandTotal) < 0.01) ? $providedGrandTotal : $grandTotal;
 
-    // Validate customer_id exists if provided
-    if ($customer_id !== null) {
-        $stmt = $pdo->prepare('SELECT id FROM customers WHERE id = ? LIMIT 1');
-        $stmt->execute([$customer_id]);
+    // Validate vehicle_id exists if provided
+    if ($vehicle_id !== null) {
+        $stmt = $pdo->prepare('SELECT id FROM vehicles WHERE id = ? LIMIT 1');
+        $stmt->execute([$vehicle_id]);
         if (!$stmt->fetch()) {
-            error_log("Customer ID $customer_id does not exist in database");
-            throw new Exception('Invalid customer reference. Please try again.');
+            error_log("Vehicle ID $vehicle_id does not exist in database");
+            throw new Exception('Invalid vehicle reference. Please try again.');
         }
     }
 
@@ -181,12 +131,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($existing_id) {
         // Update existing invoice (include VIN)
-        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, customer_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, vehicle_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
             !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
-            $customer_id,
+            $vehicle_id,
             $data['customer_name'],
             $data['phone_number'],
             $data['car_mark'],
@@ -202,12 +152,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $invoice_id = $existing_id;
     } else {
         // Insert new invoice (include VIN)
-        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, customer_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, vehicle_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
             !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
-            $customer_id,
+            $vehicle_id,
             $data['customer_name'],
             $data['phone_number'],
             $data['car_mark'],

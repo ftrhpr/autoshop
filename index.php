@@ -1503,8 +1503,9 @@ if (!empty($serverInvoice)) {
                 document.getElementById('input_customer_name').focus();
                 return false;
             }
-            if (!vehicleId) {
-                alert('Please select a vehicle.');
+            if (!vehicleId && !plateNumber.trim()) {
+                alert('Please select a vehicle or enter a plate number.');
+                document.getElementById('input_plate_number').focus();
                 return false;
             }
 
