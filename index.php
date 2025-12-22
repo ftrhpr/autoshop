@@ -26,17 +26,19 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Support loading a saved invoice into the editor/preview for printing (index.php?print_id=123)
+// Support loading a saved invoice into the editor for editing or printing (index.php?edit_id=123 or ?print_id=123)
 $serverInvoice = null;
 $invoiceNotFound = false;
-if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
-    $pid = (int)$_GET['print_id'];
+$isEdit = isset($_GET['edit_id']);
+$isPrint = isset($_GET['print_id']);
+$loadId = $isEdit ? (int)$_GET['edit_id'] : ($isPrint ? (int)$_GET['print_id'] : null);
+if ($loadId) {
     try {
         if (!isset($pdo)) {
             throw new Exception("Database connection not available");
         }
         $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ? LIMIT 1');
-        $stmt->execute([$pid]);
+        $stmt->execute([$loadId]);
         $inv = $stmt->fetch();
         if ($inv) {
             $inv_items = json_decode($inv['items'], true) ?: [];
@@ -165,21 +167,40 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                         <svg class="w-10 h-10 mr-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-                        <?php if (isset($_GET['print_id']) && !empty($serverInvoice)): ?>
-                            Invoice #<?php echo htmlspecialchars($_GET['print_id']); ?> - Ready for Print
+                        <?php if ($isEdit && !empty($serverInvoice)): ?>
+                            Editing Invoice #<?php echo htmlspecialchars($loadId); ?>
+                        <?php elseif ($isPrint && !empty($serverInvoice)): ?>
+                            Invoice #<?php echo htmlspecialchars($loadId); ?> - Ready for Print
                         <?php else: ?>
                             Invoice Editor
                         <?php endif; ?>
                     </h1>
                     <p class="mt-2 text-gray-600">
-                        <?php if (isset($_GET['print_id']) && !empty($serverInvoice)): ?>
+                        <?php if ($isEdit && !empty($serverInvoice)): ?>
+                            Invoice loaded for editing. Make changes and save to update.
+                        <?php elseif ($isPrint && !empty($serverInvoice)): ?>
                             Invoice loaded successfully. Use the Preview or Print buttons below to view or print the invoice.
                         <?php else: ?>
                             Create and manage auto shop invoices with ease.
                         <?php endif; ?>
                     </p>
 
-                    <?php if (isset($_GET['print_id']) && !empty($serverInvoice)): ?>
+                    <?php if ($isEdit && !empty($serverInvoice)): ?>
+                    <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700">
+                                    Invoice #<?php echo htmlspecialchars($loadId); ?> has been loaded and all data has been populated. You can now edit the invoice details and save changes.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php elseif ($isPrint && !empty($serverInvoice)): ?>
                     <div class="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
                         <div class="flex">
                             <div class="flex-shrink-0">
@@ -192,7 +213,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                     Invoice Loaded Successfully
                                 </h3>
                                 <div class="mt-2 text-sm text-green-700">
-                                    <p>Invoice #<?php echo htmlspecialchars($_GET['print_id']); ?> has been loaded and all data has been populated. You can now preview the invoice or print it directly.</p>
+                                    <p>Invoice #<?php echo htmlspecialchars($loadId); ?> has been loaded and all data has been populated. You can now preview the invoice or print it directly.</p>
                                 </div>
                             </div>
                         </div>
@@ -213,7 +234,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                 Invoice Not Found
                             </h3>
                             <div class="mt-2 text-sm text-red-700">
-                                <p>The invoice with ID <?php echo htmlspecialchars($_GET['print_id']); ?> could not be found. It may have been deleted or the ID may be incorrect.</p>
+                                <p>The invoice with ID <?php echo htmlspecialchars($loadId); ?> could not be found. It may have been deleted or the ID may be incorrect.</p>
                             </div>
                         </div>
                     </div>
@@ -226,6 +247,9 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         <div class="h-full overflow-auto p-4 md:p-8">
         <div id="edit-mode" class="block print-hidden animate-fade-in">
             <form id="invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data" onsubmit="return handleSave()" role="form" aria-label="Invoice form">
+                <?php if ($isEdit && !empty($serverInvoice)): ?>
+                <input type="hidden" name="existing_invoice_id" value="<?php echo $serverInvoice['id']; ?>">
+                <?php endif; ?>
                 <input type="hidden" name="creation_date" id="hidden_creation_date">
                 <input type="hidden" name="service_manager" id="hidden_service_manager">
                 <input type="hidden" name="customer_name" id="hidden_customer_name">
@@ -416,8 +440,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             <!-- Review content will be populated by JS -->
                         </div>
                         <div class="mt-6 flex gap-4">
-                            <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Save Invoice</button>
-                            <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Save & Print</button>
+                            <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"><?php echo $isEdit ? 'Update Invoice' : 'Save Invoice'; ?></button>
+                            <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><?php echo $isEdit ? 'Update & Print' : 'Save & Print'; ?></button>
                         </div>
                     </div>
                 </div>
@@ -1169,7 +1193,7 @@ if (!empty($serverInvoice)) {
                         </div>
 
                         <div class="bg-blue-50 p-4 rounded-lg">
-                            <p class="text-sm text-blue-800">Ready to save this invoice? Click "Save Invoice" to store it or "Save & Print" to save and print immediately.</p>
+                            <p class="text-sm text-blue-800">Ready to <?php echo $isEdit ? 'update' : 'save'; ?> this invoice? Click "<?php echo $isEdit ? 'Update Invoice' : 'Save Invoice'; ?>" to store it or "<?php echo $isEdit ? 'Update & Print' : 'Save & Print'; ?>" to <?php echo $isEdit ? 'update' : 'save'; ?> and print immediately.</p>
                         </div>
                     </div>
                 </div>

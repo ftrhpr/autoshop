@@ -360,6 +360,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Redirect based on flag
     if (!empty($data['print_after_save'])) {
         header('Location: print_invoice.php?id=' . $invoice_id);
+    } elseif ($existing_id) {
+        // After update, go back to manager
+        header('Location: manager.php?updated=' . $invoice_id);
     } else {
         header('Location: view_invoice.php?id=' . $invoice_id);
     }

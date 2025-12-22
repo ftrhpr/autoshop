@@ -18,6 +18,12 @@ if (isset($_POST['delete_invoice'])) {
     $success = 'Invoice deleted successfully';
 }
 
+// Check for update success
+if (isset($_GET['updated'])) {
+    $updated_id = (int)$_GET['updated'];
+    $success = "Invoice #{$updated_id} updated successfully";
+}
+
 // Build filters from GET params (search form)
 $filters = [];
 $params = [];
@@ -256,6 +262,7 @@ $resultsCount = count($invoices);
                                    <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
+                            <a href="index.php?edit_id=<?php echo $invoice['id']; ?>" class="text-purple-600 hover:underline mr-2 text-xs md:text-sm">Edit</a>
                             <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">View</a>
                             <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
                             <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
@@ -559,6 +566,7 @@ $resultsCount = count($invoices);
                         <input type="checkbox" class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500" data-invoice-id="${invoice.id}" ${invoice.opened_in_fina ? 'checked' : ''}>
                     </td>
                     <td class="px-2 md:px-4 py-2 text-center">
+                        <a href="index.php?edit_id=${invoice.id}" class="text-purple-600 hover:underline mr-2 text-xs md:text-sm">Edit</a>
                         <a href="view_invoice.php?id=${invoice.id}" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">View</a>
                         <a href="print_invoice.php?id=${invoice.id}" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
                         <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
