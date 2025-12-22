@@ -25,7 +25,19 @@ try {
         $insertStmt->execute([$customer['id'], $customer['plate_number'], $customer['car_mark']]);
     }
 
-    echo "Vehicles table created and data migrated.\n";
+    // Add vehicle_id to invoices table
+    $pdo->exec("ALTER TABLE invoices ADD COLUMN vehicle_id INT AFTER service_manager_id");
+
+    // Update existing invoices to set vehicle_id based on customer data
+    $pdo->exec("
+        UPDATE invoices i
+        JOIN customers c ON i.customer_id = c.id
+        JOIN vehicles v ON c.id = v.customer_id AND i.plate_number = v.plate_number
+        SET i.vehicle_id = v.id
+        WHERE i.customer_id IS NOT NULL AND i.plate_number IS NOT NULL
+    ");
+
+    echo "Vehicle_id column added to invoices and data updated.\n";
 } catch (PDOException $e) {
     echo "Migration failed: " . $e->getMessage() . "\n";
     exit(1);
