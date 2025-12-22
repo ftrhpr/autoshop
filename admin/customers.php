@@ -183,7 +183,7 @@ function sortLink($column, $label) {
 </head>
 <body class="bg-gray-50 min-h-screen overflow-auto font-sans antialiased pb-20">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
-    <div class="min-h-screen ml-0 md:ml-64">
+    <div class="min-h-screen ml-0 md:ml-64 pt-4 pl-4">
         <!-- Header -->
         <header class="flex-shrink-0 p-4 md:p-6">
             <nav aria-label="Breadcrumb" class="mb-4">
