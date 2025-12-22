@@ -45,7 +45,7 @@ if ($plate) {
 }
 
 if ($q) {
-    $stmt = $pdo->prepare('SELECT v.id, c.full_name, c.phone, v.plate_number, v.car_mark FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE v.plate_number LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ? LIMIT 20');
+    $stmt = $pdo->prepare('SELECT v.id, c.full_name, c.phone, v.plate_number, v.car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE v.plate_number LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ? LIMIT 20');
     $stmt->execute(["%$q%","%$q%","%$q%"]);
     $rows = $stmt->fetchAll();
     echo json_encode($rows);

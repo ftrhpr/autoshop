@@ -676,22 +676,21 @@ if (!empty($serverInvoice)) {
                 pn.addEventListener('blur', () => {
                     const val = pn.value.trim(); if (!val) return;
 
-                    // Only auto-fill if customer fields are empty (except plate)
-                    const customerName = document.getElementById('input_customer_name').value.trim();
-                    const vehicleId = document.getElementById('input_vehicle_id').value;
-
-                    if (customerName || vehicleId) {
-                        // Customer info already filled, don't overwrite
-                        return;
-                    }
+                    const customerNameElem = document.getElementById('input_customer_name');
+                    const customerName = customerNameElem.value.trim();
 
                     fetch('./admin/api_customers.php?plate=' + encodeURIComponent(val))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
-                            document.getElementById('input_customer_name').value = data.full_name || '';
-                            document.getElementById('input_phone_number').value = data.phone || '';
+                            // Only set customer name/phone if empty
+                            if (!customerName && data.full_name) customerNameElem.value = data.full_name || '';
+                            if (data.phone) document.getElementById('input_phone_number').value = data.phone || '';
+                            // Always set VIN, car make/model and vehicle id
                             const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id;
+                            const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = data.vin || '';
+                            const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = data.car_mark || '';
+                            const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = data.mileage || '';
                         }).catch(e=>{});
                 });
             }
