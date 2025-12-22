@@ -41,9 +41,9 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
         if ($inv) {
             $inv_items = json_decode($inv['items'], true) ?: [];
             $inv_customer = null;
-            if (!empty($inv['customer_id'])) {
-                $s = $pdo->prepare('SELECT * FROM customers WHERE id = ? LIMIT 1');
-                $s->execute([(int)$inv['customer_id']]);
+            if (!empty($inv['vehicle_id'])) {
+                $s = $pdo->prepare('SELECT v.*, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.id = ? LIMIT 1');
+                $s->execute([(int)$inv['vehicle_id']]);
                 $inv_customer = $s->fetch();
             }
             $sm_username = '';
@@ -421,7 +421,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 
                 <!-- Hidden inputs for service manager -->
                 <input type="hidden" id="input_service_manager_id" name="service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
-                <input type="hidden" id="input_customer_id" name="customer_id">
+                <input type="hidden" id="input_vehicle_id" name="vehicle_id">
             </form>
         </div>
 
@@ -548,9 +548,9 @@ if (!empty($serverInvoice)) {
                     // Only auto-fill if customer fields are empty
                     const customerName = document.getElementById('input_customer_name').value.trim();
                     const phoneNumber = document.getElementById('input_phone_number').value.trim();
-                    const customerId = document.getElementById('input_customer_id').value;
+                    const vehicleId = document.getElementById('input_vehicle_id').value;
 
-                    if (customerName || phoneNumber || customerId) {
+                    if (customerName || phoneNumber || vehicleId) {
                         // Customer info already filled, don't overwrite
                         return;
                     }
@@ -562,7 +562,7 @@ if (!empty($serverInvoice)) {
                             document.getElementById('input_customer_name').value = data.full_name || '';
                             document.getElementById('input_phone_number').value = data.phone || '';
                             document.getElementById('input_car_mark').value = data.car_mark || '';
-                            const cid = document.getElementById('input_customer_id'); if (cid) cid.value = data.id || '';
+                            const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id || '';
                         }).catch(e => {
                             // ignore errors
                         });
@@ -629,7 +629,7 @@ if (!empty($serverInvoice)) {
                     cn.value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
                     document.getElementById('input_plate_number').value = it.plate_number || '';
-                    const cid = document.getElementById('input_customer_id'); if (cid) cid.value = it.id;
+                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id;
                 });
             }
 
@@ -640,7 +640,7 @@ if (!empty($serverInvoice)) {
                     pn.value = it.plate_number || '';
                     document.getElementById('input_customer_name').value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
-                    const cid = document.getElementById('input_customer_id'); if (cid) cid.value = it.id;
+                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id;
                 });
 
                 // Auto-fill on blur if exact plate match
@@ -649,9 +649,9 @@ if (!empty($serverInvoice)) {
 
                     // Only auto-fill if customer fields are empty (except plate)
                     const customerName = document.getElementById('input_customer_name').value.trim();
-                    const customerId = document.getElementById('input_customer_id').value;
+                    const vehicleId = document.getElementById('input_vehicle_id').value;
 
-                    if (customerName || customerId) {
+                    if (customerName || vehicleId) {
                         // Customer info already filled, don't overwrite
                         return;
                     }
@@ -662,7 +662,7 @@ if (!empty($serverInvoice)) {
                             if (!data) return;
                             document.getElementById('input_customer_name').value = data.full_name || '';
                             document.getElementById('input_phone_number').value = data.phone || '';
-                            const cid = document.getElementById('input_customer_id'); if (cid) cid.value = data.id;
+                            const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id;
                         }).catch(e=>{});
                 });
             }
@@ -676,9 +676,9 @@ if (!empty($serverInvoice)) {
                     // Only auto-fill if customer fields are empty
                     const customerName = document.getElementById('input_customer_name').value.trim();
                     const plateNumber = document.getElementById('input_plate_number').value.trim();
-                    const customerId = document.getElementById('input_customer_id').value;
+                    const vehicleId = document.getElementById('input_vehicle_id').value;
 
-                    if (customerName || plateNumber || customerId) {
+                    if (customerName || plateNumber || vehicleId) {
                         // Customer info already filled, don't overwrite
                         return;
                     }
@@ -689,7 +689,7 @@ if (!empty($serverInvoice)) {
                             if (!data) return;
                             document.getElementById('input_customer_name').value = data.full_name || '';
                             document.getElementById('input_plate_number').value = data.plate_number || '';
-                            const cid = document.getElementById('input_customer_id'); if (cid) cid.value = data.id;
+                            const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id;
                         }).catch(e=>{});
                 });
             }
@@ -1186,7 +1186,7 @@ if (!empty($serverInvoice)) {
             if (inv.plate_number) document.getElementById('input_plate_number').value = inv.plate_number;
             if (inv.vin) document.getElementById('input_vin').value = inv.vin || '';
             if (inv.mileage) document.getElementById('input_mileage').value = inv.mileage;
-            if (inv.customer && inv.customer.id) document.getElementById('input_customer_id').value = inv.customer.id;
+            if (inv.customer && inv.customer.id) document.getElementById('input_vehicle_id').value = inv.customer.id;
 
             // Render existing images (if server provided) with delete functionality
             if (inv.images && Array.isArray(inv.images) && inv.images.length > 0) {
@@ -1495,12 +1495,16 @@ if (!empty($serverInvoice)) {
             // Basic validation before preparing data
             const customerName = document.getElementById('input_customer_name').value.trim();
             const serviceManager = document.getElementById('input_service_manager').value.trim();
-            const customerId = document.getElementById('input_customer_id').value.trim();
+            const vehicleId = document.getElementById('input_vehicle_id').value.trim();
             const plateNumber = document.getElementById('input_plate_number').value.trim();
 
             if (!customerName) {
                 alert('Please enter a customer name.');
                 document.getElementById('input_customer_name').focus();
+                return false;
+            }
+            if (!vehicleId) {
+                alert('Please select a vehicle.');
                 return false;
             }
 

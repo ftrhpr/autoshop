@@ -15,7 +15,7 @@ $phone = $_GET['phone'] ?? null;
 header('Content-Type: application/json; charset=utf-8');
 
 if ($id) {
-    $stmt = $pdo->prepare('SELECT * FROM customers WHERE id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT v.*, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.id = ? LIMIT 1');
     $stmt->execute([(int)$id]);
     $row = $stmt->fetch();
     echo json_encode($row ?: null);
@@ -23,7 +23,7 @@ if ($id) {
 }
 
 if ($plate) {
-    $stmt = $pdo->prepare('SELECT c.*, v.plate_number, v.car_mark as vehicle_car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE v.plate_number = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT v.id, c.full_name, c.phone, c.email, c.notes, v.plate_number, v.car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE v.plate_number = ? LIMIT 1');
     $stmt->execute([strtoupper($plate)]);
     $row = $stmt->fetch();
     echo json_encode($row ?: null);
@@ -31,7 +31,7 @@ if ($plate) {
 }
 
 if ($q) {
-    $stmt = $pdo->prepare('SELECT c.id, c.full_name, c.phone, v.plate_number, v.car_mark FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE v.plate_number LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ? LIMIT 20');
+    $stmt = $pdo->prepare('SELECT v.id, c.full_name, c.phone, v.plate_number, v.car_mark FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE v.plate_number LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ? LIMIT 20');
     $stmt->execute(["%$q%","%$q%","%$q%"]);
     $rows = $stmt->fetchAll();
     echo json_encode($rows);
@@ -39,7 +39,7 @@ if ($q) {
 }
 
 if ($phone) {
-    $stmt = $pdo->prepare('SELECT c.*, v.plate_number, v.car_mark as vehicle_car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE c.phone = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT v.id, c.full_name, c.phone, c.email, c.notes, v.plate_number, v.car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE c.phone = ? LIMIT 1');
     $stmt->execute([trim($phone)]);
     $row = $stmt->fetch();
     echo json_encode($row ?: null);
