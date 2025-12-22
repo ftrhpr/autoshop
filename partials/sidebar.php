@@ -124,18 +124,8 @@ function svgIcon($name){
 })();
 </script>
 
-<!-- Mobile overlay and toggle -->
-<button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>
-
-<script>
-    const sidebar = document.getElementById('site-sidebar');
-    const toggle = document.getElementById('sidebarToggle');
-    const closeBtn = document.getElementById('closeSidebar');
-    if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
-    if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
-
-    // Notification system: polls server for new invoices and shows badge/toasts/sound
-    (function(){
+<!-- Notification system: polls server for new invoices and shows badge/toasts/sound -->
+(function(){
         const notifButton = document.getElementById('notifButton');
         const notifBadge = document.getElementById('notifBadge');
         let lastId = null;
