@@ -22,7 +22,7 @@ try {
 
     if ($lastTimestamp === null) {
         // Return the current latest timestamp
-        $stmt = $pdo->query('SELECT MAX(created_at) as max_timestamp FROM invoices');
+        $stmt = $pdo->query('SELECT MAX(updated_at) as max_timestamp FROM invoices');
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $max = $row['max_timestamp'] ?? null;
         error_log("Live updates API: Returning initial timestamp: $max");
@@ -30,7 +30,7 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT id, created_at, customer_name, plate_number, grand_total, is_new, opened_in_fina FROM invoices WHERE created_at >= ? ORDER BY created_at ASC');
+    $stmt = $pdo->prepare('SELECT id, updated_at as created_at, customer_name, plate_number, grand_total, is_new, opened_in_fina FROM invoices WHERE updated_at >= ? ORDER BY updated_at ASC');
     $stmt->execute([$lastTimestamp]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -40,7 +40,7 @@ try {
         $latestTimestamp = end($rows)['created_at'];
     }
 
-    error_log("Live updates API: Found $newCount new invoices since $lastTimestamp, new latest: $latestTimestamp");
+    error_log("Live updates API: Found $newCount updated invoices since $lastTimestamp, new latest: $latestTimestamp");
     echo json_encode(['success' => true, 'latest_timestamp' => $latestTimestamp, 'new_count' => $newCount, 'invoices' => $rows]);
 
 } catch (Exception $e) {

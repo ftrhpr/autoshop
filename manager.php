@@ -452,12 +452,12 @@ $resultsCount = count($invoices);
                     .then(data => {
                         console.log('pollForUpdates data:', data);
                         if (data && data.success && data.new_count > 0) {
-                            console.log('Found', data.new_count, 'new invoices');
-                            console.log('New invoices:', data.invoices.map(inv => inv.id));
-                            handleNewInvoices(data.invoices);
+                            console.log('Found', data.new_count, 'updated invoices');
+                            console.log('Updated invoices:', data.invoices.map(inv => inv.id));
+                            handleInvoiceUpdates(data.invoices);
                             lastTimestamp = data.latest_timestamp;
                         } else {
-                            console.log('No new invoices found (count:', data.new_count, ')');
+                            console.log('No updated invoices found (count:', data.new_count, ')');
                         }
                     })
                     .catch(e => {
@@ -469,19 +469,29 @@ $resultsCount = count($invoices);
                     });
             }
 
-            function handleNewInvoices(newInvoices) {
+            function handleInvoiceUpdates(updatedInvoices) {
                 const tableBody = document.querySelector('tbody');
                 if (!tableBody) return;
 
-                let hasTrulyNewInvoices = false;
+                let hasUpdates = false;
 
-                // Add new invoices to the top of the table
-                newInvoices.forEach(invoice => {
+                // Process each updated invoice
+                updatedInvoices.forEach(invoice => {
                     // Check if this invoice is already in the table
                     const existingRow = document.querySelector(`tr[data-invoice-id="${invoice.id}"]`);
-                    if (!existingRow) {
-                        // This is a truly new invoice
-                        hasTrulyNewInvoices = true;
+                    if (existingRow) {
+                        // Update existing row
+                        hasUpdates = true;
+                        const newRow = createInvoiceRow(invoice);
+                        // Remove the blinking if it was new
+                        newRow.classList.remove('invoice-new');
+                        // Replace the existing row
+                        existingRow.parentNode.replaceChild(newRow, existingRow);
+                        // Re-setup event listeners
+                        setupRowEventListeners(newRow);
+                    } else {
+                        // This is a new invoice
+                        hasUpdates = true;
                         const newRow = createInvoiceRow(invoice);
                         newRow.classList.add('invoice-new'); // Start with blinking
                         newInvoiceIds.add(invoice.id);
@@ -492,16 +502,15 @@ $resultsCount = count($invoices);
                         } else {
                             tableBody.appendChild(newRow);
                         }
-                    } else {
-                        console.log('Invoice', invoice.id, 'already exists in table, skipping');
                     }
                 });
 
                 // Update results count display
                 updateResultsCount();
 
-                // Play notification sound only for truly new invoices
-                if (hasTrulyNewInvoices) {
+                // Play notification sound only for new invoices
+                const newInvoices = updatedInvoices.filter(inv => !document.querySelector(`tr[data-invoice-id="${inv.id}"]`));
+                if (newInvoices.length > 0) {
                     playNotificationSound();
                     // Add visual flash effect
                     flashPageBackground();
