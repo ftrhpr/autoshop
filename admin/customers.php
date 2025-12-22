@@ -21,29 +21,41 @@ if (!$tbl) {
 // Handle create / update / delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['create_customer'])) {
-        $full = trim($_POST['full_name']);
-        $phone = trim($_POST['phone']);
-        $email = trim($_POST['email']);
+        $customer_id = (int)$_POST['customer_id'];
         $plate = strtoupper(trim($_POST['plate_number']));
         $car = trim($_POST['car_mark']);
         $vin = trim($_POST['vin']);
         $mileage = trim($_POST['mileage']);
         $notes = trim($_POST['notes']);
 
-        // Insert customer
-        $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, email, notes, created_by) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([$full, $phone, $email, $notes, $_SESSION['user_id']]);
-        $customer_id = $pdo->lastInsertId();
+        if (!$customer_id) {
+            $error = 'Please select a customer.';
+        } elseif (!$plate) {
+            $error = 'Plate number is required.';
+        } else {
+            // Check if plate already exists
+            $stmt = $pdo->prepare('SELECT id FROM vehicles WHERE plate_number = ?');
+            $stmt->execute([$plate]);
+            if ($stmt->fetch()) {
+                $error = 'Plate number already exists.';
+            } else {
+                // Insert vehicle
+                $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
+                $stmt->execute([$customer_id, $plate, $car, $vin, $mileage]);
 
-        // Insert vehicle
-        $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([$customer_id, $plate, $car, $vin, $mileage]);
+                // Update customer notes if provided
+                if ($notes) {
+                    $stmt = $pdo->prepare('UPDATE customers SET notes = ? WHERE id = ?');
+                    $stmt->execute([$notes, $customer_id]);
+                }
 
-        // Audit
-        $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$_SESSION['user_id'], 'create_vehicle', "plate={$plate}, name={$full}", $_SERVER['REMOTE_ADDR'] ?? '']);
+                // Audit
+                $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
+                $stmt->execute([$_SESSION['user_id'], 'create_vehicle', "customer_id={$customer_id}, plate={$plate}", $_SERVER['REMOTE_ADDR'] ?? '']);
 
-        $success = 'Vehicle created';
+                $success = 'Vehicle added successfully.';
+            }
+        }
     }
 
     if (isset($_POST['update_customer'])) {
@@ -238,24 +250,17 @@ $totalPages = (int)ceil($total / $perPage);
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
-                            Create Vehicle
+                            Add Vehicle to Customer
                         </h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                <input type="text" name="full_name" placeholder="Enter full name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                <input type="text" name="phone" placeholder="Enter phone number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input type="email" name="email" placeholder="Enter email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Select Customer</label>
+                                <input type="text" id="customer_search" placeholder="Search customer by name or phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <input type="hidden" name="customer_id" id="selected_customer_id">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
-                                <input type="text" name="plate_number" placeholder="Enter plate number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <input type="text" name="plate_number" placeholder="Enter plate number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Car Mark</label>
@@ -278,7 +283,7 @@ $totalPages = (int)ceil($total / $perPage);
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            Create Vehicle
+                            Add Vehicle
                         </button>
                     </form>
 
@@ -448,6 +453,54 @@ $totalPages = (int)ceil($total / $perPage);
                                 <button type="submit" name="update_customer" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                             `;
                         });
+                }
+
+                // Debounce function
+                function debounce(fn, wait=250) {
+                    let t;
+                    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+                }
+
+                // Typeahead function
+                function attachTypeahead(input, endpoint, formatItem, onSelect) {
+                    const box = document.createElement('div');
+                    box.className = 'absolute bg-white border rounded mt-1 shadow z-50 w-full';
+                    box.style.maxHeight = '220px';
+                    box.style.overflow = 'auto';
+                    input.parentElement.style.position = 'relative';
+                    input.parentElement.appendChild(box);
+
+                    input.addEventListener('input', debounce(async () => {
+                        const q = input.value.trim();
+                        if (!q) { box.innerHTML = ''; return; }
+                        try {
+                            const res = await fetch(endpoint + encodeURIComponent(q));
+                            if (!res.ok) { 
+                                box.innerHTML = ''; return; 
+                            }
+                            const list = await res.json();
+                            if (!Array.isArray(list)) { box.innerHTML = ''; return; }
+                            box.innerHTML = list.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                            box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
+                                const item = JSON.parse(el.getAttribute('data-json'));
+                                onSelect(item);
+                                box.innerHTML = '';
+                            }));
+                        } catch (e) {
+                            box.innerHTML = '';
+                        }
+                    }));
+
+                    document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) box.innerHTML = ''; });
+                }
+
+                // Attach customer search typeahead
+                const customerSearch = document.getElementById('customer_search');
+                if (customerSearch) {
+                    attachTypeahead(customerSearch, './admin/api_customers.php?customer_q=', c => `${c.full_name} — ${c.phone}`, (it) => {
+                        customerSearch.value = it.full_name || '';
+                        document.getElementById('selected_customer_id').value = it.id;
+                    });
                 }
 
                 // Sidebar toggle

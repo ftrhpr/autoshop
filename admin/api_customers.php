@@ -38,6 +38,16 @@ if ($q) {
     exit;
 }
 
+$customer_q = $_GET['customer_q'] ?? null;
+
+if ($customer_q) {
+    $stmt = $pdo->prepare('SELECT id, full_name, phone FROM customers WHERE full_name LIKE ? OR phone LIKE ? LIMIT 20');
+    $stmt->execute(["%$customer_q%","%$customer_q%"]);
+    $rows = $stmt->fetchAll();
+    echo json_encode($rows);
+    exit;
+}
+
 if ($phone) {
     $stmt = $pdo->prepare('SELECT v.id, c.full_name, c.phone, c.email, c.notes, v.plate_number, v.car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE c.phone = ? LIMIT 1');
     $stmt->execute([trim($phone)]);
