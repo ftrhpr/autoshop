@@ -1515,7 +1515,7 @@ if (!empty($serverInvoice)) {
             }
 
             // If no customer is selected, plate number is required
-            if (!customerId && customerName && !plateNumber) {
+            if (!vehicleId && customerName && !plateNumber) {
                 alert('Please enter a plate number when creating a new customer.');
                 document.getElementById('input_plate_number').focus();
                 return false;
