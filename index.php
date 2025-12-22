@@ -233,6 +233,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 <input type="hidden" name="car_mark" id="hidden_car_mark">
                 <input type="hidden" name="plate_number" id="hidden_plate_number">
                 <input type="hidden" name="vin" id="hidden_vin">
+                <input type="hidden" name="customer_id" id="hidden_customer_id">
+                <input type="hidden" name="vehicle_id" id="hidden_vehicle_id">
                 <input type="hidden" name="mileage" id="hidden_mileage">
                 <input type="hidden" name="parts_total" id="hidden_parts_total">
                 <input type="hidden" name="service_total" id="hidden_service_total">
@@ -306,6 +308,11 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             <div>
                                 <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                                 <input type="text" id="input_phone_number" placeholder="Phone number" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                            </div>
+                            <input type="hidden" id="input_customer_id" name="customer_id" value="">
+                            <div>
+                                <label for="input_vehicle_select" class="block text-sm font-medium text-gray-700 mb-2">Select Vehicle</label>
+                                <select id="input_vehicle_select" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition"><option value="">-- No vehicle selected --</option></select>
                             </div>
                             <div>
                                 <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">Service Manager</label>
@@ -563,6 +570,24 @@ if (!empty($serverInvoice)) {
                             document.getElementById('input_phone_number').value = data.phone || '';
                             document.getElementById('input_car_mark').value = data.car_mark || '';
                             const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id || '';
+                            const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = data.customer_id || '';
+                            // Populate vehicle select with customer's vehicles and select this vehicle
+                            const vsel = document.getElementById('input_vehicle_select');
+                            if (vsel) {
+                                vsel.innerHTML = '<option value="">-- No vehicle selected --</option>';
+                                fetch('./admin/api_customers.php?customer_vehicles=' + (data.customer_id || ''))
+                                    .then(r => r.json())
+                                    .then(list => {
+                                        if (!Array.isArray(list)) return;
+                                        list.forEach(v => {
+                                            const o = document.createElement('option');
+                                            o.value = v.id;
+                                            o.textContent = v.plate_number + (v.car_mark ? ' — ' + v.car_mark : '');
+                                            if (v.id == data.id) o.selected = true;
+                                            vsel.appendChild(o);
+                                        });
+                                    });
+                            }
                         }).catch(e => {
                             // ignore errors
                         });
@@ -622,14 +647,31 @@ if (!empty($serverInvoice)) {
                 });
             }
 
-            // Attach customer name typeahead
+            // Attach customer name typeahead (search customers)
             const cn = document.getElementById('input_customer_name');
             if (cn) {
-                attachTypeahead(cn, './admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
+                attachTypeahead(cn, './admin/api_customers.php?customer_q=', c => `${c.full_name} — ${c.phone || ''}` , (it) => {
                     cn.value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
-                    document.getElementById('input_plate_number').value = it.plate_number || '';
-                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id;
+                    const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.id;
+                    // Load customer's vehicles into select
+                    const vsel = document.getElementById('input_vehicle_select');
+                    if (vsel) {
+                        vsel.innerHTML = '<option value="">-- No vehicle selected --</option>';
+                        fetch('./admin/api_customers.php?customer_vehicles=' + it.id)
+                            .then(r => r.json())
+                            .then(list => {
+                                if (!Array.isArray(list)) return;
+                                list.forEach(v => {
+                                    const o = document.createElement('option');
+                                    o.value = v.id;
+                                    o.textContent = v.plate_number + (v.car_mark ? ' — ' + v.car_mark : '');
+                                    vsel.appendChild(o);
+                                });
+                            });
+                    }
+                    // clear any previously selected vehicle id
+                    const vid = document.getElementById('input_vehicle_id'); if (vid) vid.value = '';
                 });
             }
 
@@ -641,6 +683,24 @@ if (!empty($serverInvoice)) {
                     document.getElementById('input_customer_name').value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
                     const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id;
+                    const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.customer_id || '';
+                    // Populate vehicle select and mark selected
+                    const vsel = document.getElementById('input_vehicle_select');
+                    if (vsel) {
+                        vsel.innerHTML = '<option value="">-- No vehicle selected --</option>';
+                        fetch('./admin/api_customers.php?customer_vehicles=' + (it.customer_id || ''))
+                            .then(r => r.json())
+                            .then(list => {
+                                if (!Array.isArray(list)) return;
+                                list.forEach(v => {
+                                    const o = document.createElement('option');
+                                    o.value = v.id;
+                                    o.textContent = v.plate_number + (v.car_mark ? ' — ' + v.car_mark : '');
+                                    if (v.id == it.id) o.selected = true;
+                                    vsel.appendChild(o);
+                                });
+                            });
+                    }
                 });
 
                 // Auto-fill on blur if exact plate match
@@ -691,6 +751,29 @@ if (!empty($serverInvoice)) {
                             document.getElementById('input_plate_number').value = data.plate_number || '';
                             const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id;
                         }).catch(e=>{});
+                });
+            }
+
+            // Vehicle select change handler
+            const vehicleSelect = document.getElementById('input_vehicle_select');
+            if (vehicleSelect) {
+                vehicleSelect.addEventListener('change', () => {
+                    const val = vehicleSelect.value;
+                    const vid = document.getElementById('input_vehicle_id');
+                    if (!val) { if (vid) vid.value = ''; return; }
+                    fetch('./admin/api_customers.php?id=' + encodeURIComponent(val))
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data) return;
+                            if (vid) vid.value = data.id || '';
+                            document.getElementById('input_plate_number').value = data.plate_number || '';
+                            const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = data.car_mark || '';
+                            const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = data.vin || '';
+                            const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = data.mileage || '';
+                            document.getElementById('input_customer_name').value = data.full_name || '';
+                            document.getElementById('input_phone_number').value = data.phone || '';
+                            const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = data.customer_id || '';
+                        });
                 });
             }
 
@@ -1453,6 +1536,9 @@ if (!empty($serverInvoice)) {
             document.getElementById('hidden_plate_number').value = plateNumber;
             document.getElementById('hidden_vin').value = document.getElementById('input_vin') ? document.getElementById('input_vin').value : '';
             document.getElementById('hidden_mileage').value = mileage;
+            // Hidden customer/vehicle ids
+            document.getElementById('hidden_customer_id').value = document.getElementById('input_customer_id') ? document.getElementById('input_customer_id').value : '';
+            document.getElementById('hidden_vehicle_id').value = document.getElementById('input_vehicle_id') ? document.getElementById('input_vehicle_id').value : '';
             
             const totals = calculateTotals();
             // Ensure totals are valid numbers, default to 0.00 if NaN
