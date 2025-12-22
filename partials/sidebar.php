@@ -229,7 +229,7 @@ function svgIcon($name){
 
         async function fetchLatestId(){
             try {
-                const res = await fetch('api_new_invoices.php', { cache: 'no-store' });
+                const res = await fetch('api_live_invoices.php', { cache: 'no-store' });
                 if (!res.ok) throw new Error('Network');
                 const data = await res.json();
                 if (data && data.success){
@@ -242,7 +242,7 @@ function svgIcon($name){
             if (inFlight) return;
             inFlight = true;
             try {
-                const url = 'api_new_invoices.php' + (lastId ? ('?last_id=' + encodeURIComponent(lastId)) : '');
+                const url = 'api_live_invoices.php' + (lastId ? ('?last_id=' + encodeURIComponent(lastId)) : '');
                 const res = await fetch(url, { cache: 'no-store' });
                 if (!res.ok) throw new Error('Network');
                 const data = await res.json();

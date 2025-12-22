@@ -473,7 +473,6 @@ $totalPages = (int)ceil($total / $perPage);
                                     });
                             }
                         });
-                        });
                 }
 
                 // Debounce function
