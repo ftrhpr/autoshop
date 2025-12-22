@@ -4,9 +4,9 @@
 $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 if ($scriptDir === '/' || $scriptDir === '\\') $scriptDir = '';
 $parts = array_values(array_filter(explode('/', $scriptDir), 'strlen'));
-if (end($parts) === 'admin') array_pop($parts); // move up if currently in admin folder
-$appRoot = '/' . implode('/', $parts);
-if ($appRoot === '/') $appRoot = '';
+$originalDepth = count($parts);
+if (end($parts) === 'admin') array_pop($parts);
+$appRoot = str_repeat('../', $originalDepth - count($parts));
 
 $menu = [
     ['label' => 'New Invoice', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => null],
