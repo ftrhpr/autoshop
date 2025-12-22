@@ -101,6 +101,29 @@ function svgIcon($name){
     </div>
 </div>
 
+<!-- Mobile: floating menu button -->
+<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+
+<script>
+(function(){
+    function open() { document.getElementById('site-sidebar').classList.remove('-translate-x-full'); document.body.classList.add('overflow-hidden'); }
+    function close() { document.getElementById('site-sidebar').classList.add('-translate-x-full'); document.body.classList.remove('overflow-hidden'); }
+    var openBtn = document.getElementById('openSidebar');
+    var closeBtn = document.getElementById('closeSidebar');
+    if (openBtn) openBtn.addEventListener('click', open);
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    // Close on escape
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+    // Close when tapping outside on mobile
+    document.addEventListener('click', function(e){
+        var sidebar = document.getElementById('site-sidebar');
+        if (!sidebar.contains(e.target) && !openBtn.contains(e.target) && window.innerWidth < 768) close();
+    });
+})();
+</script>
+
 <!-- Mobile overlay and toggle -->
 <button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>
 
@@ -110,14 +133,6 @@ function svgIcon($name){
     const closeBtn = document.getElementById('closeSidebar');
     if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
     if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
-
-    // Close on escape
-    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') sidebar.classList.add('-translate-x-full'); });
-    // Close when tapping outside on mobile
-    document.addEventListener('click', function(e){
-        if (!sidebar.contains(e.target) && !toggle.contains(e.target) && window.innerWidth < 768) sidebar.classList.add('-translate-x-full');
-    });
-</script>
 
     // Notification system: polls server for new invoices and shows badge/toasts/sound
     (function(){
