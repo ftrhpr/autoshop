@@ -8,11 +8,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $id = $_GET['id'] ?? null;
+$customer_id = $_GET['customer_id'] ?? null;
 $plate = $_GET['plate'] ?? null;
 $q = $_GET['q'] ?? null;
 $phone = $_GET['phone'] ?? null;
 
 header('Content-Type: application/json; charset=utf-8');
+
+if ($customer_id) {
+    $stmt = $pdo->prepare('SELECT id, full_name, phone, email, notes FROM customers WHERE id = ? LIMIT 1');
+    $stmt->execute([(int)$customer_id]);
+    $cust = $stmt->fetch();
+    if ($cust) {
+        $vstmt = $pdo->prepare('SELECT id, plate_number, car_mark, vin, mileage FROM vehicles WHERE customer_id = ? ORDER BY created_at DESC');
+        $vstmt->execute([(int)$customer_id]);
+        $cust['vehicles'] = $vstmt->fetchAll();
+    }
+    echo json_encode($cust ?: null);
+    exit;
+}
 
 if ($id) {
     $stmt = $pdo->prepare('SELECT v.*, c.id as customer_id, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.id = ? LIMIT 1');

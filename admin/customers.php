@@ -20,7 +20,28 @@ if (!$tbl) {
 
 // Handle create / update / delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Create Customer
     if (isset($_POST['create_customer'])) {
+        $full = trim($_POST['full_name']);
+        $phone = trim($_POST['phone']);
+        $email = trim($_POST['email']);
+        $notes = trim($_POST['notes']);
+
+        if (!$full) {
+            $error = 'Full name is required.';
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, email, notes, created_by) VALUES (?, ?, ?, ?, ?)');
+            $stmt->execute([$full, $phone, $email, $notes, $_SESSION['user_id']]);
+
+            $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
+            $stmt->execute([$_SESSION['user_id'], 'create_customer', "name={$full}, phone={$phone}", $_SERVER['REMOTE_ADDR'] ?? '']);
+
+            $success = 'Customer created.';
+        }
+    }
+
+    // Add vehicle to existing customer
+    if (isset($_POST['add_vehicle'])) {
         $customer_id = (int)$_POST['customer_id'];
         $plate = strtoupper(trim($_POST['plate_number']));
         $car = trim($_POST['car_mark']);
@@ -63,32 +84,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $full = trim($_POST['full_name']);
         $phone = trim($_POST['phone']);
         $email = trim($_POST['email']);
-        $plate = strtoupper(trim($_POST['plate_number']));
-        $car = trim($_POST['car_mark']);
-        $vin = trim($_POST['vin']);
-        $mileage = trim($_POST['mileage']);
         $notes = trim($_POST['notes']);
 
-        // Get customer_id from vehicle
-        $stmt = $pdo->prepare('SELECT customer_id FROM vehicles WHERE id = ?');
-        $stmt->execute([$id]);
-        $customer_id = $stmt->fetchColumn();
+        $stmt = $pdo->prepare('UPDATE customers SET full_name=?, phone=?, email=?, notes=? WHERE id=?');
+        $stmt->execute([$full, $phone, $email, $notes, $id]);
 
-        if ($customer_id) {
-            $stmt = $pdo->prepare('UPDATE vehicles SET plate_number=?, car_mark=?, vin=?, mileage=? WHERE id=?');
-            $stmt->execute([$plate, $car, $vin, $mileage, $id]);
+        $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$_SESSION['user_id'], 'update_customer', "customer_id={$id}", $_SERVER['REMOTE_ADDR'] ?? '']);
 
-            $stmt = $pdo->prepare('UPDATE customers SET full_name=?, phone=?, email=?, notes=? WHERE id=?');
-            $stmt->execute([$full, $phone, $email, $notes, $customer_id]);
-
-            $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
-            $stmt->execute([$_SESSION['user_id'], 'update_vehicle', "vehicle_id={$id}, plate={$plate}", $_SERVER['REMOTE_ADDR'] ?? '']);
-
-            $success = 'Vehicle updated';
-        }
+        $success = 'Customer updated';
     }
 
-    if (isset($_POST['delete_customer'])) {
+    if (isset($_POST['delete_vehicle'])) {
         $id = (int)$_POST['id'];
         $stmt = $pdo->prepare('DELETE FROM vehicles WHERE id=?');
         $stmt->execute([$id]);
@@ -97,6 +104,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$_SESSION['user_id'], 'delete_vehicle', "vehicle_id={$id}", $_SERVER['REMOTE_ADDR'] ?? '']);
 
         $success = 'Vehicle deleted';
+    }
+
+    if (isset($_POST['delete_customer'])) {
+        $id = (int)$_POST['id'];
+        $stmt = $pdo->prepare('DELETE FROM customers WHERE id=?');
+        $stmt->execute([$id]);
+
+        $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$_SESSION['user_id'], 'delete_customer', "customer_id={$id}", $_SERVER['REMOTE_ADDR'] ?? '']);
+
+        $success = 'Customer deleted';
     }
 }
 
@@ -107,22 +125,23 @@ $perPage = 20;
 $offset = ($page - 1) * $perPage;
 
 if ($search) {
-    $stmt = $pdo->prepare('SELECT v.*, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.plate_number LIKE ? OR c.full_name LIKE ? ORDER BY c.created_at DESC, v.created_at DESC LIMIT ? OFFSET ?');
+    $stmt = $pdo->prepare('SELECT c.*, GROUP_CONCAT(v.plate_number SEPARATOR ", ") AS vehicles, COUNT(v.id) AS vehicle_count FROM customers c LEFT JOIN vehicles v ON v.customer_id = c.id WHERE c.full_name LIKE ? OR c.phone LIKE ? OR v.plate_number LIKE ? GROUP BY c.id ORDER BY c.created_at DESC LIMIT ? OFFSET ?');
     $stmt->bindValue(1, "%$search%", PDO::PARAM_STR);
     $stmt->bindValue(2, "%$search%", PDO::PARAM_STR);
-    $stmt->bindValue(3, (int)$perPage, PDO::PARAM_INT);
-    $stmt->bindValue(4, (int)$offset, PDO::PARAM_INT);
+    $stmt->bindValue(3, "%$search%", PDO::PARAM_STR);
+    $stmt->bindValue(4, (int)$perPage, PDO::PARAM_INT);
+    $stmt->bindValue(5, (int)$offset, PDO::PARAM_INT);
     $stmt->execute();
 
-    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.plate_number LIKE ? OR c.full_name LIKE ?');
-    $countStmt->execute(["%$search%","%$search%"]);
+    $countStmt = $pdo->prepare('SELECT COUNT(DISTINCT c.id) FROM customers c LEFT JOIN vehicles v ON v.customer_id = c.id WHERE c.full_name LIKE ? OR c.phone LIKE ? OR v.plate_number LIKE ?');
+    $countStmt->execute(["%$search%","%$search%","%$search%"]);
     $total = (int)$countStmt->fetchColumn();
 } else {
-    $stmt = $pdo->prepare('SELECT v.*, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id ORDER BY c.created_at DESC, v.created_at DESC LIMIT ? OFFSET ?');
+    $stmt = $pdo->prepare('SELECT c.*, GROUP_CONCAT(v.plate_number SEPARATOR ", ") AS vehicles, COUNT(v.id) AS vehicle_count FROM customers c LEFT JOIN vehicles v ON v.customer_id = c.id GROUP BY c.id ORDER BY c.created_at DESC LIMIT ? OFFSET ?');
     $stmt->bindValue(1, (int)$perPage, PDO::PARAM_INT);
     $stmt->bindValue(2, (int)$offset, PDO::PARAM_INT);
     $stmt->execute();
-    $total = (int)$pdo->query('SELECT COUNT(*) FROM vehicles')->fetchColumn();
+    $total = (int)$pdo->query('SELECT COUNT(*) FROM customers')->fetchColumn();
 }
 
 $customers = $stmt->fetchAll();
@@ -224,9 +243,9 @@ $totalPages = (int)ceil($total / $perPage);
 
             <form method="get" class="mb-6 flex flex-col sm:flex-row gap-4" role="search" aria-label="Search customers">
                 <div class="flex-1">
-                    <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">Search Vehicles</label>
+                    <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">Search Customers</label>
                     <div class="relative">
-                        <input id="search-input" type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by plate or name" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" aria-describedby="search-help">
+                        <input id="search-input" type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name, phone or plate" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" aria-describedby="search-help">
                         <svg class="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -279,7 +298,7 @@ $totalPages = (int)ceil($total / $perPage);
                                 <textarea name="notes" placeholder="Enter notes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" rows="3"></textarea>
                             </div>
                         </div>
-                        <button type="submit" name="create_customer" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center">
+                        <button type="submit" name="add_vehicle" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
@@ -346,30 +365,31 @@ $totalPages = (int)ceil($total / $perPage);
                             <caption class="sr-only">List of vehicles with their details and actions</caption>
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200">
                                 <tr>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Plate</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Car Mark</th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Owner Name</th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col">Name</th>
                                     <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Phone</th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Email</th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Vehicles</th>
                                     <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700 w-1/5" scope="col">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($customers as $c): ?>
                                 <tr class="border-t border-gray-200 hover:bg-blue-50 transition">
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['plate_number']); ?></td>
-                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['car_mark']); ?></td>
                                     <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['full_name']); ?></td>
                                     <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['phone']); ?></td>
+                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['email']); ?></td>
+                                    <td class="px-1 py-3 sm:px-2 sm:py-4 truncate"><?php echo htmlspecialchars($c['vehicles'] ?? '—'); ?><?php echo $c['vehicle_count'] ? ' (' . intval($c['vehicle_count']) . ')' : ''; ?></td>
                                     <td class="px-1 py-3 sm:px-2 sm:py-4 flex flex-col gap-1 sm:flex-row sm:gap-2">
-                                        <button type="button" onclick="prefill(<?php echo $c['id']; ?>)" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none" aria-label="Edit vehicle <?php echo htmlspecialchars($c['plate_number']); ?>">
+                                        <button type="button" onclick="prefillCustomer(<?php echo $c['id']; ?>)" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none" aria-label="Edit customer <?php echo htmlspecialchars($c['full_name']); ?>">
                                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                             </svg>
                                             Edit
                                         </button>
-                                        <form method="post" style="display:inline-block" onsubmit="return confirm('Delete?');" class="flex-1 sm:flex-none">
+                                        <a href="?search=<?php echo urlencode($c['full_name']); ?>" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none">Manage vehicles</a>
+                                        <form method="post" style="display:inline-block" onsubmit="return confirm('Delete customer?');" class="flex-1 sm:flex-none">
                                             <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
-                                            <button type="submit" name="delete_customer" class="inline-flex items-center justify-center w-full px-2 py-1 sm:px-3 sm:py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-md text-xs font-medium transition" aria-label="Delete vehicle <?php echo htmlspecialchars($c['plate_number']); ?>">
+                                            <button type="submit" name="delete_customer" class="inline-flex items-center justify-center w-full px-2 py-1 sm:px-3 sm:py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-md text-xs font-medium transition" aria-label="Delete customer <?php echo htmlspecialchars($c['full_name']); ?>">
                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                 </svg>
@@ -432,46 +452,52 @@ $totalPages = (int)ceil($total / $perPage);
             </div>
 
             <script>
-                function prefill(id) {
-                    fetch('api_customers.php?id=' + id)
+                function prefillCustomer(id) {
+                    fetch('api_customers.php?customer_id=' + id)
                         .then(r => r.json())
                         .then(data => {
                             if (!data) return;
-                            // Replace create form with update form
+                            // Replace create form with update customer form
                             const form = document.querySelector('form[method="post"]');
                             form.innerHTML = `
-                                <h3 class="font-semibold mb-2">Update Vehicle</h3>
+                                <h3 class="font-semibold mb-2">Update Customer</h3>
                                 <input type="hidden" name="id" value="${data.id}">
-                                <input type="text" name="plate_number" value="${data.plate_number || ''}" placeholder="Plate Number" class="w-full px-2 py-2 border rounded mb-2" required>
-                                <input type="text" name="car_mark" value="${data.car_mark || ''}" placeholder="Car Mark" class="w-full px-2 py-2 border rounded mb-2">
-                                <input type="text" name="vin" value="${data.vin || ''}" placeholder="VIN" class="w-full px-2 py-2 border rounded mb-2">
-                                <input type="text" name="mileage" value="${data.mileage || ''}" placeholder="Mileage" class="w-full px-2 py-2 border rounded mb-2">
-                                <input type="text" name="full_name" value="${data.full_name || ''}" placeholder="Full Name" class="w-full px-2 py-2 border rounded mb-2">
+                                <input type="text" name="full_name" value="${data.full_name || ''}" placeholder="Full Name" class="w-full px-2 py-2 border rounded mb-2" required>
                                 <input type="text" name="phone" value="${data.phone || ''}" placeholder="Phone" class="w-full px-2 py-2 border rounded mb-2">
                                 <input type="email" name="email" value="${data.email || ''}" placeholder="Email" class="w-full px-2 py-2 border rounded mb-2">
                                 <textarea name="notes" placeholder="Notes" class="w-full px-2 py-2 border rounded mb-2">${data.notes || ''}</textarea>
-                                <div id="other-vehicles" class="mt-4"></div>
+                                <div id="customer-vehicles" class="mt-4"></div>
                                 <button type="submit" name="update_customer" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                             `;
 
-                            // Fetch other vehicles of the customer
-                            if (data.customer_id) {
-                                fetch('api_customers.php?customer_vehicles=' + data.customer_id)
-                                    .then(r => r.json())
-                                    .then(vehicles => {
-                                        const otherVehiclesDiv = document.getElementById('other-vehicles');
-                                        if (vehicles.length > 1) {
-                                            let html = '<h4 class="font-semibold mb-2">Other Vehicles of this Customer:</h4><ul class="list-disc pl-5">';
-                                            vehicles.forEach(v => {
-                                                if (v.id != data.id) {
-                                                    html += `<li>${v.plate_number} - ${v.car_mark || 'N/A'}</li>`;
-                                                }
-                                            });
-                                            html += '</ul>';
-                                            otherVehiclesDiv.innerHTML = html;
-                                        }
-                                    });
+                            // Render customer's vehicles and small add vehicle form
+                            const vDiv = document.getElementById('customer-vehicles');
+                            let html = '<h4 class="font-semibold mb-2">Vehicles</h4>';
+                            if (Array.isArray(data.vehicles) && data.vehicles.length) {
+                                html += '<ul class="list-disc pl-5 mb-3">';
+                                data.vehicles.forEach(v => {
+                                    html += `<li class="flex items-center justify-between"><span>${v.plate_number} — ${v.car_mark || ''}${v.vin ? ' — ' + v.vin : ''}</span>`;
+                                    html += `<form method="post" onsubmit="return confirm('Delete vehicle?');" style="display:inline"><input type="hidden" name="id" value="${v.id}"><button name="delete_vehicle" class="ml-3 text-xs text-red-600">Delete</button></form>`;
+                                    html += `</li>`;
+                                });
+                                html += '</ul>';
+                            } else {
+                                html += '<div class="text-sm text-gray-500 mb-3">No vehicles</div>';
                             }
+
+                            // Add vehicle small form
+                            html += `<hr class="my-3"><h5 class="font-semibold mb-2">Add Vehicle</h5>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <input type="hidden" name="customer_id" value="${data.id}">
+                                    <div><input name="plate_number" placeholder="Plate number" class="w-full px-2 py-2 border rounded"></div>
+                                    <div><input name="car_mark" placeholder="Car mark" class="w-full px-2 py-2 border rounded"></div>
+                                    <div><input name="vin" placeholder="VIN" class="w-full px-2 py-2 border rounded"></div>
+                                    <div><input name="mileage" placeholder="Mileage" class="w-full px-2 py-2 border rounded"></div>
+                                    <div class="sm:col-span-2"><textarea name="notes" placeholder="Notes (optional)" class="w-full px-2 py-2 border rounded"></textarea></div>
+                                </div>
+                                <button type="submit" name="add_vehicle" class="mt-3 bg-green-600 text-white px-4 py-2 rounded">Add Vehicle</button>`;
+
+                            vDiv.innerHTML = html;
                         });
                 }
 
