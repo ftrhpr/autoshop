@@ -69,27 +69,56 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $customer_id = $pdo->lastInsertId();
                 error_log("Created new customer ID $customer_id because selected was changed");
             } else {
-                // Check if customer with this plate number already exists
-                $stmt = $pdo->prepare('SELECT id FROM customers WHERE plate_number = ? LIMIT 1');
+                // Check if vehicle with this plate number already exists
+                $stmt = $pdo->prepare('SELECT customer_id FROM vehicles WHERE plate_number = ? LIMIT 1');
                 $stmt->execute([$plateNumber]);
-                $existingCustomer = $stmt->fetch();
+                $existingVehicle = $stmt->fetch();
 
-                if ($existingCustomer) {
+                if ($existingVehicle) {
                     // Use existing customer
-                    $customer_id = $existingCustomer['id'];
+                    $customer_id = $existingVehicle['customer_id'];
                     error_log("Used existing customer ID $customer_id for plate $plateNumber");
                 } else {
-                    // Create new customer
-                    $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
-                    $stmt->execute([
-                        $data['customer_name'],
-                        $data['phone_number'],
-                        $plateNumber,
-                        $data['car_mark'],
-                        $_SESSION['user_id']
-                    ]);
-                    $customer_id = $pdo->lastInsertId();
-                    error_log("Created new customer ID $customer_id for plate $plateNumber");
+                    // Check if customer exists by name and phone
+                    $stmt = $pdo->prepare('SELECT id FROM customers WHERE full_name = ? AND phone = ? LIMIT 1');
+                    $stmt->execute([trim($data['customer_name']), trim($data['phone_number'])]);
+                    $existingCustomer = $stmt->fetch();
+
+                    if ($existingCustomer) {
+                        // Add new vehicle to existing customer
+                        $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
+                        $stmt->execute([
+                            $existingCustomer['id'],
+                            $plateNumber,
+                            $data['car_mark'],
+                            $data['vin'] ?? '',
+                            $data['mileage'] ?? ''
+                        ]);
+                        $customer_id = $existingCustomer['id'];
+                        error_log("Added new vehicle for existing customer ID $customer_id, plate $plateNumber");
+                    } else {
+                        // Create new customer
+                        $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone, plate_number, car_mark, created_by) VALUES (?, ?, ?, ?, ?)');
+                        $stmt->execute([
+                            $data['customer_name'],
+                            $data['phone_number'],
+                            $plateNumber,
+                            $data['car_mark'],
+                            $_SESSION['user_id']
+                        ]);
+                        $customer_id = $pdo->lastInsertId();
+
+                        // Create vehicle
+                        $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
+                        $stmt->execute([
+                            $customer_id,
+                            $plateNumber,
+                            $data['car_mark'],
+                            $data['vin'] ?? '',
+                            $data['mileage'] ?? ''
+                        ]);
+                        error_log("Created new customer ID $customer_id for plate $plateNumber");
+                    }
                 }
             }
         } elseif (trim($data['customer_name']) !== '') {
