@@ -166,7 +166,7 @@ $invoices = $stmt->fetchAll();
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
 
 
-    <div class="h-full overflow-hidden">
+    <div class="h-full overflow-hidden ml-0 md:ml-64">
         <div class="h-full overflow-auto p-4 md:p-6">
         <!-- Analytics cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

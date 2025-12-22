@@ -9,14 +9,14 @@ $appRoot = '/' . implode('/', $parts);
 if ($appRoot === '/') $appRoot = '';
 
 $menu = [
-    ['label' => 'New Invoice', 'href' => $appRoot.'/index.php', 'icon' => 'plus', 'permission' => null],
-    ['label' => 'Dashboard', 'href' => $appRoot.'/admin/index.php', 'icon' => 'home', 'permission' => null],
-    ['label' => 'Invoices', 'href' => $appRoot.'/manager.php', 'icon' => 'file-text', 'permission' => null],
-    ['label' => 'Customers', 'href' => $appRoot.'/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
-    ['label' => 'Export CSV', 'href' => $appRoot.'/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_csv'],
-    ['label' => 'Users', 'href' => $appRoot.'/admin/index.php', 'icon' => 'user', 'permission' => 'manage_users'],
-    ['label' => 'Roles & Permissions', 'href' => $appRoot.'/admin/permissions.php', 'icon' => 'shield', 'permission' => null],
-    ['label' => 'Audit Logs', 'href' => $appRoot.'/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
+    ['label' => 'New Invoice', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => null],
+    ['label' => 'Dashboard', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => null],
+    ['label' => 'Invoices', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
+    ['label' => 'Customers', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
+    ['label' => 'Export CSV', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_csv'],
+    ['label' => 'Users', 'href' => $appRoot . '/admin/index.php', 'icon' => 'user', 'permission' => 'manage_users'],
+    ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'icon' => 'shield', 'permission' => null],
+    ['label' => 'Audit Logs', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
 ];
 
 // If current user is a manager, restrict sidebar to only New Invoice and Invoices
@@ -25,11 +25,11 @@ if (isset($_SESSION['role']) && $_SESSION['role'] === 'manager') {
         return in_array($it['label'], ['New Invoice', 'Invoices']);
     }));
 }
-$logoutHref = $appRoot.'/logout.php';
+$logoutHref = $appRoot . '/logout.php';
 
 function svgIcon($name){
     $icons = [
-        'home' => '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L2 8v8a2 2 0 002 2h3v-6h6v6h3a2 2 0 002-2V8L10 2z"/></svg>',
+        'home' => '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L2 8v8a2 2 0 002 2h3v-6h6v-6h3a2 2 0 002-2V8L10 2z"/></svg>',
         'file-text' => '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v12a2 2 0 01-2 2z"/></svg>',
         'users' => '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>',
         'download' => '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>',
@@ -42,57 +42,87 @@ function svgIcon($name){
 }
 ?>
 
-<!-- Bottom Navigation Menu -->
-<nav class="fixed bottom-0 left-0 right-0 z-50 bg-slate-800 text-white border-t border-slate-700" id="bottom-nav">
-    <div class="flex justify-around items-center py-2">
-        <?php foreach ($menu as $item):
-            if ($item['permission'] && !function_exists('currentUserCan')) continue;
-            if ($item['permission'] && !currentUserCan($item['permission'])) continue;
+<!-- Sidebar (desktop) & Off-canvas (mobile) -->
+<div class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform -translate-x-full md:translate-x-0 transition-transform duration-200" id="site-sidebar" aria-hidden="false">
+    <div class="h-full flex flex-col">
+        <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="font-bold text-lg">AutoShop</div>
+                <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                <div id="notif-root" class="relative">
+                    <button id="notifButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    </button>
+                    <button id="notifTestButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Test sound" aria-label="Test sound">🔊</button>
+                    <button id="notifMuteButton" class="ml-1 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Mute notifications" aria-label="Mute notifications">🔈</button>
+                    <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
+                        <source src="assets/sounds/notify.mp3" type="audio/mpeg">
+                        <source src="assets/sounds/notify.ogg" type="audio/ogg">
+                        <!-- Fallback to server-served WAV if mp3/ogg not present -->
+                        <source src="assets/sounds/notify.php" type="audio/wav">
+                    </audio>
+                    <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
+                </div>
+                <?php endif; ?>
+            </div>
+            <button id="closeSidebar" class="md:hidden text-slate-300">✕</button>
+        </div>
 
-            $raw = $item['href'];
-            if (preg_match('#^https?://#i', $raw)) {
-                $href = $raw;
-            } else {
-                // Collapse duplicate segments and ensure leading slash
-                $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
-                $clean = [];
-                foreach ($parts as $p) {
-                    if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1" aria-label="Primary">
+            <?php foreach ($menu as $item):
+                if ($item['permission'] && !function_exists('currentUserCan')) continue;
+                if ($item['permission'] && !currentUserCan($item['permission'])) continue;
+
+                $raw = $item['href'];
+                if (preg_match('#^https?://#i', $raw)) {
+                    $href = $raw;
+                } else {
+                    // Collapse duplicate segments and ensure path relative to app root
+                    $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
+                    $clean = [];
+                    foreach ($parts as $p) {
+                        if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
+                    }
+                    $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
                 }
-                $href = '/' . implode('/', $clean);
-            }
 
-            $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
-        ?>
-        <a href="<?php echo htmlspecialchars($href); ?>" class="flex flex-col items-center justify-center px-2 py-1 rounded <?php echo $isActive ? 'bg-yellow-500 text-slate-900' : 'text-slate-200 hover:text-white'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-            <span class="w-5 h-5"><?php echo svgIcon($item['icon']); ?></span>
-            <span class="text-xs mt-1"><?php echo htmlspecialchars($item['label']); ?></span>
-        </a>
-        <?php endforeach; ?>
-        <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="flex flex-col items-center justify-center px-2 py-1 rounded text-slate-200 hover:text-white" title="Logout">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-            <span class="text-xs mt-1">Logout</span>
-        </a>
+                $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
+            ?>
+            <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-700 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>">
+                <span class="w-5 h-5"><?php echo svgIcon($item['icon']); ?></span>
+                <span><?php echo htmlspecialchars($item['label']); ?></span>
+            </a>
+            <?php endforeach; ?>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700">
+            <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
+        </div>
     </div>
-    <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-    <div id="notif-root" class="absolute top-0 right-4 transform -translate-y-full">
-        <button id="notifButton" class="text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-        </button>
-        <button id="notifTestButton" class="ml-1 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Test sound" aria-label="Test sound">🔊</button>
-        <button id="notifMuteButton" class="ml-1 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Mute notifications" aria-label="Mute notifications">🔈</button>
-        <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
-            <source src="assets/sounds/notify.mp3" type="audio/mpeg">
-            <source src="assets/sounds/notify.ogg" type="audio/ogg">
-            <!-- Fallback to server-served WAV if mp3/ogg not present -->
-            <source src="assets/sounds/notify.php" type="audio/wav">
-        </audio>
-        <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
-    </div>
-    <?php endif; ?>
-</nav>
+</div>
+
+<!-- Mobile: floating menu button -->
+<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+
+<script>
+(function(){
+    function open() { document.getElementById('site-sidebar').classList.remove('-translate-x-full'); document.body.classList.add('overflow-hidden'); }
+    function close() { document.getElementById('site-sidebar').classList.add('-translate-x-full'); document.body.classList.remove('overflow-hidden'); }
+    var openBtn = document.getElementById('openSidebar');
+    var closeBtn = document.getElementById('closeSidebar');
+    if (openBtn) openBtn.addEventListener('click', open);
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    // Close on escape
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+    // Close when tapping outside on mobile
+    document.addEventListener('click', function(e){
+        var sidebar = document.getElementById('site-sidebar');
+        if (!sidebar.contains(e.target) && !openBtn.contains(e.target) && window.innerWidth < 768) close();
+    });
+})();
+</script>
 
 <!-- Mobile overlay and toggle -->
 <button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>

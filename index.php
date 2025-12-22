@@ -149,7 +149,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
 <body class="bg-gradient-to-br from-slate-50 to-blue-50 h-screen overflow-hidden font-sans text-gray-800 antialiased pb-20">
     <?php include 'partials/sidebar.php'; ?>
 
-    <main class="h-full overflow-hidden" role="main">
+    <main class="h-full overflow-hidden ml-0 md:ml-64" role="main">
         <!-- Header -->
         <header class="flex-shrink-0 p-4 md:p-8 print-hidden">
             <nav aria-label="Breadcrumb" class="mb-6">
