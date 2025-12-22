@@ -373,17 +373,17 @@ function sortLink($column, $label) {
                     </form>
                 </div>
 
-                <div>
-                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 max-h-96">
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-x-auto">
                         <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Vehicles list">
                             <caption class="sr-only">List of vehicles with their details and actions</caption>
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">
                                 <tr>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col"><?php echo sortLink('full_name', 'Name'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('phone', 'Phone'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('email', 'Email'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('vehicle_count', 'Vehicles'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700 w-1/5" scope="col">Actions</th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('full_name', 'Name'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('phone', 'Phone'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('email', 'Email'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('vehicle_count', 'Vehicles'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700" scope="col">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
