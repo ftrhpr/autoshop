@@ -361,7 +361,7 @@ $totalPages = (int)ceil($total / $perPage);
                 </div>
 
                 <div class="flex-1 overflow-hidden">
-                    <div class="h-full overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div class="h-full overflow-auto bg-white rounded-lg shadow-lg border border-gray-200">
                         <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Vehicles list">
                             <caption class="sr-only">List of vehicles with their details and actions</caption>
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">

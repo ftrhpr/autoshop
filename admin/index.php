@@ -162,11 +162,12 @@ $invoices = $stmt->fetchAll();
     <title>Admin Panel - Auto Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen overflow-x-hidden font-sans antialiased">
+<body class="bg-gray-100 h-screen overflow-hidden font-sans antialiased flex">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
 
 
-    <div class="container mx-auto p-4 md:p-6 ml-0 md:ml-64">
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-auto p-4 md:p-6">
         <!-- Analytics cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
@@ -414,6 +415,7 @@ $invoices = $stmt->fetchAll();
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 </body>

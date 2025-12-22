@@ -145,10 +145,11 @@ $resultsCount = count($invoices);
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen overflow-x-hidden font-sans antialiased">
+<body class="bg-gray-100 h-screen overflow-hidden font-sans antialiased flex">
     <?php include 'partials/sidebar.php'; ?>
 
-    <div class="container mx-auto p-4 md:p-6 ml-0 md:ml-64">
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-auto p-4 md:p-6">
         <h2 class="text-2xl font-bold mb-6">Invoice Management</h2>
 
         <?php if (isset($success)): ?>
@@ -271,6 +272,7 @@ $resultsCount = count($invoices);
         <?php if ($resultsCount === 0): ?>
             <div class="mt-4 text-sm text-gray-500">No invoices match the current filters.</div>
         <?php endif; ?>
+    </div>
     </div>
 
     <script>

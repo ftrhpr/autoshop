@@ -146,12 +146,12 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             animation: slideInRight 0.3s ease-out;
         }    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen font-sans text-gray-800 antialiased overflow-x-hidden">
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 h-screen overflow-hidden font-sans text-gray-800 antialiased flex">
     <?php include 'partials/sidebar.php'; ?>
 
-    <main class="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-32 print:p-0 print:max-w-none print:pb-0 ml-0 md:ml-64" role="main">
+    <main class="flex-1 flex flex-col overflow-hidden" role="main">
         <!-- Header -->
-        <header class="mb-8 print-hidden">
+        <header class="flex-shrink-0 p-4 md:p-8 print-hidden">
             <nav aria-label="Breadcrumb" class="mb-6">
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
                     <li><a href="admin/index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
@@ -223,7 +223,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             </div>
         </header>
         
-        <!-- ================= EDIT MODE ================= -->
+        <div class="flex-1 overflow-auto p-4 md:p-8">
         <div id="edit-mode" class="block print-hidden animate-fade-in">
             <form id="invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data" onsubmit="return handleSave()" role="form" aria-label="Invoice form">
                 <input type="hidden" name="creation_date" id="hidden_creation_date">
@@ -446,7 +446,6 @@ if (!empty($serverInvoice)) {
 ?>
 <?php include 'partials/invoice_print_template.php'; ?>
         </div>
-
     </main>
 
     <!-- Multi-Capture Modal -->
