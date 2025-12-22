@@ -85,15 +85,6 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $invoices = $stmt->fetchAll();
 $resultsCount = count($invoices);
-
-// Identify recent invoices (created within last 2 hours) for highlighting
-$recentThreshold = date('Y-m-d H:i:s', strtotime('-2 hours'));
-$recentInvoiceIds = [];
-foreach ($invoices as $invoice) {
-    if ($invoice['created_at'] > $recentThreshold) {
-        $recentInvoiceIds[] = $invoice['id'];
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -117,13 +108,6 @@ foreach ($invoices as $invoice) {
         .invoice-new:hover {
             background-color: #fef3c7 !important;
         }
-        .invoice-recent {
-            background-color: #fef3c7;
-            border-left: 4px solid #fbbf24;
-        }
-        .invoice-recent:hover {
-            background-color: #fde68a !important;
-        }
         .invoice-highlight {
             background-color: #fef3c7;
             border-left: 4px solid #fbbf24;
@@ -138,6 +122,13 @@ foreach ($invoices as $invoice) {
         }
         .invoice-fina:hover {
             background-color: #bbf7d0 !important;
+        }
+        .invoice-recent {
+            background-color: #fef3c7;
+            border-left: 4px solid #fbbf24;
+        }
+        .invoice-recent:hover {
+            background-color: #fde68a !important;
         }
         .invoice-seen {
             background-color: white;
@@ -239,7 +230,7 @@ foreach ($invoices as $invoice) {
                 </thead>
                 <tbody>
                     <?php foreach ($invoices as $invoice): ?>
-                    <tr class="hover:bg-gray-50 <?php echo in_array($invoice['id'], $recentInvoiceIds) ? 'invoice-recent' : ''; ?> <?php echo (!empty($invoice['opened_in_fina'])) ? 'invoice-fina' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
+                    <tr class="hover:bg-gray-50 <?php echo (!empty($invoice['is_new'])) ? 'invoice-recent' : ''; ?> <?php echo (!empty($invoice['opened_in_fina'])) ? 'invoice-fina' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
                         <td class="px-2 md:px-4 py-2"><?php echo $invoice['id']; ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
@@ -525,6 +516,11 @@ foreach ($invoices as $invoice) {
             function createInvoiceRow(invoice) {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
+                row.classList.add('invoice-new');
+                row.classList.add('invoice-recent');
+                if (invoice.opened_in_fina) {
+                    row.classList.add('invoice-fina');
+                }
                 row.setAttribute('data-invoice-id', invoice.id);
 
                 row.innerHTML = `

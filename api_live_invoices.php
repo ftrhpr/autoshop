@@ -30,7 +30,7 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT id, created_at, customer_name, plate_number, grand_total FROM invoices WHERE created_at >= ? ORDER BY created_at ASC');
+    $stmt = $pdo->prepare('SELECT id, created_at, customer_name, plate_number, grand_total, is_new, opened_in_fina FROM invoices WHERE created_at >= ? ORDER BY created_at ASC');
     $stmt->execute([$lastTimestamp]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

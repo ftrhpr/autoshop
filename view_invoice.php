@@ -209,6 +209,17 @@ $items = json_decode($invoice['items'], true);
             } catch (e) {
                 console.warn('Could not update seen invoices in sessionStorage', e);
             }
+
+            // Update DB
+            fetch('../update_is_new.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'invoice_id=' + invoiceId
+            }).then(response => response.json()).then(data => {
+                if (!data.success) {
+                    console.warn('Failed to update is_new:', data.error);
+                }
+            }).catch(e => console.warn('Error updating is_new:', e));
         })();
     </script>
 </body>
