@@ -277,17 +277,113 @@ function sortLink($column, $label) {
             </form>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="lg:col-span-2">
-                    <div class="bg-white rounded-lg shadow-lg border border-gray-200 overflow-x-auto">
-                        <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Customers list">
-                            <caption class="sr-only">List of customers with their details and actions</caption>
+                <div class="space-y-6">
+                    <form method="post" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-lg border border-blue-200">
+                        <h3 class="font-bold text-lg mb-4 text-blue-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Add Vehicle to Customer
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Select Customer</label>
+                                <input type="text" id="customer_search" placeholder="Search customer by name or phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <input type="hidden" name="customer_id" id="selected_customer_id">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
+                                <input type="text" name="plate_number" placeholder="Enter plate number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Car Mark</label>
+                                <input type="text" name="car_mark" placeholder="Enter car mark" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">VIN</label>
+                                <input type="text" name="vin" placeholder="Enter VIN" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mileage</label>
+                                <input type="text" name="mileage" placeholder="Enter mileage" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                <textarea name="notes" placeholder="Enter notes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" name="add_vehicle" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Add Vehicle
+                        </button>
+                    </form>
+
+                    <form method="post" action="import_customers.php" enctype="multipart/form-data" class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg shadow-lg border border-green-200 mt-6">
+                        <h4 class="font-bold text-lg mb-4 text-green-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                            </svg>
+                            Import Vehicles (CSV)
+                        </h4>
+                        <p class="text-sm text-gray-600 mb-4">Download the template and fill it. Required: full_name, phone. Optional: plate_number, email, car_mark, vin, mileage, notes, last_service_at. Import will insert new vehicles or update existing ones by plate number, phone, or name. If a vehicle exists by any of these fields, all provided details will be updated. <strong>Ensure the CSV file is saved in UTF-8 encoding to support Georgian characters.</strong></p>
+                        <a href="customers_import_template.csv" class="inline-flex items-center px-4 py-2 bg-green-100 hover:bg-green-200 text-green-800 rounded-md text-sm font-medium transition mb-4">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                            </svg>
+                            Download CSV template
+                        </a>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                            <input type="file" name="csv_file" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                        </div>
+                        <button type="submit" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                            </svg>
+                            Upload & Import
+                        </button>
+                    </form>
+
+                    <form method="post" action="import_customers_raw.php" class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg shadow-lg border border-purple-200 mt-6">
+                        <h4 class="font-bold text-lg mb-4 text-purple-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Import Customers (Raw Text)
+                        </h4>
+                        <p class="text-sm text-gray-600 mb-4">Paste names and phones separately (one per line). Import will pair them by line and insert new customers or update existing ones by phone or name. If a customer exists by phone, it updates their name. If a customer exists by name but has a different phone, it updates their phone and name.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Names (one per line)</label>
+                                <textarea name="names" rows="6" placeholder="John Doe&#10;Jane Smith" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Phones (one per line)</label>
+                                <textarea name="phones" rows="6" placeholder="+995555000000&#10;+995555111111" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                            </svg>
+                            Import Raw Data
+                        </button>
+                    </form>
+                </div>
+
+                <div>
+                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 max-h-96">
+                        <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Vehicles list">
+                            <caption class="sr-only">List of vehicles with their details and actions</caption>
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">
                                 <tr>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('full_name', 'Name'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('phone', 'Phone'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('email', 'Email'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700" scope="col"><?php echo sortLink('vehicle_count', 'Vehicles'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700" scope="col">Actions</th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col"><?php echo sortLink('full_name', 'Name'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('phone', 'Phone'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('email', 'Email'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('vehicle_count', 'Vehicles'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700 w-1/5" scope="col">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
