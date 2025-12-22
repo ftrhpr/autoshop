@@ -49,7 +49,7 @@ $items = json_decode($invoice['items'], true);
                     }
                     ?>
                     <p><strong>Service Manager:</strong> <?php echo htmlspecialchars($invoice['service_manager']); ?><?php echo !empty($smu['username']) ? ' ('.$smu['username'].')' : ''; ?></p>
-                    <p><strong>Customer:</strong> <?php echo htmlspecialchars($invoice['customer_name']); ?></p>
+                    <p><strong>Plate:</strong> <?php echo htmlspecialchars($invoice['customer_name']); ?></p>
                     <p><strong>Phone:</strong> <?php echo htmlspecialchars($invoice['phone']); ?></p>
                     <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
                         <p><strong>FINA Status:</strong>
