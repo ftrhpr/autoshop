@@ -117,11 +117,18 @@ $resultsCount = count($invoices);
             background-color: #fde68a !important;
         }
         .invoice-fina {
-            background-color: #dcfce7; /* light green */
-            border-left: 4px solid #16a34a;
+            background-color: #dbeafe; /* light blue */
+            border-left: 4px solid #3b82f6;
         }
         .invoice-fina:hover {
-            background-color: #bbf7d0 !important;
+            background-color: #bfdbfe !important;
+        }
+        .invoice-viewed {
+            background-color: #d1fae5; /* light green */
+            border-left: 4px solid #10b981;
+        }
+        .invoice-viewed:hover {
+            background-color: #a7f3d0 !important;
         }
         .invoice-recent {
             background-color: #fef3c7;
@@ -230,7 +237,7 @@ $resultsCount = count($invoices);
                 </thead>
                 <tbody>
                     <?php foreach ($invoices as $invoice): ?>
-                    <tr class="hover:bg-gray-50 <?php echo (!empty($invoice['is_new'])) ? 'invoice-recent' : ''; ?> <?php echo (!empty($invoice['opened_in_fina'])) ? 'invoice-fina' : ''; ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
+                    <tr class="hover:bg-gray-50 <?php echo (!empty($invoice['opened_in_fina'])) ? 'invoice-fina' : ((!empty($invoice['is_new'])) ? 'invoice-new invoice-recent' : 'invoice-viewed'); ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
                         <td class="px-2 md:px-4 py-2"><?php echo $invoice['id']; ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
                         <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($invoice['phone']); ?></td>
@@ -525,10 +532,13 @@ $resultsCount = count($invoices);
             function createInvoiceRow(invoice) {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
-                row.classList.add('invoice-new');
-                row.classList.add('invoice-recent');
                 if (invoice.opened_in_fina) {
                     row.classList.add('invoice-fina');
+                } else if (invoice.is_new) {
+                    row.classList.add('invoice-new');
+                    row.classList.add('invoice-recent');
+                } else {
+                    row.classList.add('invoice-viewed');
                 }
                 row.setAttribute('data-invoice-id', invoice.id);
 
@@ -594,8 +604,12 @@ $resultsCount = count($invoices);
                         // Update row styling immediately
                         if (isChecked) {
                             row.classList.add('invoice-fina');
+                            row.classList.remove('invoice-new', 'invoice-recent', 'invoice-viewed');
                         } else {
                             row.classList.remove('invoice-fina');
+                            if (!row.classList.contains('invoice-new')) {
+                                row.classList.add('invoice-viewed');
+                            }
                         }
 
                         this.disabled = true;
@@ -645,7 +659,11 @@ $resultsCount = count($invoices);
                     // Remove highlight after 30 seconds and add seen class
                     setTimeout(() => {
                         row.classList.remove('invoice-highlight');
-                        row.classList.add('invoice-seen');
+                        if (row.classList.contains('invoice-fina')) {
+                            // keep fina
+                        } else {
+                            row.classList.add('invoice-viewed');
+                        }
                     }, 30000);
                 } else {
                     // Even if not in newInvoiceIds, still mark as seen for cross-tab communication
@@ -653,7 +671,11 @@ $resultsCount = count($invoices);
                     row.classList.add('invoice-highlight');
                     setTimeout(() => {
                         row.classList.remove('invoice-highlight');
-                        row.classList.add('invoice-seen');
+                        if (row.classList.contains('invoice-fina')) {
+                            // keep
+                        } else {
+                            row.classList.add('invoice-viewed');
+                        }
                     }, 30000);
                 }
 
