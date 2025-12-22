@@ -146,10 +146,10 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             animation: slideInRight 0.3s ease-out;
         }    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-blue-50 h-screen overflow-hidden font-sans text-gray-800 antialiased flex">
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 h-screen overflow-hidden font-sans text-gray-800 antialiased pb-20">
     <?php include 'partials/sidebar.php'; ?>
 
-    <main class="flex-1 flex flex-col overflow-hidden" role="main">
+    <main class="h-full overflow-hidden" role="main">
         <!-- Header -->
         <header class="flex-shrink-0 p-4 md:p-8 print-hidden">
             <nav aria-label="Breadcrumb" class="mb-6">
@@ -223,7 +223,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
             </div>
         </header>
         
-        <div class="flex-1 overflow-auto p-4 md:p-8">
+        <div class="h-full overflow-auto p-4 md:p-8">
         <div id="edit-mode" class="block print-hidden animate-fade-in">
             <form id="invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data" onsubmit="return handleSave()" role="form" aria-label="Invoice form">
                 <input type="hidden" name="creation_date" id="hidden_creation_date">

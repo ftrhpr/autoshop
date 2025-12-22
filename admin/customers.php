@@ -161,16 +161,9 @@ $totalPages = (int)ceil($total / $perPage);
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-50 h-screen overflow-hidden font-sans antialiased flex">
+<body class="bg-gray-50 h-screen overflow-hidden font-sans antialiased pb-20">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Mobile menu button -->
-        <button id="openSidebar" class="md:hidden fixed top-4 left-4 z-50 bg-slate-800 text-white p-2 rounded-md shadow-lg" aria-label="Open navigation menu">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-        </button>
-
+    <div class="h-full overflow-hidden">
         <!-- Header -->
         <header class="flex-shrink-0 p-4 md:p-6">
             <nav aria-label="Breadcrumb" class="mb-4">
@@ -188,7 +181,7 @@ $totalPages = (int)ceil($total / $perPage);
             </h1>
             <p class="mt-2 text-gray-600">Manage your vehicle database, import data, and view vehicle details.</p>
         </header>
-        <div class="flex-1 overflow-hidden">
+        <div class="h-full overflow-hidden">
             <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; Back</a>
 
             <div class="h-full overflow-hidden bg-white p-4 md:p-6 rounded-xl shadow-xl mx-4 md:mx-6 mb-4">
@@ -550,13 +543,6 @@ $totalPages = (int)ceil($total / $perPage);
                     });
                 }
 
-                // Sidebar toggle
-                document.getElementById('openSidebar').addEventListener('click', function() {
-                    document.getElementById('site-sidebar').classList.remove('-translate-x-full');
-                });
-                document.getElementById('closeSidebar').addEventListener('click', function() {
-                    document.getElementById('site-sidebar').classList.add('-translate-x-full');
-                });
             </script>
         </div>
     </div>
