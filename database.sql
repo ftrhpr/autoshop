@@ -106,3 +106,27 @@ INSERT INTO role_permissions (role, permission_id)
 SELECT 'admin', id FROM permissions;
 INSERT INTO role_permissions (role, permission_id)
 SELECT 'manager', id FROM permissions WHERE name IN ('manage_invoices', 'view_charts', 'manage_customers');
+
+-- Table for predefined labor items
+CREATE TABLE labors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    default_price DECIMAL(10,2) DEFAULT 0,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX (name)
+);
+
+-- Table for predefined parts
+CREATE TABLE parts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    default_price DECIMAL(10,2) DEFAULT 0,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX (name)
+);

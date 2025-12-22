@@ -1208,7 +1208,7 @@ if (!empty($serverInvoice)) {
             tr.id = `row-${rowCount}`;
             tr.innerHTML = `
                 <td class="px-3 py-3 font-medium text-center text-gray-400 row-number"></td>
-                <td class="px-3 py-3"><input type="text" placeholder="Description" class="item-name w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
+                <td class="px-3 py-3 relative"><input type="text" placeholder="Description" class="item-name w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><div class="suggestions absolute z-10 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
                 <td class="px-3 py-3"><input type="number" min="1" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-part w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-svc w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
@@ -1593,6 +1593,86 @@ if (!empty($serverInvoice)) {
                 document.getElementById('print_after_save').value = '';
             }
         }
+
+        // Autocomplete for item names
+        let currentSuggestions = [];
+        let currentInput = null;
+
+        function showSuggestions(input, suggestions) {
+            const container = input.nextElementSibling;
+            container.innerHTML = '';
+            if (suggestions.length > 0) {
+                suggestions.forEach(suggestion => {
+                    const div = document.createElement('div');
+                    div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
+                    div.textContent = suggestion.name + (suggestion.default_price > 0 ? ` (${suggestion.default_price} ₾)` : '') + ` [${suggestion.type}]`;
+                    div.addEventListener('click', () => {
+                        input.value = suggestion.name;
+                        // Optionally set price
+                        const row = input.closest('tr');
+                        const svcInput = row.querySelector('.item-price-svc');
+                        if (suggestion.default_price > 0 && (!svcInput.value || svcInput.value == '0')) {
+                            svcInput.value = suggestion.default_price;
+                            calculateTotals();
+                        }
+                        hideSuggestions();
+                        input.focus();
+                    });
+                    container.appendChild(div);
+                });
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function hideSuggestions() {
+            document.querySelectorAll('.suggestions').forEach(s => s.classList.add('hidden'));
+        }
+
+        function fetchSuggestions(query) {
+            if (query.length < 2) {
+                hideSuggestions();
+                return;
+            }
+            fetch(`admin/api_labors_parts.php?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    currentSuggestions = data;
+                    if (currentInput) {
+                        showSuggestions(currentInput, data);
+                    }
+                })
+                .catch(error => console.error('Error fetching suggestions:', error));
+        }
+
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('item-name')) {
+                currentInput = e.target;
+                const query = e.target.value.trim();
+                // Determine if it's labor or part based on context or assume labor for now
+                // For simplicity, check if "part" in name or something, but let's assume labor
+                fetchSuggestions(query);
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.relative')) {
+                hideSuggestions();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.target.classList.contains('item-name')) {
+                const container = e.target.nextElementSibling;
+                if (e.key === 'Escape') {
+                    hideSuggestions();
+                } else if (e.key === 'ArrowDown' && !container.classList.contains('hidden')) {
+                    const first = container.querySelector('div');
+                    if (first) first.focus();
+                }
+            }
+        });
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
