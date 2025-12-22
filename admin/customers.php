@@ -450,8 +450,29 @@ $totalPages = (int)ceil($total / $perPage);
                                 <input type="text" name="phone" value="${data.phone || ''}" placeholder="Phone" class="w-full px-2 py-2 border rounded mb-2">
                                 <input type="email" name="email" value="${data.email || ''}" placeholder="Email" class="w-full px-2 py-2 border rounded mb-2">
                                 <textarea name="notes" placeholder="Notes" class="w-full px-2 py-2 border rounded mb-2">${data.notes || ''}</textarea>
+                                <div id="other-vehicles" class="mt-4"></div>
                                 <button type="submit" name="update_customer" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Save</button>
                             `;
+
+                            // Fetch other vehicles of the customer
+                            if (data.customer_id) {
+                                fetch('api_customers.php?customer_vehicles=' + data.customer_id)
+                                    .then(r => r.json())
+                                    .then(vehicles => {
+                                        const otherVehiclesDiv = document.getElementById('other-vehicles');
+                                        if (vehicles.length > 1) {
+                                            let html = '<h4 class="font-semibold mb-2">Other Vehicles of this Customer:</h4><ul class="list-disc pl-5">';
+                                            vehicles.forEach(v => {
+                                                if (v.id != data.id) {
+                                                    html += `<li>${v.plate_number} - ${v.car_mark || 'N/A'}</li>`;
+                                                }
+                                            });
+                                            html += '</ul>';
+                                            otherVehiclesDiv.innerHTML = html;
+                                        }
+                                    });
+                            }
+                        });
                         });
                 }
 

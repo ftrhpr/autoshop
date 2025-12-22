@@ -15,7 +15,7 @@ $phone = $_GET['phone'] ?? null;
 header('Content-Type: application/json; charset=utf-8');
 
 if ($id) {
-    $stmt = $pdo->prepare('SELECT v.*, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT v.*, c.id as customer_id, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.id = ? LIMIT 1');
     $stmt->execute([(int)$id]);
     $row = $stmt->fetch();
     echo json_encode($row ?: null);
@@ -43,6 +43,16 @@ $customer_q = $_GET['customer_q'] ?? null;
 if ($customer_q) {
     $stmt = $pdo->prepare('SELECT id, full_name, phone FROM customers WHERE full_name LIKE ? OR phone LIKE ? LIMIT 20');
     $stmt->execute(["%$customer_q%","%$customer_q%"]);
+    $rows = $stmt->fetchAll();
+    echo json_encode($rows);
+    exit;
+}
+
+$customer_vehicles = $_GET['customer_vehicles'] ?? null;
+
+if ($customer_vehicles) {
+    $stmt = $pdo->prepare('SELECT v.id, v.plate_number, v.car_mark, v.vin, v.mileage FROM vehicles v WHERE v.customer_id = ? ORDER BY v.created_at DESC');
+    $stmt->execute([(int)$customer_vehicles]);
     $rows = $stmt->fetchAll();
     echo json_encode($rows);
     exit;
