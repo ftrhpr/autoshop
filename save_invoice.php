@@ -52,6 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Use existing vehicle
                 $vehicle_id = $existingVehicle['id'];
                 error_log("Used existing vehicle ID $vehicle_id for plate $plateNumber");
+
+                // Ensure customer main record kept in sync with vehicle (plate/car)
+                $stmt = $pdo->prepare('UPDATE customers SET plate_number = ?, car_mark = ? WHERE id = ?');
+                $stmt->execute([$plateNumber, $data['car_mark'], $existingVehicle['customer_id']]);
             } else {
                 // Find customer by name and phone
                 $stmt = $pdo->prepare('SELECT id FROM customers WHERE full_name = ? AND phone = ? LIMIT 1');
@@ -70,6 +74,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     ]);
                     $vehicle_id = $pdo->lastInsertId();
                     error_log("Added new vehicle ID $vehicle_id for existing customer ID {$existingCustomer['id']}, plate $plateNumber");
+
+                    // Update customer record with latest vehicle info (backwards compatibility)
+                    $stmt = $pdo->prepare('UPDATE customers SET plate_number = ?, car_mark = ? WHERE id = ?');
+                    $stmt->execute([$plateNumber, $data['car_mark'], $existingCustomer['id']]);
+
+                    // Audit log for vehicle created from invoice
+                    $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
+                    $stmt->execute([$_SESSION['user_id'], 'create_vehicle_from_invoice', "vehicle_id={$vehicle_id}, customer_id={$existingCustomer['id']}, plate={$plateNumber}", $_SERVER['REMOTE_ADDR'] ?? '']);
                 } else {
                     throw new Exception('Customer not found. Please ensure the customer exists or contact admin to add the customer first.');
                 }
