@@ -245,8 +245,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 <!-- Tab Navigation -->
                 <div class="mb-6">
                     <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">Customer</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="vehicle">Vehicle</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">Customer</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="items">Items</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="photos">Photos</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="review">Review</button>
@@ -254,39 +254,7 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                 </div>
 
                 <!-- Tab Content -->
-                <div class="tab-content" id="customer-tab">
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
-                            <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            Customer Details
-                        </h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label for="input_creation_date" class="block text-sm font-medium text-gray-700 mb-2">Creation Date</label>
-                                <input type="datetime-local" id="input_creation_date" value="<?php echo $currentDate; ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
-                            </div>
-                            <div>
-                                <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
-                                <input type="text" id="input_customer_name" placeholder="Enter customer name" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
-                            </div>
-                            <div>
-                                <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                                <input type="text" id="input_phone_number" placeholder="Phone number" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
-                            </div>
-                            <div>
-                                <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">Service Manager</label>
-                                <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
-                            </div>
-                        </div>
-                        <div class="mt-6 flex justify-end">
-                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-content hidden" id="vehicle-tab">
+                <div class="tab-content" id="vehicle-tab">
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                         <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
                             <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -312,8 +280,40 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                                 <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
                         </div>
+                        <div class="mt-6 flex justify-end">
+                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="customer-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Customer Details
+                        </h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="input_creation_date" class="block text-sm font-medium text-gray-700 mb-2">Creation Date</label>
+                                <input type="datetime-local" id="input_creation_date" value="<?php echo $currentDate; ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
+                                <input type="text" id="input_customer_name" placeholder="Enter customer name" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                <input type="text" id="input_phone_number" placeholder="Phone number" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">Service Manager</label>
+                                <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                            </div>
+                        </div>
                         <div class="mt-6 flex justify-between">
-                            <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
                             <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
                         </div>
                     </div>
@@ -366,8 +366,11 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             </div>
                         </div>
                         <div class="mt-6 flex justify-between">
-                            <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
-                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
+                                <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -391,7 +394,8 @@ if (isset($_GET['print_id']) && is_numeric($_GET['print_id'])) {
                             <p class="text-xs text-gray-500">Upload multiple vehicle photos (max 10MB each). Long-press "Take Photo" or use "Multi-Capture" for continuous photo taking.</p>
                             <span id="image_count" class="text-xs text-gray-400">0 images</span>
                         </div>
-                        <div class="mt-6 flex justify-end">
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
                             <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Skip to Review</button>
                         </div>
                     </div>
@@ -1044,6 +1048,16 @@ if (!empty($serverInvoice)) {
             const currentIndex = Array.from(tabButtons).indexOf(activeButton);
             if (currentIndex < tabButtons.length - 1) {
                 tabButtons[currentIndex + 1].click();
+            }
+        }
+
+        function prevTab() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const activeButton = document.querySelector('.tab-btn.bg-blue-500');
+            if (!activeButton) return;
+            const currentIndex = Array.from(tabButtons).indexOf(activeButton);
+            if (currentIndex > 0) {
+                tabButtons[currentIndex - 1].click();
             }
         }
 
