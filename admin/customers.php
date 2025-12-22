@@ -161,9 +161,9 @@ $totalPages = (int)ceil($total / $perPage);
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-50 h-screen overflow-hidden font-sans antialiased pb-20">
+<body class="bg-gray-50 min-h-screen overflow-auto font-sans antialiased pb-20">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
-    <div class="h-full overflow-hidden">
+    <div class="min-h-screen">
         <!-- Header -->
         <header class="flex-shrink-0 p-4 md:p-6">
             <nav aria-label="Breadcrumb" class="mb-4">
@@ -184,7 +184,7 @@ $totalPages = (int)ceil($total / $perPage);
         <div class="h-full overflow-hidden">
             <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; Back</a>
 
-            <div class="h-full overflow-hidden bg-white p-4 md:p-6 rounded-xl shadow-xl mx-4 md:mx-6 mb-4">
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-xl mx-4 md:mx-6 mb-4">
             <h2 class="text-3xl font-bold mb-6 text-gray-800 flex items-center">
                 <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -256,8 +256,8 @@ $totalPages = (int)ceil($total / $perPage);
                 </div>
             </form>
 
-            <div class="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
-                <div class="flex-shrink-0 lg:w-1/2 space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-6">
                     <form method="post" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-lg border border-blue-200">
                         <h3 class="font-bold text-lg mb-4 text-blue-800 flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,8 +353,8 @@ $totalPages = (int)ceil($total / $perPage);
                     </form>
                 </div>
 
-                <div class="flex-1 overflow-hidden">
-                    <div class="h-full overflow-auto bg-white rounded-lg shadow-lg border border-gray-200">
+                <div>
+                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 max-h-96">
                         <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Vehicles list">
                             <caption class="sr-only">List of vehicles with their details and actions</caption>
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">
