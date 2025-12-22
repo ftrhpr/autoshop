@@ -30,7 +30,7 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT id, updated_at as created_at, customer_name, plate_number, grand_total, is_new, opened_in_fina FROM invoices WHERE updated_at >= ? ORDER BY updated_at ASC');
+    $stmt = $pdo->prepare('SELECT i.id, i.updated_at as created_at, i.customer_name, i.phone, i.car_mark, i.plate_number, i.vin, i.mileage, i.grand_total, i.is_new, i.opened_in_fina, u.username as sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id WHERE i.updated_at >= ? ORDER BY i.updated_at ASC');
     $stmt->execute([$lastTimestamp]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

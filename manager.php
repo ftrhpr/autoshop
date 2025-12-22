@@ -535,16 +535,16 @@ $resultsCount = count($invoices);
                 row.innerHTML = `
                     <td class="px-2 md:px-4 py-2">${invoice.id}</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[150px]">${escapeHtml(invoice.customer_name || '')}</td>
-                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"></td>
-                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"></td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.phone || '')}</td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.car_mark || '')}</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.plate_number || '')}</td>
-                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"></td>
-                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"></td>
-                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"></td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${escapeHtml(invoice.vin || '')}</td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[120px]">${escapeHtml(invoice.mileage || '')}</td>
+                    <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${escapeHtml(invoice.sm_username || '')}</td>
                     <td class="px-2 md:px-4 py-2 text-right">${invoice.grand_total || 0} ₾</td>
                     <td class="px-2 md:px-4 py-2 truncate max-w-[140px]">${invoice.created_at}</td>
                     <td class="px-2 md:px-4 py-2 text-center">
-                        <input type="checkbox" class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500" data-invoice-id="${invoice.id}">
+                        <input type="checkbox" class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500" data-invoice-id="${invoice.id}" ${invoice.opened_in_fina ? 'checked' : ''}>
                     </td>
                     <td class="px-2 md:px-4 py-2 text-center">
                         <a href="view_invoice.php?id=${invoice.id}" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">View</a>
