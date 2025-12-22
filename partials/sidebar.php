@@ -58,10 +58,10 @@ function svgIcon($name){
                     <button id="notifTestButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Test sound" aria-label="Test sound">🔊</button>
                     <button id="notifMuteButton" class="ml-1 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Mute notifications" aria-label="Mute notifications">🔈</button>
                     <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
-                        <source src="assets/sounds/notify.mp3" type="audio/mpeg">
-                        <source src="assets/sounds/notify.ogg" type="audio/ogg">
+                        <source src="<?php echo $appRoot; ?>assets/sounds/notify.mp3" type="audio/mpeg">
+                        <source src="<?php echo $appRoot; ?>assets/sounds/notify.ogg" type="audio/ogg">
                         <!-- Fallback to server-served WAV if mp3/ogg not present -->
-                        <source src="assets/sounds/notify.php" type="audio/wav">
+                        <source src="<?php echo $appRoot; ?>assets/sounds/notify.php" type="audio/wav">
                     </audio>
                     <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
                 </div>
