@@ -567,9 +567,10 @@ if (!empty($serverInvoice)) {
                             document.getElementById('input_car_mark').value = data.car_mark || '';
                             const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id || '';
                             const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = data.customer_id || '';
-                            // Populate VIN and mileage if available
+                            // Populate VIN, make/model, and mileage if available
                             const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = data.vin || '';
-                            const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = data.mileage || ''; 
+                            const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = data.car_mark || '';
+                            const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = data.mileage || '';
                         }).catch(e => {
                             // ignore errors
                         });
@@ -665,9 +666,10 @@ if (!empty($serverInvoice)) {
                     document.getElementById('input_phone_number').value = it.phone || '';
                     const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id;
                     const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.customer_id || '';
-                    // Populate VIN and mileage if present
+                    // Populate VIN, make/model, and mileage if present
                     const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = it.vin || '';
-                    const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = it.mileage || ''; 
+                    const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = it.car_mark || '';
+                    const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = it.mileage || '';
                 });
 
                 // Auto-fill on blur if exact plate match
