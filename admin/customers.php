@@ -161,9 +161,9 @@ $totalPages = (int)ceil($total / $perPage);
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen overflow-x-hidden font-sans antialiased">
+<body class="bg-gray-50 h-screen overflow-hidden font-sans antialiased flex">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
-    <div class="w-full ml-0 md:ml-64 p-4 md:p-6 fade-in" role="main">
+    <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Mobile menu button -->
         <button id="openSidebar" class="md:hidden fixed top-4 left-4 z-50 bg-slate-800 text-white p-2 rounded-md shadow-lg" aria-label="Open navigation menu">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -172,7 +172,7 @@ $totalPages = (int)ceil($total / $perPage);
         </button>
 
         <!-- Header -->
-        <header class="mb-8">
+        <header class="flex-shrink-0 p-4 md:p-6">
             <nav aria-label="Breadcrumb" class="mb-4">
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
                     <li><a href="index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
@@ -188,9 +188,10 @@ $totalPages = (int)ceil($total / $perPage);
             </h1>
             <p class="mt-2 text-gray-600">Manage your vehicle database, import data, and view vehicle details.</p>
         </header>
-        <a href="index.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back</a>
+        <div class="flex-1 overflow-hidden">
+            <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; Back</a>
 
-        <div class="bg-white p-8 rounded-xl shadow-xl mb-6">
+            <div class="h-full overflow-hidden bg-white p-4 md:p-6 rounded-xl shadow-xl mx-4 md:mx-6 mb-4">
             <h2 class="text-3xl font-bold mb-6 text-gray-800 flex items-center">
                 <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -262,8 +263,8 @@ $totalPages = (int)ceil($total / $perPage);
                 </div>
             </form>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+            <div class="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
+                <div class="flex-shrink-0 lg:w-1/2 space-y-6">
                     <form method="post" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-lg border border-blue-200">
                         <h3 class="font-bold text-lg mb-4 text-blue-800 flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,11 +360,11 @@ $totalPages = (int)ceil($total / $perPage);
                     </form>
                 </div>
 
-                <div>
-                    <div class="overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200" style="max-height: 70vh;">
+                <div class="flex-1 overflow-hidden">
+                    <div class="h-full overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200">
                         <table class="w-full text-xs sm:text-sm min-w-full" style="table-layout: fixed;" role="table" aria-label="Vehicles list">
                             <caption class="sr-only">List of vehicles with their details and actions</caption>
-                            <thead class="bg-gradient-to-r from-gray-100 to-gray-200">
+                            <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">
                                 <tr>
                                     <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col">Name</th>
                                     <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col">Phone</th>
