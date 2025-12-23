@@ -6,51 +6,315 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'mana
     exit;
 }
 
-// Server-side fallback (non-AJAX): handle POST actions so forms still work without JS
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['type'])) {
-    $type = $_POST['type'];
-    $action = $_POST['action'] ?? '';
-    $table = $type === 'part' ? 'parts' : 'labors';
-
-    try {
-        if ($action === 'add') {
-            $name = trim($_POST['name'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $default_price = (float)($_POST['default_price'] ?? 0);
-            if ($name === '') throw new Exception('Name is required');
-            $stmt = $pdo->prepare("INSERT INTO $table (name, description, default_price, created_by) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $description, $default_price, $_SESSION['user_id']]);
-            $success = ucfirst($type) . ' added successfully';
-        } elseif ($action === 'edit') {
-            $id = (int)($_POST['id'] ?? 0);
-            $name = trim($_POST['name'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $default_price = (float)($_POST['default_price'] ?? 0);
-            if ($id <= 0) throw new Exception('Invalid id');
-            $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ? WHERE id = ?");
-            $stmt->execute([$name, $description, $default_price, $id]);
-            $success = ucfirst($type) . ' updated successfully';
-        } elseif ($action === 'delete') {
-            $id = (int)($_POST['id'] ?? 0);
-            $stmt = $pdo->prepare("DELETE FROM $table WHERE id = ?");
-            $stmt->execute([$id]);
-            $success = ucfirst($type) . ' deleted successfully';
-        }
-    } catch (Exception $e) {
-        $error = $e->getMessage();
-    }
-}
-
-// We'll load data via API on the client side; but provide initial server-rendered data for noscript users
+// Server-side fallback (non-AJAX): keep a small server-rendered list for users without JS
 $labors = [];
 $parts = [];
 try {
-    $labors = $pdo->query("SELECT * FROM labors ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-    $parts = $pdo->query("SELECT * FROM parts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    $labors = $pdo->query("SELECT id, name, description, default_price FROM labors ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    $parts = $pdo->query("SELECT id, name, description, default_price FROM parts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    // If DB not available, leave arrays empty; client-side will handle gracefully
+    // Leave arrays empty if DB isn't accessible
 }
 ?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Labors & Parts — Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    .modal { display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:60 }
+    .modal.show { display:flex; }
+    .toast { position:fixed; right:1rem; top:1rem; z-index:70 }
+</style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans antialiased">
+<?php include '../partials/sidebar.php'; ?>
+
+<div class="ml-0 md:ml-64 p-6 max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Labors & Parts</h1>
+        <div class="flex items-center space-x-3">
+            <input id="global-search" placeholder="Search labors / parts" class="px-3 py-2 border rounded-md" />
+            <a href="create_labor.php" class="px-3 py-2 bg-blue-600 text-white rounded-md">Create Labor</a>
+            <a href="create_part.php" class="px-3 py-2 bg-blue-600 text-white rounded-md">Create Part</a>
+            <button id="export-labors" class="px-3 py-2 bg-gray-200 rounded-md">Export Labors</button>
+            <button id="export-parts" class="px-3 py-2 bg-gray-200 rounded-md">Export Parts</button>
+        </div>
+    </div>
+
+    <div id="notifications" class="mb-4"></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section class="bg-white shadow rounded-lg p-4" aria-labelledby="labors-heading">
+            <div class="flex items-center justify-between mb-3">
+                <h2 id="labors-heading" class="font-semibold">Labors <span id="labors-count" class="text-sm text-gray-500 ml-2"></span></h2>
+                <button id="refresh-labors" class="text-sm text-gray-600">Refresh</button>
+            </div>
+            <form id="add-labor-form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <input type="text" name="name" placeholder="Name" required class="border p-2 rounded" />
+                <input type="text" name="description" placeholder="Description" class="border p-2 rounded" />
+                <div class="flex items-center space-x-2">
+                    <input type="number" name="default_price" placeholder="Price" step="0.01" class="border p-2 rounded w-full" />
+                    <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded">Add</button>
+                </div>
+            </form>
+            <div id="labors-list" class="overflow-auto max-h-[60vh]">
+                <table class="min-w-full text-sm" aria-describedby="labors-heading">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="p-2 text-left">Name</th>
+                            <th class="p-2 text-left">Description</th>
+                            <th class="p-2 text-left">Price</th>
+                            <th class="p-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="labors-tbody">
+                        <?php foreach ($labors as $l): ?>
+                        <tr data-id="<?php echo $l['id']; ?>">
+                            <td class="p-2"><?php echo htmlspecialchars($l['name']); ?></td>
+                            <td class="p-2"><?php echo htmlspecialchars($l['description'] ?? ''); ?></td>
+                            <td class="p-2"><?php echo number_format($l['default_price'],2); ?></td>
+                            <td class="p-2 text-right">
+                                <button class="edit-btn text-indigo-600" data-type="labor" data-id="<?php echo $l['id']; ?>">Edit</button>
+                                <button class="delete-btn text-red-600 ml-3" data-type="labor" data-id="<?php echo $l['id']; ?>">Delete</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="bg-white shadow rounded-lg p-4" aria-labelledby="parts-heading">
+            <div class="flex items-center justify-between mb-3">
+                <h2 id="parts-heading" class="font-semibold">Parts <span id="parts-count" class="text-sm text-gray-500 ml-2"></span></h2>
+                <button id="refresh-parts" class="text-sm text-gray-600">Refresh</button>
+            </div>
+            <form id="add-part-form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <input type="text" name="name" placeholder="Name" required class="border p-2 rounded" />
+                <input type="text" name="description" placeholder="Description" class="border p-2 rounded" />
+                <div class="flex items-center space-x-2">
+                    <input type="number" name="default_price" placeholder="Price" step="0.01" class="border p-2 rounded w-full" />
+                    <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded">Add</button>
+                </div>
+            </form>
+            <div id="parts-list" class="overflow-auto max-h-[60vh]">
+                <table class="min-w-full text-sm" aria-describedby="parts-heading">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="p-2 text-left">Name</th>
+                            <th class="p-2 text-left">Description</th>
+                            <th class="p-2 text-left">Price</th>
+                            <th class="p-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parts-tbody">
+                        <?php foreach ($parts as $p): ?>
+                        <tr data-id="<?php echo $p['id']; ?>">
+                            <td class="p-2"><?php echo htmlspecialchars($p['name']); ?></td>
+                            <td class="p-2"><?php echo htmlspecialchars($p['description'] ?? ''); ?></td>
+                            <td class="p-2"><?php echo number_format($p['default_price'],2); ?></td>
+                            <td class="p-2 text-right">
+                                <button class="edit-btn text-indigo-600" data-type="part" data-id="<?php echo $p['id']; ?>">Edit</button>
+                                <button class="delete-btn text-red-600 ml-3" data-type="part" data-id="<?php echo $p['id']; ?>">Delete</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal" aria-hidden="true">
+        <div class="bg-white w-full max-w-xl rounded-md shadow p-4">
+            <h3 id="modal-title" class="font-semibold mb-2">Edit Item</h3>
+            <form id="modal-form" class="grid grid-cols-1 gap-3">
+                <input type="hidden" name="id" id="modal-id">
+                <input type="hidden" name="type" id="modal-type">
+                <div>
+                    <label class="block text-sm">Name</label>
+                    <input id="modal-name" name="name" required class="border p-2 w-full rounded" />
+                </div>
+                <div>
+                    <label class="block text-sm">Description</label>
+                    <input id="modal-description" name="description" class="border p-2 w-full rounded" />
+                </div>
+                <div>
+                    <label class="block text-sm">Price</label>
+                    <input id="modal-price" name="default_price" type="number" step="0.01" class="border p-2 w-full rounded" />
+                </div>
+                <div class="flex justify-end space-x-2 mt-2">
+                    <button type="button" id="modal-cancel" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast"></div>
+
+</div>
+
+<script>
+// Minimal, robust client-side logic for Labors & Parts
+const apiUrl = 'api_labors_parts.php';
+
+function notify(msg, type='success'){
+    const el = document.createElement('div');
+    el.className = 'mb-2 px-4 py-2 rounded shadow ' + (type==='error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800');
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(()=>el.remove(), 4000);
+}
+
+async function apiGet(params){
+    const url = apiUrl + '?' + new URLSearchParams(params).toString();
+    const r = await fetch(url, {credentials:'same-origin'});
+    const json = await r.json().catch(()=>null);
+    if(!r.ok) throw new Error(json && json.message ? json.message : ('HTTP ' + r.status));
+    return json;
+}
+
+async function apiPost(payload){
+    const r = await fetch(apiUrl, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'same-origin'});
+    const json = await r.json().catch(()=>null);
+    if(!r.ok) throw new Error(json && json.message ? json.message : ('HTTP ' + r.status));
+    return json;
+}
+
+function el(tag, props={}, children=[]){ const e = document.createElement(tag); for(const k in props) e[k]=props[k]; (children||[]).forEach(c=>e.appendChild(typeof c==='string'?document.createTextNode(c):c)); return e; }
+
+function clearAndRender(type, rows){
+    const tbody = document.getElementById(type==='part'?'parts-tbody':'labors-tbody');
+    tbody.innerHTML='';
+    rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.dataset.id = r.id;
+        const tdName = el('td',{className:'p-2'},[r.name||'']);
+        const tdDesc = el('td',{className:'p-2'},[r.description||'']);
+        const tdPrice = el('td',{className:'p-2'},[(Number(r.default_price||0)).toFixed(2)]);
+        const tdActions = document.createElement('td'); tdActions.className='p-2 text-right';
+        const edit = el('button',{className:'edit-btn text-indigo-600'} , ['Edit']); edit.dataset.type = type; edit.dataset.id = r.id; edit.addEventListener('click', onEditClick);
+        const del = el('button',{className:'delete-btn text-red-600 ml-3'}, ['Delete']); del.dataset.type=type; del.dataset.id=r.id; del.addEventListener('click', onDeleteClick);
+        tdActions.appendChild(edit); tdActions.appendChild(del);
+        tr.appendChild(tdName); tr.appendChild(tdDesc); tr.appendChild(tdPrice); tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+    });
+    const countEl = document.getElementById(type==='part'?'parts-count':'labors-count'); if(countEl) countEl.textContent = '(' + rows.length + ')';
+}
+
+async function load(type){
+    const listType = type === 'part' ? 'part' : 'labor';
+    try{
+        const res = await apiGet({type:listType});
+        if(res && res.success){
+            clearAndRender(type, res.data);
+            return res.data;
+        }
+        notify('Unable to load ' + type, 'error');
+        return [];
+    }catch(e){
+        console.error('load error',e);
+        notify('Load error: ' + e.message, 'error');
+        return [];
+    }
+}
+
+async function refreshAll(){ await Promise.all([load('labor'), load('part')]); }
+
+// Form handlers
+document.getElementById('add-part-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    const payload = {action:'add', type:'part', name:fd.get('name'), description:fd.get('description'), default_price:fd.get('default_price')};
+    try{
+        const res = await apiPost(payload);
+        if(res && res.success){ notify('Part added'); this.reset(); await load('part'); } else notify(res && res.message ? res.message : 'Add failed','error');
+    }catch(e){ console.error(e); notify('Error: ' + e.message,'error'); }
+});
+
+document.getElementById('add-labor-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    const payload = {action:'add', type:'labor', name:fd.get('name'), description:fd.get('description'), default_price:fd.get('default_price')};
+    try{
+        const res = await apiPost(payload);
+        if(res && res.success){ notify('Labor added'); this.reset(); await load('labor'); } else notify(res && res.message ? res.message : 'Add failed','error');
+    }catch(e){ console.error(e); notify('Error: ' + e.message,'error'); }
+});
+
+// Edit / Delete handlers
+function onEditClick(e){
+    const btn = e.currentTarget;
+    const type = btn.dataset.type;
+    const id = btn.dataset.id;
+    // fetch details and show modal
+    (async()=>{
+        try{
+            const res = await apiGet({type:type});
+            const item = (res.data||[]).find(x=>String(x.id)===String(id));
+            if(!item){ notify('Item not found','error'); return; }
+            document.getElementById('modal-id').value = item.id;
+            document.getElementById('modal-type').value = type;
+            document.getElementById('modal-name').value = item.name || '';
+            document.getElementById('modal-description').value = item.description || '';
+            document.getElementById('modal-price').value = item.default_price || '';
+            document.getElementById('modal-title').textContent = 'Edit ' + (type==='labor' ? 'Labor' : 'Part');
+            document.getElementById('edit-modal').classList.add('show');
+        }catch(e){ console.error(e); notify('Error loading item','error'); }
+    })();
+}
+
+async function onDeleteClick(e){
+    if(!confirm('Delete this item?')) return;
+    const id = e.currentTarget.dataset.id; const type = e.currentTarget.dataset.type;
+    try{
+        const res = await apiPost({action:'delete', type, id});
+        if(res && res.success){ notify('Deleted'); await load(type); } else notify(res && res.message ? res.message : 'Delete failed','error');
+    }catch(e){ console.error(e); notify('Error: ' + e.message,'error'); }
+}
+
+// Modal save
+document.getElementById('modal-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(this));
+    try{
+        const res = await apiPost({action:'edit', type: f.type, id: f.id, name: f.name, description: f.description, default_price: f.default_price});
+        if(res && res.success){ notify('Updated'); document.getElementById('edit-modal').classList.remove('show'); await load(f.type); }
+        else notify(res && res.message ? res.message : 'Update failed','error');
+    }catch(e){ console.error(e); notify('Error: ' + e.message,'error'); }
+});
+
+// Modal cancel
+document.getElementById('modal-cancel').addEventListener('click', ()=> document.getElementById('edit-modal').classList.remove('show'));
+
+// Simple search across both lists
+document.getElementById('global-search').addEventListener('input', function(){
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('#labors-tbody tr, #parts-tbody tr').forEach(tr => {
+        tr.style.display = (q === '') ? '' : (tr.textContent.toLowerCase().includes(q) ? '' : 'none');
+    });
+});
+
+// Refresh buttons
+document.getElementById('refresh-parts').addEventListener('click', ()=>load('part'));
+document.getElementById('refresh-labors').addEventListener('click', ()=>load('labor'));
+
+// Export
+document.getElementById('export-parts').addEventListener('click', ()=> window.location = apiUrl + '?action=export&type=parts');
+document.getElementById('export-labors').addEventListener('click', ()=> window.location = apiUrl + '?action=export&type=labors');
+
+// Initial load
+(async function(){
+    await refreshAll();
+})();
+</script>
+</body>
+</html>
 
 <!doctype html>
 <html lang="en">

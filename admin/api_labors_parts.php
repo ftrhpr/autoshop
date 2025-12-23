@@ -59,6 +59,8 @@ try {
         if (in_array($listType, ['labor','part'])) {
             $table = $listType === 'part' ? 'parts' : 'labors';
             $rows = $pdo->query("SELECT * FROM $table ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+            // add explicit type to each row so clients can treat results uniformly
+            $rows = array_map(function($r) use ($listType){ $r['type'] = $listType === 'part' ? 'part' : 'labor'; return $r; }, $rows);
             // Log row count and a small sample for debugging
             error_log('api_labors_parts.php - GET list ' . $table . ' rows: ' . count($rows));
             if (!empty($_GET['debug'])) {
@@ -109,7 +111,9 @@ try {
                 $stmt->execute([$name, $description, $default_price, $_SESSION['user_id']]);
                 $id = $pdo->lastInsertId();
                 $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
-                $response = ['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)];
+                $rowData = $row->fetch(PDO::FETCH_ASSOC);
+                if ($rowData) $rowData['type'] = $type;
+                $response = ['success' => true, 'data' => $rowData];
                 if ($debug) $response['debug'] = $debugInfo;
                 echo json_encode($response);
                 exit;
@@ -132,7 +136,9 @@ try {
             $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ? WHERE id = ?");
             $stmt->execute([$name, $description, $default_price, $id]);
             $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
-            $response = ['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)];
+            $rowData = $row->fetch(PDO::FETCH_ASSOC);
+            if ($rowData) $rowData['type'] = $type;
+            $response = ['success' => true, 'data' => $rowData];
             if ($debug) $response['debug'] = $debugInfo;
             echo json_encode($response);
             exit;
