@@ -39,13 +39,7 @@ $title = 'Technicians';
                 <th class="px-4 py-2 text-left text-slate-500 font-medium">User</th>
                 <th class="px-4 py-2 text-left text-slate-500 font-medium">Email</th>
                 <th class="px-4 py-2 text-left text-slate-500 font-medium">Actions</th>
-            </tr></thead>
-            <tbody class="bg-white"></tbody>
-        </table>
-    </div>
-
-    <!-- Add Technician Modal -->
-    <div id="modalNewTech" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-40">
+                    <th class="px-4 py-2 text-left text-slate-500 font-medium">Earnings (30d)</th>
         <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
             <h2 class="text-lg font-semibold mb-4">Add Technician</h2>
             <label class="block text-sm">Name</label>
@@ -101,7 +95,9 @@ async function fetchTechs(){
             <td class="px-4 py-3">
                 <button data-id="${t.id}" data-name="${escapeHtml(t.name)}" data-email="${escapeHtml(t.email||'')}" class="btnEdit bg-yellow-400 px-3 py-1 rounded">Edit</button>
                 <button data-id="${t.id}" class="btnDel bg-red-500 px-3 py-1 rounded text-white">Delete</button>
-            </td>`;
+                <button data-id="${t.id}" class="btnCompute ml-2 bg-green-600 text-white px-2 py-1 rounded">Compute (30d)</button>
+            </td>
+            <td class="px-4 py-3 text-slate-700" id="earnings-${t.id}">—</td>`;
         tbody.appendChild(tr);
         const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.name; sel.appendChild(opt);
     });
@@ -132,7 +128,7 @@ document.getElementById('modalSave').addEventListener('click', ()=>{
 // Refresh
 document.getElementById('btnRefresh').addEventListener('click', fetchTechs);
 
-// Delegate delete/edit
+// Delegate delete/edit/compute for rows
 document.querySelector('#techTable').addEventListener('click', (e)=>{
     if (e.target.classList.contains('btnDel')){
         const id = e.target.getAttribute('data-id'); if (!confirm('Delete?')) return;
@@ -141,6 +137,10 @@ document.querySelector('#techTable').addEventListener('click', (e)=>{
     if (e.target.classList.contains('btnEdit')){
         const id = e.target.getAttribute('data-id'); const name = e.target.getAttribute('data-name'); const email = e.target.getAttribute('data-email');
         editId = id; modalName.value = name; modalEmail.value = email; modal.classList.remove('hidden');
+    }
+    if (e.target.classList.contains('btnCompute')){
+        const id = e.target.getAttribute('data-id');
+        computeForTech(id);
     }
 });
 
@@ -155,6 +155,8 @@ document.getElementById('btnCompute').addEventListener('click', async ()=>{
     let html = '<h4 class="mt-4">Details</h4><table class="w-full text-sm"><thead><tr><th>ID</th><th>Labor</th><th>Earnings</th></tr></thead><tbody>';
     d.details.forEach(row=> html += `<tr><td>${row.invoice_id}</td><td>${row.labor}</td><td>${row.earnings}</td></tr>`);
     html += '</tbody></table>'; document.getElementById('earningsResult').innerHTML += html;
+    // update earnings placeholder in table if present
+    const total = d.total_earned || 0; const el = document.getElementById('earnings-'+document.getElementById('selectTech').value); if (el) el.textContent = total;
 });
 
 // Rules
@@ -162,9 +164,34 @@ async function loadRules(){
     const tech = document.getElementById('selectTech').value; if (!tech) return;
     const res = await fetch('api_technicians.php?action=list_rules&technician_id='+encodeURIComponent(tech)); const d = await res.json(); if (!d.success) return;
     const container = document.getElementById('rulesList'); container.innerHTML = '';
-    d.rules.forEach(r=>{ const el = document.createElement('div'); el.className='p-2 border rounded mb-2'; el.innerHTML = `<div><strong>${r.rule_type}</strong> — ${r.value} ${r.description?(' — '+r.description):''}</div>`; container.appendChild(el); });
+    d.rules.forEach(r=>{ 
+        const el = document.createElement('div'); el.className='p-2 border rounded mb-2 flex items-center justify-between gap-3';
+        el.innerHTML = `<div><strong>${r.rule_type}</strong> — ${r.value} ${r.description?(' — '+r.description):''}</div><div class="flex gap-2"><button data-id="${r.id}" class="btnEditRule bg-yellow-400 px-2 py-1 rounded">Edit</button><button data-id="${r.id}" class="btnDelRule bg-red-500 px-2 py-1 rounded text-white">Delete</button></div>`; 
+        container.appendChild(el); 
+    });
     // show panel
     document.getElementById('panel').classList.remove('hidden');
+}
+
+// Delete rule handler (delegate)
+document.getElementById('rulesList').addEventListener('click', (e)=>{
+    if (e.target.classList.contains('btnDelRule')){
+        const id = e.target.getAttribute('data-id'); if (!confirm('Delete rule?')) return;
+        fetch('api_technicians.php?action=delete_rule',{method:'POST', body:new URLSearchParams({id})}).then(r=>r.json()).then(d=>{ if (d.success) loadRules(); else alert('Failed'); });
+    }
+    if (e.target.classList.contains('btnEditRule')){
+        const id = e.target.getAttribute('data-id'); const type = prompt('Rule type (percentage|fixed_per_invoice)'); if (!type) return; const value = prompt('Value'); if (value===null) return; const desc = prompt('Description (optional)');
+        fetch('api_technicians.php?action=update_rule',{method:'POST', body:new URLSearchParams({id, rule_type:type, value, description:desc})}).then(r=>r.json()).then(d=>{ if (d.success) loadRules(); else alert('Failed'); });
+    }
+});
+
+// Compute earnings per-row
+function computeForTech(techId){
+    // default last 30 days
+    const end = new Date(); const start = new Date(); start.setDate(end.getDate()-30);
+    const s = start.toISOString().slice(0,10); const e = end.toISOString().slice(0,10);
+    document.getElementById('selectTech').value = techId; loadRules();
+    document.getElementById('startDate').value = s; document.getElementById('endDate').value = e; document.getElementById('btnCompute').click();
 }
 
 document.getElementById('btnAddRule').addEventListener('click', ()=>{

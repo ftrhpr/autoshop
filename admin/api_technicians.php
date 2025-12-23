@@ -59,8 +59,18 @@ try{
         $stmt->execute([$tech]); echo json_encode(['success'=>true,'rules'=>$stmt->fetchAll(PDO::FETCH_ASSOC)]); exit;
     }
 
-    if ($action === 'compute_earnings'){
-        // params: technician_id, start_date, end_date
+    if ($action === 'delete_rule'){
+        $id = (int)($_POST['id'] ?? 0); if (!$id) throw new Exception('Invalid');
+        $stmt = $pdo->prepare('DELETE FROM payroll_rules WHERE id=?'); $stmt->execute([$id]); echo json_encode(['success'=>true]); exit;
+    }
+
+    if ($action === 'update_rule'){
+        $id = (int)($_POST['id'] ?? 0); $rule_type = $_POST['rule_type'] ?? null; $value = (float)($_POST['value'] ?? 0); $desc = trim($_POST['description'] ?? '');
+        if (!$id || !$rule_type) throw new Exception('Invalid');
+        $stmt = $pdo->prepare('UPDATE payroll_rules SET rule_type=?, value=?, description=? WHERE id=?'); $stmt->execute([$rule_type, $value, $desc, $id]); echo json_encode(['success'=>true]); exit;
+    }
+
+    if ($action === 'compute_earnings'){        // params: technician_id, start_date, end_date
         $tech = (int)($_GET['technician_id'] ?? 0);
         if (!$tech) throw new Exception('Invalid');
         $start = $_GET['start'] ?? null; $end = $_GET['end'] ?? null;
