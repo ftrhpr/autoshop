@@ -279,10 +279,12 @@ try {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            alert('DOM loaded');
             console.log('DOM loaded');
             // Tab switching
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
+            alert('Found ' + tabButtons.length + ' tab buttons and ' + tabContents.length + ' tab contents');
             console.log('Found tab buttons:', tabButtons.length);
             console.log('Found tab contents:', tabContents.length);
 
