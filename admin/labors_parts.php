@@ -280,15 +280,26 @@ try {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Tab switching
-            document.querySelectorAll('.tab-button').forEach(btn => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('tab-active', 'border-blue-500', 'text-blue-600'));
-                    document.querySelectorAll('.tab-button').forEach(b => b.classList.add('text-gray-500', 'hover:text-gray-700'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                    // Remove active class from all buttons
+                    tabButtons.forEach(b => b.classList.remove('tab-active'));
                     
-                    this.classList.add('tab-active', 'border-blue-500', 'text-blue-600');
-                    this.classList.remove('text-gray-500', 'hover:text-gray-700');
-                    document.getElementById(this.dataset.tab + '-tab').classList.remove('hidden');
+                    // Hide all tab contents
+                    tabContents.forEach(c => c.classList.add('hidden'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('tab-active');
+                    
+                    // Show corresponding tab content
+                    const tabId = this.dataset.tab + '-tab';
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent) {
+                        tabContent.classList.remove('hidden');
+                    }
                 });
             });
 
@@ -308,15 +319,21 @@ try {
             });
 
             // Close modal on outside click
-            document.getElementById('modal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
+            const modal = document.getElementById('modal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeModal();
+                    }
+                });
+            }
         });
 
         function closeModal() {
-            document.getElementById('modal').classList.remove('show');
+            const modal = document.getElementById('modal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
         }
     </script>
 </body>
