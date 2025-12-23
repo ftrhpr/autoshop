@@ -197,17 +197,6 @@ function svgIcon($name){
 <button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg" aria-label="Open menu" aria-expanded="false" aria-controls="site-sidebar">☰</button>
 
 <style>
-#site-sidebar.collapsed {
-    width: 4rem;
-}
-#site-sidebar.collapsed .sidebar-text {
-    opacity: 0;
-    pointer-events: none;
-}
-#site-sidebar.collapsed a {
-    justify-content: center;
-}
-
 /* Focus ring and press animation for interactive buttons */
 button:focus-visible, [role="menuitem"]:focus-visible { outline: 3px solid rgba(99,102,241,0.95); outline-offset: 2px; border-radius: 6px; }
 button.btn-press-anim:active { transform: translateY(1px) scale(0.995); transition: transform 80ms ease; }
