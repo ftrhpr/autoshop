@@ -46,22 +46,22 @@ function svgIcon($name){
 
 <!-- Top Navigation Bar -->
 <nav class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 text-white shadow-2xl backdrop-blur-sm border-b border-white/10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-20">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div class="flex justify-between items-center h-16 sm:h-18 lg:h-20">
             <!-- Logo/Brand -->
             <div class="flex items-center flex-shrink-0">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                     </div>
-                    <div class="font-bold text-xl bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">AutoShop</div>
+                    <div class="font-bold text-lg sm:text-xl lg:text-2xl bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">AutoShop</div>
                 </div>
             </div>
 
             <!-- Desktop Menu -->
-            <div class="hidden md:flex items-center space-x-2 xl:space-x-6 flex-1 justify-center">
+            <div class="hidden lg:flex items-center space-x-1 xl:space-x-3 2xl:space-x-6 flex-1 justify-center max-w-4xl">
                 <?php foreach ($menu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
                     if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -81,9 +81,9 @@ function svgIcon($name){
 
                     $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
                 ?>
-                <a href="<?php echo htmlspecialchars($href); ?>" class="group relative flex items-center gap-2 xl:gap-3 px-4 xl:px-6 py-3 rounded-2xl hover:bg-white/10 transition-all duration-300 text-sm xl:text-base font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-lg scale-105' : 'text-blue-100 hover:text-white hover:scale-105'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                    <span class="w-5 h-5 xl:w-6 xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
-                    <span class="relative">
+                <a href="<?php echo htmlspecialchars($href); ?>" class="group relative flex items-center gap-1.5 xl:gap-2 2xl:gap-3 px-3 xl:px-4 2xl:px-6 py-2 xl:py-3 2xl:py-3 rounded-xl xl:rounded-2xl hover:bg-white/10 transition-all duration-300 text-xs xl:text-sm 2xl:text-base font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-lg scale-105' : 'text-blue-100 hover:text-white hover:scale-105'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                    <span class="w-4 h-4 xl:w-5 xl:h-5 2xl:w-6 2xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
+                    <span class="relative whitespace-nowrap">
                         <?php echo htmlspecialchars($item['label']); ?>
                         <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-300 group-hover:w-full"></span>
                     </span>
@@ -94,19 +94,47 @@ function svgIcon($name){
                 <?php endforeach; ?>
             </div>
 
+            <!-- Tablet Menu (Simplified) -->
+            <div class="hidden md:flex lg:hidden items-center space-x-1 flex-1 justify-center max-w-md">
+                <?php 
+                $tabletMenu = array_slice($menu, 0, 4); // Show only first 4 items on tablet
+                foreach ($tabletMenu as $item):
+                    if ($item['permission'] && !function_exists('currentUserCan')) continue;
+                    if ($item['permission'] && !currentUserCan($item['permission'])) continue;
+
+                    $raw = $item['href'];
+                    if (preg_match('#^https?://#i', $raw)) {
+                        $href = $raw;
+                    } else {
+                        $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
+                        $clean = [];
+                        foreach ($parts as $p) {
+                            if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
+                        }
+                        $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
+                    }
+
+                    $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
+                ?>
+                <a href="<?php echo htmlspecialchars($href); ?>" class="group relative flex items-center gap-1 px-2 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 text-xs font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-md' : 'text-blue-100 hover:text-white'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                    <span class="w-4 h-4 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
+
             <!-- Right side: Notifications and Logout -->
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 sm:space-x-3">
                 <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-                <div id="notif-root" class="relative flex items-center space-x-2">
-                    <button id="notifButton" class="relative p-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" title="Notifications" aria-label="Notifications">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full px-2 py-1 font-bold shadow-lg animate-bounce">0</span>
+                <div id="notif-root" class="relative flex items-center space-x-1">
+                    <button id="notifButton" class="relative p-2 sm:p-2.5 lg:p-3 rounded-xl lg:rounded-2xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" title="Notifications" aria-label="Notifications">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold shadow-lg animate-bounce">0</span>
                     </button>
-                    <button id="notifTestButton" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden sm:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Test sound" aria-label="Test sound">
-                        <span class="text-sm">🔊</span>
+                    <button id="notifTestButton" class="p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden lg:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Test sound" aria-label="Test sound">
+                        <span class="text-xs">🔊</span>
                     </button>
-                    <button id="notifMuteButton" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden sm:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Mute notifications" aria-label="Mute notifications">
-                        <span class="text-sm">🔇</span>
+                    <button id="notifMuteButton" class="p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden lg:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Mute notifications" aria-label="Mute notifications">
+                        <span class="text-xs">🔇</span>
                     </button>
                     <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.mp3" type="audio/mpeg">
@@ -118,16 +146,16 @@ function svgIcon($name){
                 <?php endif; ?>
 
                 <!-- Logout Button -->
-                <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden md:flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+                <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden lg:flex items-center gap-2 px-4 xl:px-6 py-2 xl:py-3 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
-                    <span>Logout</span>
+                    <span class="hidden xl:inline">Logout</span>
                 </a>
 
                 <!-- Mobile Hamburger Menu Button -->
-                <button id="mobile-menu-button" class="md:hidden p-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" aria-label="Open menu">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="mobile-menu-button" class="md:hidden p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" aria-label="Open menu">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
