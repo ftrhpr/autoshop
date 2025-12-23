@@ -49,12 +49,12 @@ function svgIcon($name){
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
             <!-- Logo/Brand -->
-            <div class="flex items-center">
+            <div class="flex items-center flex-shrink-0">
                 <div class="font-bold text-lg">AutoShop</div>
             </div>
 
             <!-- Desktop Menu -->
-            <div class="hidden md:flex space-x-4">
+            <div class="hidden md:flex items-center space-x-1 xl:space-x-4 flex-1 justify-center">
                 <?php foreach ($menu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
                     if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -74,22 +74,22 @@ function svgIcon($name){
 
                     $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
                 ?>
-                <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-700 transition-colors duration-200 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                    <span class="w-5 h-5"><?php echo svgIcon($item['icon']); ?></span>
+                <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-1 xl:gap-2 px-2 xl:px-3 py-2 rounded-lg hover:bg-slate-700 transition-colors duration-200 text-xs md:text-sm xl:text-base <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                    <span class="w-4 h-4 xl:w-5 xl:h-5"><?php echo svgIcon($item['icon']); ?></span>
                     <span><?php echo htmlspecialchars($item['label']); ?></span>
                 </a>
                 <?php endforeach; ?>
             </div>
 
             <!-- Right side: Notifications and Logout -->
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
                 <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-                <div id="notif-root" class="relative">
-                    <button id="notifButton" class="text-slate-300 hover:text-white p-2 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                <div id="notif-root" class="relative flex items-center space-x-1">
+                    <button id="notifButton" class="text-slate-300 hover:text-white p-1.5 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </button>
-                    <button id="notifTestButton" class="text-slate-300 hover:text-white p-2 rounded focus:outline-none" title="Test sound" aria-label="Test sound">🔊</button>
-                    <button id="notifMuteButton" class="text-slate-300 hover:text-white p-2 rounded focus:outline-none" title="Mute notifications" aria-label="Mute notifications">🔈</button>
+                    <button id="notifTestButton" class="text-slate-300 hover:text-white p-1.5 rounded focus:outline-none hidden sm:block" title="Test sound" aria-label="Test sound">🔊</button>
+                    <button id="notifMuteButton" class="text-slate-300 hover:text-white p-1.5 rounded focus:outline-none hidden sm:block" title="Mute notifications" aria-label="Mute notifications">🔈</button>
                     <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.mp3" type="audio/mpeg">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.ogg" type="audio/ogg">
@@ -101,7 +101,7 @@ function svgIcon($name){
                 <?php endif; ?>
 
                 <!-- Logout Button -->
-                <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden md:block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white transition-colors duration-200">Logout</a>
+                <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden md:block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white transition-colors duration-200 text-sm">Logout</a>
 
                 <!-- Mobile Hamburger Menu Button -->
                 <button id="mobile-menu-button" class="md:hidden text-slate-300 hover:text-white p-2 rounded focus:outline-none" aria-label="Open menu">
@@ -113,33 +113,35 @@ function svgIcon($name){
         </div>
 
         <!-- Mobile Menu Dropdown -->
-        <div id="mobile-menu" class="hidden md:hidden bg-slate-700 border-t border-slate-600">
-            <div class="px-2 pt-2 pb-3 space-y-1">
-                <?php foreach ($menu as $item):
-                    if ($item['permission'] && !function_exists('currentUserCan')) continue;
-                    if ($item['permission'] && !currentUserCan($item['permission'])) continue;
+        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-slate-800 border-t border-slate-600 shadow-xl z-40 max-h-screen overflow-y-auto">
+            <div class="max-w-7xl mx-auto px-4 py-2">
+                <div class="grid grid-cols-1 gap-1">
+                    <?php foreach ($menu as $item):
+                        if ($item['permission'] && !function_exists('currentUserCan')) continue;
+                        if ($item['permission'] && !currentUserCan($item['permission'])) continue;
 
-                    $raw = $item['href'];
-                    if (preg_match('#^https?://#i', $raw)) {
-                        $href = $raw;
-                    } else {
-                        $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
-                        $clean = [];
-                        foreach ($parts as $p) {
-                            if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
+                        $raw = $item['href'];
+                        if (preg_match('#^https?://#i', $raw)) {
+                            $href = $raw;
+                        } else {
+                            $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
+                            $clean = [];
+                            foreach ($parts as $p) {
+                                if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
+                            }
+                            $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
                         }
-                        $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
-                    }
 
-                    $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
-                ?>
-                <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-600 transition-colors duration-200 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                    <span class="w-5 h-5"><?php echo svgIcon($item['icon']); ?></span>
-                    <span><?php echo htmlspecialchars($item['label']); ?></span>
-                </a>
-                <?php endforeach; ?>
-                <div class="border-t border-slate-600 pt-2">
-                    <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
+                        $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
+                    ?>
+                    <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                        <span class="w-5 h-5 flex-shrink-0"><?php echo svgIcon($item['icon']); ?></span>
+                        <span><?php echo htmlspecialchars($item['label']); ?></span>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+                <div class="border-t border-slate-600 mt-2 pt-2">
+                    <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block w-full px-3 py-3 rounded bg-red-600 hover:bg-red-500 text-white text-center font-medium">Logout</a>
                 </div>
             </div>
         </div>
@@ -147,16 +149,27 @@ function svgIcon($name){
 </nav>
 
 <style>
-/* Old sidebar styles - can be removed if not needed */
-#site-sidebar.collapsed {
-    width: 4rem;
-}
-#site-sidebar.collapsed .sidebar-text {
+/* Mobile menu animations */
+#mobile-menu {
+    transform: translateY(-100%);
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
     opacity: 0;
-    pointer-events: none;
 }
-#site-sidebar.collapsed a {
-    justify-content: center;
+#mobile-menu:not(.hidden) {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Ensure main content has proper top padding for fixed nav */
+main, .container, .max-w-7xl {
+    padding-top: 4rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1023px) {
+    main, .container, .max-w-7xl {
+        padding-top: 4rem;
+    }
 }
 </style>
 
@@ -166,12 +179,28 @@ function svgIcon($name){
     const mobileMenuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
     if (mobileMenuButton && mobileMenu) {
-        mobileMenuButton.addEventListener('click', () => {
+        mobileMenuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
             mobileMenu.classList.toggle('hidden');
         });
+        
         // Close menu when clicking outside or on a link
         document.addEventListener('click', (e) => {
             if (!mobileMenuButton.contains(e.target) && !mobileMenu.contains(e.target)) {
+                mobileMenu.classList.add('hidden');
+            }
+        });
+        
+        // Close menu when clicking on menu items
+        mobileMenu.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                mobileMenu.classList.add('hidden');
+            }
+        });
+        
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
                 mobileMenu.classList.add('hidden');
             }
         });
@@ -195,7 +224,7 @@ function svgIcon($name){
             @keyframes notif-slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity:1; } }
             @keyframes bell-pulse { 0%{ transform: scale(1); } 30%{ transform: scale(1.15) rotate(-8deg);} 60%{ transform: scale(1.03) rotate(6deg);} 100%{transform: scale(1);} }
             .notif-bell-anim { animation: bell-pulse 0.9s ease; }
-            #notifContainer { position: fixed; top: 5rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+            #notifContainer { position: fixed; top: 4rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
             .notif-item { width: 20rem; max-width: calc(100vw - 4rem); background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(0,0,0,0.08); padding: 0.75rem; cursor: pointer; transform: translateX(24px); opacity:0; animation: notif-slide-in 320ms forwards ease; }
             .notif-item .notif-dismiss{ background: transparent; border: 0; font-size: 1.05rem; line-height: 1; cursor: pointer; color: #6b7280; }
         `;
@@ -407,11 +436,6 @@ function svgIcon($name){
     window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
 })();
 </script>
-
-<style>
-    /* Adjust main content to account for fixed top nav */
-    main, .container, .max-w-7xl { padding-top: 4rem; }
-</style>
 
 <?php if (!empty($_SESSION['created_items'])): $created_items = $_SESSION['created_items']; unset($_SESSION['created_items']); ?>
 <script>
