@@ -214,6 +214,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
                             <button class="text-red-600">Delete</button>
                         </form>
                         <button class="ml-3 text-indigo-600" onclick="openEdit(<?php echo (int)$r['id']; ?>, '<?php echo h(addslashes($r['name'])); ?>', '<?php echo h(addslashes($r['description'])); ?>', '<?php echo h($r['default_price']); ?>', '<?php echo h(addslashes($r['vehicle_make_model'] ?? '')); ?>')">Edit</button>
+                        <button class="ml-3 text-blue-600" onclick="openManagePrices(<?php echo (int)$r['id']; ?>, '<?php echo h(addslashes($r['name'])); ?>', '<?php echo h($type); ?>')">Manage Prices</button>
                     </td>
                 </tr>
                 <?php endforeach; endif; ?>
@@ -265,6 +266,22 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
 
 </div>
 
+<!-- Manage Prices Modal -->
+<div id="manage-prices-modal" style="display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:70;">
+    <div class="bg-white w-full max-w-2xl rounded p-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 id="prices-title" class="font-semibold">Manage Prices</h3>
+            <button onclick="document.getElementById('manage-prices-modal').style.display='none'" class="text-gray-500">✕</button>
+        </div>
+        <div id="prices-content">
+            <div class="text-center text-gray-500 py-6">Loading...</div>
+        </div>
+        <div class="mt-3 text-right">
+            <button class="px-3 py-2 bg-gray-200 rounded" onclick="document.getElementById('manage-prices-modal').style.display='none'">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
 function openEdit(id,name,desc,price,vehicle){
     document.getElementById('edit-id').value = id;
@@ -273,6 +290,88 @@ function openEdit(id,name,desc,price,vehicle){
     document.getElementById('edit-price').value = price;
     document.getElementById('edit-vehicle').value = vehicle || '';
     document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function openManagePrices(id, name, itemType){
+    const modal = document.getElementById('manage-prices-modal');
+    modal.dataset.currentItemId = id;
+    modal.dataset.currentItemType = itemType;
+    document.getElementById('prices-title').textContent = 'Manage Prices — ' + name;
+    modal.style.display = 'flex';
+    fetchPrices(id, itemType);
+}
+
+function fetchPrices(itemId, itemType){
+    const content = document.getElementById('prices-content');
+    content.innerHTML = '<div class="text-center text-gray-500 py-6">Loading...</div>';
+    fetch('admin/api_labors_parts.php?action=prices&item_id=' + encodeURIComponent(itemId) + '&item_type=' + encodeURIComponent(itemType))
+        .then(r => r.json())
+        .then(resp => {
+            if (!resp || !resp.success) throw new Error(resp && resp.message ? resp.message : 'Failed');
+            renderPrices(itemId, itemType, resp.data || []);
+        }).catch(e => { content.innerHTML = '<div class="text-red-500 text-center py-6">Error: '+e.message+'</div>' });
+}
+
+function renderPrices(itemId, itemType, rows){
+    const content = document.getElementById('prices-content');
+    let html = `
+        <div class="mb-3">
+            <form id="price-add-form" onsubmit="return false;" class="grid grid-cols-3 gap-2 items-end">
+                <input type="text" id="price-vehicle" placeholder="Vehicle (e.g. Toyota Corolla)" class="border p-2 rounded col-span-2">
+                <input type="number" id="price-value" placeholder="Price" class="border p-2 rounded">
+                <div class="col-span-3 text-right mt-1"><button class="px-3 py-2 bg-blue-600 text-white rounded" onclick="addPrice(`+itemId+`, '`+itemType+`')">Add / Save</button></div>
+            </form>
+        </div>
+        <div class="overflow-auto max-h-64">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50"><tr><th class="p-2 text-left">Vehicle</th><th class="p-2 text-left">Price</th><th class="p-2">Actions</th></tr></thead>
+                <tbody>`;
+    if (rows.length === 0) {
+        html += '<tr><td colspan="3" class="p-4 text-center text-gray-500">No prices defined</td></tr>';
+    } else {
+        rows.forEach(r => {
+            html += `<tr data-price-id="${r.id}"><td class="p-2">${r.vehicle_make_model}</td><td class="p-2">${Number(r.price).toFixed(2)} ₾</td><td class="p-2 text-right"><button class="text-indigo-600 mr-3" onclick="startEditPrice(${r.id}, '${r.vehicle_make_model.replace(/'/g, "\\'")}', ${Number(r.price)}, '${itemType}')">Edit</button><button class="text-red-600" onclick="deletePrice(${r.id}, ${itemId}, '${itemType}')">Delete</button></td></tr>`;
+        });
+    }
+    html += `</tbody></table></div>`;
+    content.innerHTML = html;
+}
+
+function addPrice(itemId, itemType){
+    const vehicle = document.getElementById('price-vehicle').value.trim();
+    const price = parseFloat(document.getElementById('price-value').value || 0);
+    if (!vehicle || !price) return alert('Please enter vehicle and price');
+    fetch('admin/api_labors_parts.php', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({action:'price_add', item_id:itemId, item_type:itemType, vehicle_make_model:vehicle, price:price})
+    }).then(r=>r.json()).then(d=>{
+        if (!d || !d.success) return alert('Failed to save price: '+(d && d.message ? d.message : 'unknown'));
+        // refresh modal
+        fetchPrices(itemId, itemType);
+        // also refresh page to show updated price badges
+        setTimeout(()=>location.reload(), 600);
+    }).catch(e=>alert('Error: '+e.message));
+}
+
+function startEditPrice(id, vehicle, price, itemType){
+    document.getElementById('price-vehicle').value = vehicle;
+    document.getElementById('price-value').value = price;
+    // change add button to do edit
+    const btn = document.querySelector('#price-add-form button');
+    btn.onclick = function(){
+        const nv = document.getElementById('price-vehicle').value.trim();
+        const np = parseFloat(document.getElementById('price-value').value || 0);
+        if (!nv || !np) return alert('Please enter vehicle and price');
+        fetch('admin/api_labors_parts.php', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({action:'price_edit', id:id, vehicle_make_model:nv, price:np})
+        }).then(r=>r.json()).then(d=>{ if (!d || !d.success) return alert('Failed'); const modal = document.getElementById('manage-prices-modal'); const itemId = modal.dataset.currentItemId; const itemType = modal.dataset.currentItemType; fetchPrices(itemId, itemType); setTimeout(()=>location.reload(),600); }).catch(e=>alert('Error: '+e.message));
+    };
+}
+
+function deletePrice(id, itemId, itemType){
+    if (!confirm('Delete price?')) return;
+    fetch('admin/api_labors_parts.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'price_delete', id:id})}).then(r=>r.json()).then(d=>{ if (!d || !d.success) return alert('Failed'); fetchPrices(itemId, itemType); setTimeout(()=>location.reload(),600); }).catch(e=>alert('Error: '+e.message));
 }
 </script>
 </body>

@@ -28,6 +28,18 @@ try {
             exit;
         }
 
+        // Price list for a specific item: ?action=prices&item_id=123&item_type=part|labor
+        if ($action === 'prices' && !empty($_GET['item_id']) && !empty($_GET['item_type'])) {
+            $itemId = (int)$_GET['item_id'];
+            $itemType = in_array($_GET['item_type'], ['part','labor']) ? $_GET['item_type'] : null;
+            if (!$itemType) { echo json_encode(['success' => false, 'message' => 'Invalid item type']); exit; }
+            $ps = $pdo->prepare('SELECT id, vehicle_make_model, price, created_by, created_at FROM item_prices WHERE item_type = ? AND item_id = ? ORDER BY vehicle_make_model');
+            $ps->execute([$itemType, $itemId]);
+            $prices = $ps->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['success' => true, 'data' => $prices]);
+            exit;
+        }
+
         // Autocomplete suggestions: ?q=term&vehicle=Make%20Model
         $q = trim($_GET['q'] ?? '');
         $vehicle = trim($_GET['vehicle'] ?? '');
@@ -211,6 +223,41 @@ try {
             if ($id <= 0) throw new Exception('Invalid id');
             $table = $data['type'] === 'part' ? 'parts' : 'labors';
             $stmt = $pdo->prepare("DELETE FROM $table WHERE id = ?");
+            $stmt->execute([$id]);
+            echo json_encode(['success' => true]);
+            exit;
+        }
+
+        // Price management operations
+        if ($op === 'price_add') {
+            $itemId = (int)($data['item_id'] ?? 0);
+            $itemType = in_array($data['item_type'] ?? '', ['part','labor']) ? $data['item_type'] : null;
+            $vehicle = trim($data['vehicle_make_model'] ?? $data['vehicle'] ?? '');
+            $price = (float)($data['price'] ?? 0);
+            if (!$itemId || !$itemType || $vehicle === '') throw new Exception('Missing parameters');
+            $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
+            $ins->execute([$itemType, $itemId, $vehicle, $price, $_SESSION['user_id']]);
+            $row = $pdo->prepare('SELECT * FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1'); $row->execute([$itemType, $itemId, $vehicle]);
+            echo json_encode(['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)]);
+            exit;
+        }
+
+        if ($op === 'price_edit') {
+            $id = (int)($data['id'] ?? 0);
+            $price = (float)($data['price'] ?? 0);
+            $vehicle = trim($data['vehicle_make_model'] ?? $data['vehicle'] ?? '');
+            if ($id <= 0) throw new Exception('Invalid price id');
+            $stmt = $pdo->prepare('UPDATE item_prices SET price = ?, vehicle_make_model = ? WHERE id = ?');
+            $stmt->execute([$price, $vehicle, $id]);
+            $row = $pdo->prepare('SELECT * FROM item_prices WHERE id = ? LIMIT 1'); $row->execute([$id]);
+            echo json_encode(['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)]);
+            exit;
+        }
+
+        if ($op === 'price_delete') {
+            $id = (int)($data['id'] ?? 0);
+            if ($id <= 0) throw new Exception('Invalid price id');
+            $stmt = $pdo->prepare('DELETE FROM item_prices WHERE id = ?');
             $stmt->execute([$id]);
             echo json_encode(['success' => true]);
             exit;

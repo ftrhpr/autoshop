@@ -1614,7 +1614,7 @@ if (!empty($serverInvoice)) {
         let currentInput = null;
 
         function showSuggestions(input, suggestions) {
-            const container = input.parentElement.querySelector('.suggestions');
+            const container = input.closest('td').querySelector('.suggestions');
             container.innerHTML = '';
             const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
             if (Array.isArray(suggestions) && suggestions.length > 0) {
@@ -1718,7 +1718,7 @@ if (!empty($serverInvoice)) {
 
         document.addEventListener('keydown', function(e) {
             if (e.target.classList.contains('item-name')) {
-                const container = e.target.parentElement.querySelector('.suggestions');
+                const container = e.target.closest('td').querySelector('.suggestions');
                 if (e.key === 'Escape') {
                     hideSuggestions();
                 } else if (e.key === 'ArrowDown' && !container.classList.contains('hidden')) {
