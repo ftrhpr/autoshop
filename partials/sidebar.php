@@ -160,13 +160,7 @@ function svgIcon($name){
             }
         }
     });
-    // Close on escape
-    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
-    // Close when tapping outside on mobile
-    document.addEventListener('click', function(e){
-        var sidebar = document.getElementById('site-sidebar');
-        if (!sidebar.contains(e.target) && !openBtn.contains(e.target) && window.innerWidth < 768) close();
-    });
+
 })();
 </script>
 
@@ -176,7 +170,8 @@ function svgIcon($name){
 <script>
     const sidebar = document.getElementById('site-sidebar');
     const toggle = document.getElementById('sidebarToggle');
-    if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+    // Ensure sidebar toggle only opens the sidebar (do not allow closing via toggle)
+    if (toggle) toggle.addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
 
 
     // Notification system: polls server for new invoices and shows badge/toasts/sound
