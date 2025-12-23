@@ -145,6 +145,17 @@ function svgIcon($name){
                 </div>
                 <?php endif; ?>
 
+                <!-- Menu style switcher (desktop/tablet) -->
+                <div class="hidden md:flex items-center mr-3">
+                    <label for="menu-style-select" class="sr-only">Menu style</label>
+                    <select id="menu-style-select" class="bg-white/10 text-white rounded-lg px-2 py-1 text-xs border border-white/5 hover:bg-white/15 transition" title="Change menu style">
+                        <option value="default">Default</option>
+                        <option value="compact">Compact</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="pill">Pill</option>
+                    </select>
+                </div>
+
                 <!-- Logout Button -->
                 <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden lg:flex items-center gap-2 px-4 xl:px-6 py-2 xl:py-3 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,6 +274,40 @@ nav * {
     transition-property: all;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Alternate menu styles */
+nav[data-menu-style="compact"] .group {
+    padding: .375rem .6rem !important;
+    font-size: .78rem !important;
+    border-radius: .5rem !important;
+}
+nav[data-menu-style="compact"] .group span { white-space: nowrap; }
+
+nav[data-menu-style="minimal"] {
+    background: linear-gradient(180deg, rgba(15,23,42,0.85), rgba(17,24,39,0.75));
+    box-shadow: none;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+nav[data-menu-style="minimal"] .group { background: transparent !important; box-shadow: none !important; }
+nav[data-menu-style="minimal"] .group span { color: rgba(255,255,255,0.9); }
+nav[data-menu-style="minimal"] .group:hover { background: rgba(255,255,255,0.03) !important; }
+nav[data-menu-style="minimal"] .group .absolute { display: none; }
+
+nav[data-menu-style="pill"] .group {
+    border-radius: 9999px !important;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+nav[data-menu-style="pill"] .group:hover {
+    background: linear-gradient(90deg, rgba(255,165,0,0.15), rgba(255,99,71,0.12)) !important;
+    transform: translateY(-2px) scale(1.02);
+}
+
+/* subtle left/right gradient indicators for scrollable menu */
+nav .scroll-fade-left, nav .scroll-fade-right { position: absolute; top: 0; bottom: 0; width: 2.4rem; pointer-events: none; z-index: 55; }
+nav .scroll-fade-left { left: 0; background: linear-gradient(90deg, rgba(15,23,42,0.9), transparent); display: none; }
+nav .scroll-fade-right { right: 0; background: linear-gradient(270deg, rgba(15,23,42,0.9), transparent); display: none; }
+
 </style>
 
 <script>
@@ -549,6 +594,45 @@ nav * {
 
     // Expose for console debugging
     window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
+})();
+</script>
+
+<script>
+// Menu style picker: persists selection and applies attribute to <nav>
+(function(){
+    const SELECT_KEY = 'autoshop_menu_style';
+    const nav = document.querySelector('nav');
+    const sel = document.getElementById('menu-style-select');
+    function applyStyle(s){
+        if (!nav) return;
+        const style = s || 'default';
+        nav.setAttribute('data-menu-style', style);
+        // show/hide subtle scroll hints when center menu is scrollable
+        const center = nav.querySelector('.max-w-4xl');
+        if (center) {
+            const left = nav.querySelector('.scroll-fade-left');
+            const right = nav.querySelector('.scroll-fade-right');
+            if (!left && !right) {
+                const l = document.createElement('div'); l.className = 'scroll-fade-left'; nav.appendChild(l);
+                const r = document.createElement('div'); r.className = 'scroll-fade-right'; nav.appendChild(r);
+            }
+            requestAnimationFrame(() => {
+                const scrollable = center.scrollWidth > center.clientWidth + 1;
+                const leftEl = nav.querySelector('.scroll-fade-left');
+                const rightEl = nav.querySelector('.scroll-fade-right');
+                if (leftEl) leftEl.style.display = scrollable ? 'block' : 'none';
+                if (rightEl) rightEl.style.display = scrollable ? 'block' : 'none';
+            });
+        }
+    }
+    function init(){
+        const stored = localStorage.getItem(SELECT_KEY) || 'default';
+        applyStyle(stored);
+        if (sel){ sel.value = stored; sel.addEventListener('change', (e)=>{ localStorage.setItem(SELECT_KEY, e.target.value); applyStyle(e.target.value); }); }
+        // react to window resize (if menu becomes scrollable)
+        window.addEventListener('resize', () => { setTimeout(()=> applyStyle(localStorage.getItem(SELECT_KEY) || 'default'), 200); });
+    }
+    document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
 
