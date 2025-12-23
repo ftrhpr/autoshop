@@ -258,16 +258,50 @@ function renderRows(type, rows){
     rows.forEach(r => {
         const tr = document.createElement('tr');
         tr.dataset.id = r.id;
-        tr.innerHTML = `
-            <td class="p-2">${escapeHtml(r.name)}</td>
-            <td class="p-2">${escapeHtml(r.description ?? '')}</td>
-            <td class="p-2">${Number(r.default_price).toFixed(2)}</td>
-            <td class="p-2 text-right">
-                <button class="edit-btn text-indigo-600" data-type="${type}" data-id="${r.id}" data-name="${escapeAttr(r.name)}" data-description="${escapeAttr(r.description ?? '')}" data-price="${r.default_price}">Edit</button>
-                <button class="delete-btn text-red-600 ml-3" data-type="${type}" data-id="${r.id}">Delete</button>
-            </td>`;
+
+        const tdName = document.createElement('td');
+        tdName.className = 'p-2';
+        tdName.textContent = r.name || '';
+
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'p-2';
+        tdDesc.textContent = r.description || '';
+
+        const tdPrice = document.createElement('td');
+        tdPrice.className = 'p-2';
+        tdPrice.textContent = Number(r.default_price || 0).toFixed(2);
+
+        const tdActions = document.createElement('td');
+        tdActions.className = 'p-2 text-right';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn text-indigo-600';
+        editBtn.dataset.type = type;
+        editBtn.dataset.id = r.id;
+        editBtn.dataset.name = r.name || '';
+        editBtn.dataset.description = r.description || '';
+        editBtn.dataset.price = r.default_price || '';
+        editBtn.textContent = 'Edit';
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn text-red-600 ml-3';
+        delBtn.dataset.type = type;
+        delBtn.dataset.id = r.id;
+        delBtn.textContent = 'Delete';
+
+        tdActions.appendChild(editBtn);
+        tdActions.appendChild(delBtn);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdPrice);
+        tr.appendChild(tdActions);
+
         tbody.appendChild(tr);
     });
+
+    // debug: show rendered count in debug panel
+    try { debugLog('renderRows ' + type + ' rendered ' + rows.length + ' rows'); } catch(e){}
 }
 
 function escapeHtml(s){
