@@ -1208,7 +1208,12 @@ if (!empty($serverInvoice)) {
             tr.id = `row-${rowCount}`;
             tr.innerHTML = `
                 <td class="px-3 py-3 font-medium text-center text-gray-400 row-number"></td>
-                <td class="px-3 py-3 relative flex items-center"><input type="text" placeholder="Description" class="item-name flex-1 border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><button class="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="openItemSearch(this)" title="Search items"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button><div class="suggestions absolute z-10 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
+                <td class="px-3 py-3 relative flex items-center"><div class="w-full">
+                    <input type="text" placeholder="Description" class="item-name flex-1 border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                    <div class="price-source text-xs text-gray-500 mt-1"></div>
+                </div>
+                <button class="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="openItemSearch(this)" title="Search items"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                <div class="suggestions absolute z-10 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
                 <td class="px-3 py-3"><input type="number" min="1" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-part w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-svc w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
@@ -1775,7 +1780,8 @@ if (!empty($serverInvoice)) {
             const type = element.dataset.type;
             const price = parseFloat(element.dataset.price) || 0;
             const vehicle = element.dataset.vehicle || '';
-            selectItem(id, name, type, price, vehicle);
+            const hasVehicle = element.dataset.hasVehiclePrice === '1';
+            selectItem(id, name, type, price, vehicle, hasVehicle);
         }
 
         function selectItem(id, name, type, price, vehicle) {
