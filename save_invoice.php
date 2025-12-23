@@ -24,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // optional matched DB info from autocomplete
                 'db_id' => isset($data["item_db_id_$i"]) ? (int)$data["item_db_id_$i"] : null,
                 'db_type' => isset($data["item_db_type_$i"]) ? $data["item_db_type_$i"] : null,
+                'db_vehicle' => isset($data["item_db_vehicle_$i"]) ? $data["item_db_vehicle_$i"] : null,
+                'db_price_source' => isset($data["item_db_price_source_$i"]) ? $data["item_db_price_source_$i"] : null,
             ];
         }
     }

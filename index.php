@@ -1223,6 +1223,10 @@ if (!empty($serverInvoice)) {
                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                 </td>
+                <input type="hidden" name="item_db_id_${rowCount}" class="item-db-id">
+                <input type="hidden" name="item_db_type_${rowCount}" class="item-db-type">
+                <input type="hidden" name="item_db_vehicle_${rowCount}" class="item-db-vehicle">
+                <input type="hidden" name="item_db_price_source_${rowCount}" class="item-db-price-source">
             `;
             tbody.appendChild(tr);
             renumberRows();
@@ -1632,6 +1636,12 @@ if (!empty($serverInvoice)) {
                         if (suggestion.vehicle_make_model) row.dataset.itemDbVehicle = suggestion.vehicle_make_model;
                         row.dataset.itemDbPriceSource = suggestion.has_vehicle_price ? 'vehicle' : 'default';
 
+                        // Also set hidden inputs
+                        if (suggestion.id) row.querySelector('.item-db-id').value = suggestion.id;
+                        if (suggestion.type) row.querySelector('.item-db-type').value = suggestion.type;
+                        if (suggestion.vehicle_make_model) row.querySelector('.item-db-vehicle').value = suggestion.vehicle_make_model;
+                        row.querySelector('.item-db-price-source').value = suggestion.has_vehicle_price ? 'vehicle' : 'default';
+
                         // Fill appropriate price field depending on type
                         const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
                         if (suggestion.type === 'part') {
@@ -1808,6 +1818,12 @@ if (!empty($serverInvoice)) {
                 if (type) row.dataset.itemDbType = type;
                 if (vehicle) row.dataset.itemDbVehicle = vehicle;
                 row.dataset.itemDbPriceSource = hasVehicle ? 'vehicle' : 'default';
+
+                // Also set hidden inputs
+                if (id) row.querySelector('.item-db-id').value = id;
+                if (type) row.querySelector('.item-db-type').value = type;
+                if (vehicle) row.querySelector('.item-db-vehicle').value = vehicle;
+                row.querySelector('.item-db-price-source').value = hasVehicle ? 'vehicle' : 'default';
 
                 // Fill appropriate price field depending on type
                 if (type === 'part') {
