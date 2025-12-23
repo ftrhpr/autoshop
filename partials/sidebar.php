@@ -240,7 +240,31 @@ function svgIcon($name){
     background: rgba(255, 255, 255, 0.5);
 }
 
-/* Content spacing for fixed navigation - pages should handle their own padding */
+/* Content spacing for fixed navigation */
+main.pt-4,
+div.pt-4.min-h-full,
+div.pt-4.min-h-screen,
+div.pt-4.h-full {
+    padding-top: 5rem !important; /* Add extra padding for pages with minimal padding */
+}
+
+@media (max-width: 1023px) {
+    main.pt-4,
+    div.pt-4.min-h-full,
+    div.pt-4.min-h-screen,
+    div.pt-4.h-full {
+        padding-top: 4.75rem !important;
+    }
+}
+
+@media (max-width: 767px) {
+    main.pt-4,
+    div.pt-4.min-h-full,
+    div.pt-4.min-h-screen,
+    div.pt-4.h-full {
+        padding-top: 4.5rem !important;
+    }
+}
 
 /* Specific rules for pages using div containers instead of main */
 /* Note: These pages already have their own padding, so we don't override */
