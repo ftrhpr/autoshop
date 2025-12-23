@@ -226,9 +226,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         } else {
                             // No existing vehicle price found; create one only if invoice provided a price
                             if (!empty($it['price_part']) && floatval($it['price_part']) > 0) {
-                                $ins = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
-                                $ins->execute(['part', $it['db_id'], $vehicleMake, floatval($it['price_part']), $_SESSION['user_id']]);
-                                $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleMake, 'price' => floatval($it['price_part']), 'item_id' => $it['db_id']];
+                                // Normalize/canonicalize vehicle make/model string
+                                $vehicleCanonical = trim($vehicleMake);
+                                if ($vehicleCanonical === '') $vehicleCanonical = $vehicleMake;
+
+                                // Use upsert to avoid duplicates and ensure we save the price for the canonical model
+                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
+                                $ins->execute(['part', $it['db_id'], $vehicleCanonical, floatval($it['price_part']), $_SESSION['user_id']]);
+
+                                // Fetch the stored row to ensure consistent vehicle name and price are used
+                                $pvFetch = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
+                                $pvFetch->execute(['part', $it['db_id'], $vehicleCanonical]);
+                                $pvRow = $pvFetch->fetch(PDO::FETCH_ASSOC);
+                                if ($pvRow) {
+                                    $it['price_part'] = (float)$pvRow['price'];
+                                    $it['db_vehicle'] = $pvRow['vehicle_make_model'];
+                                }
+
+                                $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_part']), 'item_id' => $it['db_id']];
                             }
                         }
                     }
@@ -290,9 +305,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         } else {
                             // No existing vehicle price found; create one only if invoice provided a price
                             if (!empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
-                                $ins = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
-                                $ins->execute(['labor', $it['db_id'], $vehicleMake, floatval($it['price_svc']), $_SESSION['user_id']]);
-                                $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleMake, 'price' => floatval($it['price_svc']), 'item_id' => $it['db_id']];
+                                // Normalize/canonicalize vehicle make/model string
+                                $vehicleCanonical = trim($vehicleMake);
+                                if ($vehicleCanonical === '') $vehicleCanonical = $vehicleMake;
+
+                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
+                                $ins->execute(['labor', $it['db_id'], $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
+
+                                $pvFetch = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
+                                $pvFetch->execute(['labor', $it['db_id'], $vehicleCanonical]);
+                                $pvRow = $pvFetch->fetch(PDO::FETCH_ASSOC);
+                                if ($pvRow) {
+                                    $it['price_svc'] = (float)$pvRow['price'];
+                                    $it['db_vehicle'] = $pvRow['vehicle_make_model'];
+                                }
+
+                                $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $it['db_id']];
                             }
                         }
                     }
