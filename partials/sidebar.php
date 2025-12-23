@@ -45,7 +45,7 @@ function svgIcon($name){
 ?>
 
 <!-- Sidebar (desktop) & Off-canvas (mobile) -->
-<div class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform -translate-x-full md:translate-x-0 transition-transform duration-200" id="site-sidebar" aria-hidden="false">
+<div class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform -translate-x-full md:translate-x-0 transition-all duration-300 shadow-lg" id="site-sidebar" aria-hidden="false">
     <div class="h-full flex flex-col">
         <div class="p-4 border-b border-slate-700 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -67,7 +67,8 @@ function svgIcon($name){
                 </div>
                 <?php endif; ?>
             </div>
-            <button id="closeSidebar" class="text-slate-300">✕</button>
+            <button id="closeSidebar" class="text-slate-300 hover:text-white">✕</button>
+            <button id="collapseSidebar" class="hidden md:block text-slate-300 hover:text-white ml-2" title="Collapse sidebar">◀</button>
         </div>
 
         <nav class="flex-1 overflow-y-auto p-4 space-y-1" aria-label="Primary">
@@ -90,9 +91,9 @@ function svgIcon($name){
 
                 $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
             ?>
-            <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-700 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>">
-                <span class="w-5 h-5"><?php echo svgIcon($item['icon']); ?></span>
-                <span><?php echo htmlspecialchars($item['label']); ?></span>
+            <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold shadow-md' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                <span class="w-5 h-5 flex-shrink-0"><?php echo svgIcon($item['icon']); ?></span>
+                <span class="sidebar-text transition-opacity duration-300"><?php echo htmlspecialchars($item['label']); ?></span>
             </a>
             <?php endforeach; ?>
         </nav>
@@ -102,6 +103,19 @@ function svgIcon($name){
         </div>
     </div>
 </div>
+
+<style>
+#site-sidebar.collapsed {
+    width: 4rem;
+}
+#site-sidebar.collapsed .sidebar-text {
+    opacity: 0;
+    pointer-events: none;
+}
+#site-sidebar.collapsed a {
+    justify-content: center;
+}
+</style>
 
 <!-- Mobile: floating menu button -->
 <button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu">
@@ -130,8 +144,24 @@ function svgIcon($name){
     }
     var openBtn = document.getElementById('openSidebar');
     var closeBtn = document.getElementById('closeSidebar');
+    var collapseBtn = document.getElementById('collapseSidebar');
     if (openBtn) openBtn.addEventListener('click', open);
     if (closeBtn) closeBtn.addEventListener('click', close);
+    if (collapseBtn) collapseBtn.addEventListener('click', function(){
+        const sidebar = document.getElementById('site-sidebar');
+        const main = document.querySelector('main.ml-0, div.ml-0');
+        sidebar.classList.toggle('collapsed');
+        this.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        if (main && window.innerWidth >= 768) {
+            if (sidebar.classList.contains('collapsed')) {
+                main.classList.remove('md:ml-64');
+                main.classList.add('md:ml-16');
+            } else {
+                main.classList.remove('md:ml-16');
+                main.classList.add('md:ml-64');
+            }
+        }
+    });
     // Close on escape
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
     // Close when tapping outside on mobile
