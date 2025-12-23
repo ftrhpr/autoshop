@@ -278,44 +278,46 @@ try {
     </div>
 
     <script>
-        // Tab switching
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('tab-active', 'border-blue-500', 'text-blue-600'));
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.add('text-gray-500', 'hover:text-gray-700'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                
-                this.classList.add('tab-active', 'border-blue-500', 'text-blue-600');
-                this.classList.remove('text-gray-500', 'hover:text-gray-700');
-                document.getElementById(this.dataset.tab + '-tab').classList.remove('hidden');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('tab-active', 'border-blue-500', 'text-blue-600'));
+                    document.querySelectorAll('.tab-button').forEach(b => b.classList.add('text-gray-500', 'hover:text-gray-700'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                    
+                    this.classList.add('tab-active', 'border-blue-500', 'text-blue-600');
+                    this.classList.remove('text-gray-500', 'hover:text-gray-700');
+                    document.getElementById(this.dataset.tab + '-tab').classList.remove('hidden');
+                });
             });
-        });
 
-        // Edit buttons
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const type = this.dataset.type;
-                document.getElementById('modal-title').textContent = 'Edit ' + (type === 'labor' ? 'Labor' : 'Part');
-                document.getElementById('modal-type').value = type;
-                document.getElementById('modal-action').value = 'edit';
-                document.getElementById('modal-id').value = this.dataset.id;
-                document.getElementById('modal-name').value = this.dataset.name;
-                document.getElementById('modal-description').value = this.dataset.description;
-                document.getElementById('modal-price').value = this.dataset.price;
-                document.getElementById('modal').classList.add('show');
+            // Edit buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const type = this.dataset.type;
+                    document.getElementById('modal-title').textContent = 'Edit ' + (type === 'labor' ? 'Labor' : 'Part');
+                    document.getElementById('modal-type').value = type;
+                    document.getElementById('modal-action').value = 'edit';
+                    document.getElementById('modal-id').value = this.dataset.id;
+                    document.getElementById('modal-name').value = this.dataset.name;
+                    document.getElementById('modal-description').value = this.dataset.description;
+                    document.getElementById('modal-price').value = this.dataset.price;
+                    document.getElementById('modal').classList.add('show');
+                });
+            });
+
+            // Close modal on outside click
+            document.getElementById('modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
             });
         });
 
         function closeModal() {
             document.getElementById('modal').classList.remove('show');
         }
-
-        // Close modal on outside click
-        document.getElementById('modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
     </script>
 </body>
 </html>
