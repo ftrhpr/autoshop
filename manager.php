@@ -160,7 +160,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 <body class="bg-gray-100 h-screen overflow-hidden font-sans antialiased pb-20">
     <?php include 'partials/sidebar.php'; ?>
 
-    <div class="h-full overflow-hidden pt-4 pl-4">
+    <div class="h-full overflow-hidden ml-0 md:ml-64 pt-4 pl-4">
         <div class="h-full overflow-auto p-4 md:p-6">
         <h2 class="text-2xl font-bold mb-6">Invoice Management</h2>
 

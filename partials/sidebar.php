@@ -20,7 +20,7 @@ $menu = [
     ['label' => 'Audit Logs', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
 ];
 
-// If current user is a manager, restrict menu to only New Invoice and Invoices
+// If current user is a manager, restrict sidebar to only New Invoice and Invoices
 if (isset($_SESSION['role']) && $_SESSION['role'] === 'manager') {
     $menu = array_values(array_filter($menu, function($it){
         return in_array($it['label'], ['New Invoice', 'Invoices']);
@@ -44,723 +44,378 @@ function svgIcon($name){
 }
 ?>
 
-<!-- Top Navigation Bar -->
-<nav class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 text-white shadow-2xl backdrop-blur-sm border-b border-white/10">
-    <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
-        <div class="flex justify-between items-center h-16 sm:h-18 lg:h-20">
-            <!-- Logo/Brand -->
-            <div class="flex items-center flex-shrink-0">
-                <div class="flex items-center space-x-2 sm:space-x-3">
-                    <div class="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                        <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                    <div class="font-bold text-lg sm:text-xl lg:text-2xl bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">AutoShop</div>
-                </div>
-            </div>
-
-            <!-- Desktop Menu (supports one-level dropdowns) -->
-            <div class="hidden lg:flex items-center space-x-1 xl:space-x-3 2xl:space-x-6 flex-1 justify-center max-w-4xl overflow-x-auto flex-nowrap no-scrollbar px-2" style="-webkit-overflow-scrolling: touch;">
-                <?php foreach ($menu as $item):
-                    if ($item['permission'] && !function_exists('currentUserCan')) continue;
-                    if ($item['permission'] && !currentUserCan($item['permission'])) continue;
-
-                    $raw = $item['href'];
-                    if (preg_match('#^https?://#i', $raw)) {
-                        $href = $raw;
-                    } else {
-                        // Collapse duplicate segments and ensure path relative to app root
-                        $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
-                        $clean = [];
-                        foreach ($parts as $p) {
-                            if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
-                        }
-                        $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
-                    }
-
-                    $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
-                    $hasChildren = !empty($item['children']) && is_array($item['children']);
-                ?>
-                <?php if ($hasChildren): ?>
-                <div class="relative group flex-shrink-0">
-                    <button class="menu-parent group relative flex items-center gap-1.5 xl:gap-2 2xl:gap-3 px-3 xl:px-4 2xl:px-6 py-2 xl:py-3 rounded-xl xl:rounded-2xl hover:bg-white/10 transition-all duration-300 text-xs xl:text-sm 2xl:text-base font-medium text-blue-100 hover:text-white" aria-haspopup="true" aria-expanded="false" type="button">
-                        <span class="w-4 h-4 xl:w-5 xl:h-5 2xl:w-6 2xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
-                        <span class="relative whitespace-nowrap">
-                            <?php echo htmlspecialchars($item['label']); ?>
-                        </span>
-                        <svg class="ml-1 w-3 h-3 text-blue-100 group-hover:text-white transition-transform duration-200" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-
-                    <div class="dropdown hidden group-hover:block group-focus-within:block absolute left-0 mt-2 py-2 min-w-[12rem] bg-slate-900/95 border border-white/5 rounded-lg shadow-lg z-50">
-                        <?php foreach ($item['children'] as $child):
-                            if ($child['permission'] && !function_exists('currentUserCan')) continue;
-                            if ($child['permission'] && !currentUserCan($child['permission'])) continue;
-
-                            $cr = $child['href'];
-                            if (preg_match('#^https?://#i', $cr)) { $chref = $cr; }
-                            else {
-                                $cparts = array_values(array_filter(explode('/', $cr), 'strlen'));
-                                $cclean = [];
-                                foreach ($cparts as $p) { if (count($cclean) === 0 || end($cclean) !== $p) $cclean[] = $p; }
-                                $chref = rtrim($appRoot, '/') . '/' . implode('/', $cclean);
-                            }
-                            $cActive = strpos($_SERVER['SCRIPT_NAME'], $chref) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($chref);
-                        ?>
-                        <a href="<?php echo htmlspecialchars($chref); ?>" class="block px-4 py-2 text-sm <?php echo $cActive ? 'text-white bg-white/5 font-semibold' : 'text-blue-100 hover:text-white hover:bg-white/3'; ?> transition-all" title="<?php echo htmlspecialchars($child['label']); ?>">
-                            <span class="inline-flex items-center gap-2"><?php echo svgIcon($child['icon']); ?><?php echo htmlspecialchars($child['label']); ?></span>
-                        </a>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php else: ?>
-                <a href="<?php echo htmlspecialchars($href); ?>" class="group flex-shrink-0 relative flex items-center gap-1.5 xl:gap-2 2xl:gap-3 px-3 xl:px-4 2xl:px-6 py-2 xl:py-3 2xl:py-3 rounded-xl xl:rounded-2xl hover:bg-white/10 transition-all duration-300 text-xs xl:text-sm 2xl:text-base font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-lg scale-105' : 'text-blue-100 hover:text-white hover:scale-105'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                    <span class="w-4 h-4 xl:w-5 xl:h-5 2xl:w-6 2xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
-                    <span class="relative whitespace-nowrap">
-                        <?php echo htmlspecialchars($item['label']); ?>
-                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-300 group-hover:w-full"></span>
-                    </span>
-                    <?php if ($isActive): ?>
-                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                    <?php endif; ?>
-                </a>
-                <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- Tablet Menu (Simplified) -->
-            <div class="hidden md:flex lg:hidden items-center space-x-1 flex-1 justify-center max-w-md">
-                <?php 
-                $tabletMenu = array_slice($menu, 0, 4); // Show only first 4 items on tablet
-                foreach ($tabletMenu as $item):
-                    if ($item['permission'] && !function_exists('currentUserCan')) continue;
-                    if ($item['permission'] && !currentUserCan($item['permission'])) continue;
-
-                    $raw = $item['href'];
-                    if (preg_match('#^https?://#i', $raw)) {
-                        $href = $raw;
-                    } else {
-                        $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
-                        $clean = [];
-                        foreach ($parts as $p) {
-                            if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
-                        }
-                        $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
-                    }
-
-                    $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
-                ?>
-                <a href="<?php echo htmlspecialchars($href); ?>" class="group relative flex items-center gap-1 px-2 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 text-xs font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-md' : 'text-blue-100 hover:text-white'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                    <span class="w-4 h-4 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
-                </a>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- Right side: Notifications and Logout -->
-            <div class="flex items-center space-x-2 sm:space-x-3">
+<!-- Sidebar (desktop) & Off-canvas (mobile) -->
+<div class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform -translate-x-full md:translate-x-0 transition-all duration-300 shadow-lg" id="site-sidebar" aria-hidden="false">
+    <div class="h-full flex flex-col">
+        <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="font-bold text-lg">AutoShop</div>
                 <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-                <div id="notif-root" class="relative flex items-center space-x-1">
-                    <button id="notifButton" class="relative p-2 sm:p-2.5 lg:p-3 rounded-xl lg:rounded-2xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" title="Notifications" aria-label="Notifications">
-                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold shadow-lg animate-bounce">0</span>
+                <div id="notif-root" class="relative">
+                    <button id="notifButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </button>
-                    <button id="notifTestButton" class="p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden lg:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Test sound" aria-label="Test sound">
-                        <span class="text-xs">🔊</span>
-                    </button>
-                    <button id="notifMuteButton" class="p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden lg:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Mute notifications" aria-label="Mute notifications">
-                        <span class="text-xs">🔇</span>
-                    </button>
+                    <button id="notifTestButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Test sound" aria-label="Test sound">🔊</button>
+                    <button id="notifMuteButton" class="ml-1 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Mute notifications" aria-label="Mute notifications">🔈</button>
                     <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.mp3" type="audio/mpeg">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.ogg" type="audio/ogg">
                         <!-- Fallback to server-served WAV if mp3/ogg not present -->
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.php" type="audio/wav">
                     </audio>
+                    <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
                 </div>
                 <?php endif; ?>
-
-                <!-- Menu style switcher (desktop/tablet) -->
-                <div class="hidden md:flex items-center mr-3">
-                    <label for="menu-style-select" class="sr-only">Menu style</label>
-                    <select id="menu-style-select" class="bg-white/10 text-white rounded-lg px-2 py-1 text-xs border border-white/5 hover:bg-white/15 transition" title="Change menu style">
-                        <option value="default">Default</option>
-                        <option value="compact">Compact</option>
-                        <option value="minimal">Minimal</option>
-                        <option value="pill">Pill</option>
-                    </select>
-                </div>
-
-                <!-- Logout Button -->
-                <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden lg:flex items-center gap-2 px-4 xl:px-6 py-2 xl:py-3 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
-                    <span class="hidden xl:inline">Logout</span>
-                </a>
-
-                <!-- Mobile Hamburger Menu Button -->
-                <button id="mobile-menu-button" class="md:hidden p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" aria-label="Open menu">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
             </div>
+            <button id="closeSidebar" class="text-slate-300 hover:text-white">✕</button>
+            <button id="collapseSidebar" class="hidden md:block text-slate-300 hover:text-white ml-2" title="Collapse sidebar">◀</button>
         </div>
 
-        <!-- Mobile Menu Dropdown -->
-        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-40 max-h-screen overflow-y-auto">
-            <div class="max-w-7xl mx-auto px-4 py-4">
-                <div class="grid grid-cols-1 gap-2">
-                    <?php foreach ($menu as $item):
-                        if ($item['permission'] && !function_exists('currentUserCan')) continue;
-                        if ($item['permission'] && !currentUserCan($item['permission'])) continue;
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1" aria-label="Primary">
+            <?php foreach ($menu as $item):
+                if ($item['permission'] && !function_exists('currentUserCan')) continue;
+                if ($item['permission'] && !currentUserCan($item['permission'])) continue;
 
-                        $raw = $item['href'];
-                        if (preg_match('#^https?://#i', $raw)) {
-                            $href = $raw;
-                        } else {
-                            $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
-                            $clean = [];
-                            foreach ($parts as $p) {
-                                if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
-                            }
-                            $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
-                        }
+                $raw = $item['href'];
+                if (preg_match('#^https?://#i', $raw)) {
+                    $href = $raw;
+                } else {
+                    // Collapse duplicate segments and ensure path relative to app root
+                    $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
+                    $clean = [];
+                    foreach ($parts as $p) {
+                        if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
+                    }
+                    $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
+                }
 
-                        $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
-                        $hasChildren = !empty($item['children']) && is_array($item['children']);
-                    ?>
-                    <?php if ($hasChildren): ?>
-                    <div class="flex flex-col">
-                        <button class="mobile-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl hover:bg-white/10 transition-all duration-200 text-left text-blue-100" aria-expanded="false" type="button">
-                            <span class="flex items-center gap-3"><span class="w-6 h-6 flex-shrink-0 p-1 rounded-xl bg-white/10"><?php echo svgIcon($item['icon']); ?></span><span class="font-medium"><?php echo htmlspecialchars($item['label']); ?></span></span>
-                            <svg class="w-4 h-4 text-blue-100 transition-transform duration-200" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </button>
-                        <div class="mobile-submenu hidden mt-2 pl-6 space-y-1">
-                            <?php foreach ($item['children'] as $child):
-                                if ($child['permission'] && !function_exists('currentUserCan')) continue;
-                                if ($child['permission'] && !currentUserCan($child['permission'])) continue;
+                $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
+            ?>
+            <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold shadow-md' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                <span class="w-5 h-5 flex-shrink-0"><?php echo svgIcon($item['icon']); ?></span>
+                <span class="sidebar-text transition-opacity duration-300"><?php echo htmlspecialchars($item['label']); ?></span>
+            </a>
+            <?php endforeach; ?>
+        </nav>
 
-                                $cr = $child['href'];
-                                if (preg_match('#^https?://#i', $cr)) { $chref = $cr; }
-                                else {
-                                    $cparts = array_values(array_filter(explode('/', $cr), 'strlen'));
-                                    $cclean = [];
-                                    foreach ($cparts as $p) { if (count($cclean) === 0 || end($cclean) !== $p) $cclean[] = $p; }
-                                    $chref = rtrim($appRoot, '/') . '/' . implode('/', $cclean);
-                                }
-                                $cActive = strpos($_SERVER['SCRIPT_NAME'], $chref) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($chref);
-                            ?>
-                            <a href="<?php echo htmlspecialchars($chref); ?>" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/8 transition-all duration-150 <?php echo $cActive ? 'bg-white/10 text-white font-medium' : 'text-blue-100 hover:text-white'; ?>">
-                                <span class="w-5 h-5 flex-shrink-0 p-1 rounded-lg bg-white/8"><?php echo svgIcon($child['icon']); ?></span>
-                                <span class="font-medium"><?php echo htmlspecialchars($child['label']); ?></span>
-                            </a>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <?php else: ?>
-                    <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-white/10 transition-all duration-300 <?php echo $isActive ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:text-white'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                        <span class="w-6 h-6 flex-shrink-0 p-1 rounded-xl bg-white/10"><?php echo svgIcon($item['icon']); ?></span>
-                        <span class="font-medium"><?php echo htmlspecialchars($item['label']); ?></span>
-                        <?php if ($isActive): ?>
-                        <div class="ml-auto w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                        <?php endif; ?>
-                    </a>
-                    <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
-                <div class="border-t border-white/10 mt-4 pt-4">
-                    <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="flex items-center justify-center gap-3 w-full px-4 py-4 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium transition-all duration-300 shadow-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                        </svg>
-                        <span>Logout</span>
-                    </a>
-            </div>
+        <div class="p-4 border-t border-slate-700">
+            <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
         </div>
     </div>
-</nav>
+</div>
 
 <style>
-/* Mobile menu animations */
-#mobile-menu {
-    transform: translateY(-20px);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+#site-sidebar.collapsed {
+    width: 4rem;
+}
+#site-sidebar.collapsed .sidebar-text {
     opacity: 0;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
 }
-#mobile-menu:not(.hidden) {
-    transform: translateY(0);
-    opacity: 1;
+#site-sidebar.collapsed a {
+    justify-content: center;
 }
-
-/* Custom scrollbar for mobile menu */
-#mobile-menu::-webkit-scrollbar {
-    width: 6px;
-}
-#mobile-menu::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-#mobile-menu::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-}
-#mobile-menu::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
-}
-
-/* Ensure main content has proper top padding for fixed nav */
-:root { --nav-height: 5rem; }
-main, .container, .max-w-7xl {
-    padding-top: var(--nav-height);
-}
-
-/* Responsive adjustments (kept as variable-driven, JS will update --nav-height on resize/menu open) */
-@media (max-width: 1023px) {
-    main, .container, .max-w-7xl {
-        padding-top: var(--nav-height);
-    }
-}
-
-/* Utility to hide scrollbars where we enable horizontal scroll */
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-
-/* Enhanced focus states */
-nav a:focus,
-nav button:focus {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: 2px;
-}
-
-/* Smooth transitions for all interactive elements */
-nav * {
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Alternate menu styles */
-nav[data-menu-style="compact"] .group {
-    padding: .375rem .6rem !important;
-    font-size: .78rem !important;
-    border-radius: .5rem !important;
-}
-nav[data-menu-style="compact"] .group span { white-space: nowrap; }
-
-nav[data-menu-style="minimal"] {
-    background: linear-gradient(180deg, rgba(15,23,42,0.85), rgba(17,24,39,0.75));
-    box-shadow: none;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-nav[data-menu-style="minimal"] .group { background: transparent !important; box-shadow: none !important; }
-nav[data-menu-style="minimal"] .group span { color: rgba(255,255,255,0.9); }
-nav[data-menu-style="minimal"] .group:hover { background: rgba(255,255,255,0.03) !important; }
-nav[data-menu-style="minimal"] .group .absolute { display: none; }
-
-nav[data-menu-style="pill"] .group {
-    border-radius: 9999px !important;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-}
-nav[data-menu-style="pill"] .group:hover {
-    background: linear-gradient(90deg, rgba(255,165,0,0.15), rgba(255,99,71,0.12)) !important;
-    transform: translateY(-2px) scale(1.02);
-}
-
-/* subtle left/right gradient indicators for scrollable menu */
-nav .scroll-fade-left, nav .scroll-fade-right { position: absolute; top: 0; bottom: 0; width: 2.4rem; pointer-events: none; z-index: 55; }
-nav .scroll-fade-left { left: 0; background: linear-gradient(90deg, rgba(15,23,42,0.9), transparent); display: none; }
-nav .scroll-fade-right { right: 0; background: linear-gradient(270deg, rgba(15,23,42,0.9), transparent); display: none; }
-
-/* Dropdown panel styles (desktop) */
-.dropdown { display: none; opacity: 0; transform-origin: top center; transition: opacity 160ms ease, transform 160ms ease; }
-.group.open .dropdown, .group:hover .dropdown, .group:focus-within .dropdown { display: block; opacity: 1; transform: translateY(0); }
-.dropdown a { display: block; }
-.dropdown a + a { border-top: 1px solid rgba(255,255,255,0.03); }
-
-/* Mobile submenu accordion */
-.mobile-submenu { transition: max-height 220ms ease, opacity 160ms ease; overflow: hidden; }
-.mobile-submenu.hidden { max-height: 0; opacity: 0; }
-.mobile-submenu.expanded { max-height: 480px; opacity: 1; }
-
-/* caret rotation when expanded */
-.mobile-toggle[aria-expanded="true"] svg, .group.open > button.menu-parent[aria-expanded="true"] svg { transform: rotate(180deg); }
-
 </style>
 
+<!-- Mobile: floating menu button -->
+<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+
 <script>
 (function(){
-    // Mobile menu toggle
-    const mobileMenuButton = document.getElementById('mobile-menu-button');
-    const mobileMenu = document.getElementById('mobile-menu');
-    if (mobileMenuButton && mobileMenu) {
-        mobileMenuButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            mobileMenu.classList.toggle('hidden');
-        });
-        
-        // Close menu when clicking outside or on a link
-        document.addEventListener('click', (e) => {
-            if (!mobileMenuButton.contains(e.target) && !mobileMenu.contains(e.target)) {
-                mobileMenu.classList.add('hidden');
-            }
-        });
-        
-        // Close menu when clicking on menu items
-        mobileMenu.addEventListener('click', (e) => {
-            if (e.target.tagName === 'A') {
-                mobileMenu.classList.add('hidden');
-            }
-        });
-        
-        // Close on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
-                mobileMenu.classList.add('hidden');
-            }
-        });
-    }
-})();
-
-// Dynamically adjust page top padding so nav (and expanded mobile menu) never overlap content
-(function adjustNavPadding(){
-    const nav = document.querySelector('nav');
-    const mobileMenuEl = document.getElementById('mobile-menu');
-    const update = () => {
-        if (!nav) return;
-        const navH = Math.ceil(nav.getBoundingClientRect().height);
-        let extra = 0;
-        if (mobileMenuEl && !mobileMenuEl.classList.contains('hidden')) {
-            extra = Math.ceil(mobileMenuEl.getBoundingClientRect().height);
+    function open() { 
+        document.getElementById('site-sidebar').classList.remove('-translate-x-full'); 
+        document.body.classList.add('overflow-hidden');
+        const main = document.querySelector('main.ml-0, div.ml-0');
+        if (main && window.innerWidth >= 768) {
+            main.classList.add('md:ml-64');
+            main.classList.remove('md:ml-0');
         }
-        document.documentElement.style.setProperty('--nav-height', (navH + extra) + 'px');
-    };
-    update();
-    window.addEventListener('resize', () => requestAnimationFrame(update));
-    // Observe mobile menu class changes (open/close)
-    if (mobileMenuEl && window.MutationObserver) {
-        const obs = new MutationObserver(update);
-        obs.observe(mobileMenuEl, { attributes: true, attributeFilter: ['class'] });
     }
-    if (mobileMenuEl) mobileMenuEl.addEventListener('transitionend', update);
+    function close() { 
+        document.getElementById('site-sidebar').classList.add('-translate-x-full'); 
+        document.body.classList.remove('overflow-hidden');
+        const main = document.querySelector('main.ml-0, div.ml-0');
+        if (main && window.innerWidth >= 768) {
+            main.classList.remove('md:ml-64');
+            main.classList.add('md:ml-0');
+        }
+    }
+    var openBtn = document.getElementById('openSidebar');
+    var closeBtn = document.getElementById('closeSidebar');
+    var collapseBtn = document.getElementById('collapseSidebar');
+    if (openBtn) openBtn.addEventListener('click', open);
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    if (collapseBtn) collapseBtn.addEventListener('click', function(){
+        const sidebar = document.getElementById('site-sidebar');
+        const main = document.querySelector('main.ml-0, div.ml-0');
+        sidebar.classList.toggle('collapsed');
+        this.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        if (main && window.innerWidth >= 768) {
+            if (sidebar.classList.contains('collapsed')) {
+                main.classList.remove('md:ml-64');
+                main.classList.add('md:ml-16');
+            } else {
+                main.classList.remove('md:ml-16');
+                main.classList.add('md:ml-64');
+            }
+        }
+    });
+    // Close on escape
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+    // Close when tapping outside on mobile
+    document.addEventListener('click', function(e){
+        var sidebar = document.getElementById('site-sidebar');
+        if (!sidebar.contains(e.target) && !openBtn.contains(e.target) && window.innerWidth < 768) close();
+    });
 })();
 </script>
 
-<!-- Notification system: polls server for new invoices and shows badge/toasts/sound -->
+<!-- Mobile overlay and toggle -->
+<button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>
+
 <script>
-(function(){
-    const notifButton = document.getElementById('notifButton');
-    const notifBadge = document.getElementById('notifBadge');
-    let lastId = null;
-    let pollingInterval = 8000; // 8 seconds
-    let pollingTimer = null;
-    let inFlight = false;
+    const sidebar = document.getElementById('site-sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    const closeBtn = document.getElementById('closeSidebar');
+    if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+    if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
 
-    // Create and append minimal styles for animated notifications and bell animation
-    (function addNotifStyles(){
-        const css = `
-            @keyframes notif-slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity:1; } }
-            @keyframes bell-pulse { 0%{ transform: scale(1); } 30%{ transform: scale(1.15) rotate(-8deg);} 60%{ transform: scale(1.03) rotate(6deg);} 100%{transform: scale(1);} }
-            .notif-bell-anim { animation: bell-pulse 0.9s ease; }
-            #notifContainer { position: fixed; top: 5rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
-            .notif-item { width: 20rem; max-width: calc(100vw - 4rem); background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(0,0,0,0.08); padding: 0.75rem; cursor: pointer; transform: translateX(24px); opacity:0; animation: notif-slide-in 320ms forwards ease; }
-            .notif-item .notif-dismiss{ background: transparent; border: 0; font-size: 1.05rem; line-height: 1; cursor: pointer; color: #6b7280; }
-        `;
-        const s = document.createElement('style'); s.appendChild(document.createTextNode(css)); document.head.appendChild(s);
-    })();
+    // Notification system: polls server for new invoices and shows badge/toasts/sound
+    (function(){
+        const notifButton = document.getElementById('notifButton');
+        const notifBadge = document.getElementById('notifBadge');
+        let lastId = null;
+        let pollingInterval = 8000; // 8 seconds
+        let pollingTimer = null;
+        let inFlight = false;
 
-    function playBeep(){
-        // Prefer a DOM audio element when available (better compatibility on some mobile browsers)
-        try {
-            const audioEl = document.getElementById('notifAudio');
-            if (audioEl){
-                audioEl.currentTime = 0;
-                const p = audioEl.play();
-                if (p && typeof p.then === 'function'){
-                    p.catch(()=>{
-                        // If play() is rejected (autoplay policy), fall back to WebAudio
-                        tryWebAudio();
-                    });
-                }
-                return;
-            }
-        } catch (e) { console.warn('notifAudio play error', e); }
+        // Create and append minimal styles for animated notifications and bell animation
+        (function addNotifStyles(){
+            const css = `
+                @keyframes notif-slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity:1; } }
+                @keyframes bell-pulse { 0%{ transform: scale(1); } 30%{ transform: scale(1.15) rotate(-8deg);} 60%{ transform: scale(1.03) rotate(6deg);} 100%{transform: scale(1);} }
+                .notif-bell-anim { animation: bell-pulse 0.9s ease; }
+                #notifContainer { position: fixed; top: 3.5rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+                .notif-item { width: 20rem; max-width: calc(100vw - 4rem); background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(0,0,0,0.08); padding: 0.75rem; cursor: pointer; transform: translateX(24px); opacity:0; animation: notif-slide-in 320ms forwards ease; }
+                .notif-item .notif-dismiss{ background: transparent; border: 0; font-size: 1.05rem; line-height: 1; cursor: pointer; color: #6b7280; }
+            `;
+            const s = document.createElement('style'); s.appendChild(document.createTextNode(css)); document.head.appendChild(s);
+        })();
 
-        // WebAudio fallback
-        function tryWebAudio(){
+        function playBeep(){
+            // Prefer a DOM audio element when available (better compatibility on some mobile browsers)
             try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                const ctx = new AudioCtx();
-                const now = ctx.currentTime;
-                // Two short tones for a pleasant notification
-                const tones = [880, 660];
-                tones.forEach((freq, i) => {
-                    const o = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    o.type = 'sine';
-                    o.frequency.value = freq;
-                    o.connect(g);
-                    g.connect(ctx.destination);
-                    g.gain.setValueAtTime(0.0001, now + i*0.12);
-                    g.gain.exponentialRampToValueAtTime(0.12, now + i*0.12 + 0.02);
-                    g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.12 + 0.10);
-                    o.start(now + i*0.12);
-                    o.stop(now + i*0.12 + 0.11);
-                });
-            } catch (e) {
-                // Final fallback: small embedded WAV via Audio object
-                try {
-                    const fallback = new Audio();
-                    fallback.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
-                    fallback.play().catch(()=>{});
-                } catch (err) { console.warn('Audio fallback failed', err); }
-            }
-        }
-
-        tryWebAudio();
-    }
-
-    function ensureNotifContainer(){
-        let c = document.getElementById('notifContainer');
-        if (!c){ c = document.createElement('div'); c.id = 'notifContainer'; document.body.appendChild(c); }
-        return c;
-    }
-
-    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]; }); }
-
-    function showAnimatedNotification(text, invoiceId){
-        const container = ensureNotifContainer();
-        const item = document.createElement('div');
-        item.className = 'notif-item';
-        item.innerHTML = `<div style="display:flex;align-items:flex-start;gap:0.5rem"><div style="flex:1"><div style="font-weight:600">${escapeHtml(text)}</div><div style="font-size:12px;color:#6b7280;margin-top:6px">Click to open</div></div><button class="notif-dismiss" aria-label="Dismiss">×</button></div>`;
-        item.addEventListener('click', (e)=>{ if (!e.target.classList.contains('notif-dismiss')) window.open('view_invoice.php?id='+invoiceId,'_blank'); });
-        item.querySelector('.notif-dismiss').addEventListener('click', (e)=>{ e.stopPropagation(); hide(); });
-
-        function hide(){ item.style.transform = 'translateX(24px)'; item.style.opacity = '0'; setTimeout(()=>{ item.remove(); }, 300); }
-
-        container.appendChild(item);
-        // auto-hide after 7s
-        setTimeout(hide, 7000);
-    }
-
-    function animateBell(){ if (!notifButton) return; notifButton.classList.add('notif-bell-anim'); setTimeout(()=> notifButton.classList.remove('notif-bell-anim'), 1000); }
-
-    function showToast(text, invoiceId){
-        // Keep backward-compatible toast (small fade) but also show animated notification
-        showAnimatedNotification(text, invoiceId);
-    }
-
-    function showBrowserNotification(title, body, invoiceId){
-        if (!('Notification' in window)) return;
-        if (Notification.permission === 'granted'){
-            const n = new Notification(title, { body });
-            n.onclick = () => { window.focus(); window.open('view_invoice.php?id='+invoiceId, '_blank'); };
-        }
-    }
-
-    function updateBadge(count){
-        if (!notifBadge) return;
-        if (count <= 0){ notifBadge.classList.add('hidden'); notifBadge.textContent = '0'; }
-        else { notifBadge.classList.remove('hidden'); notifBadge.textContent = count > 99 ? '99+' : ''+count; }
-    }
-
-    async function fetchLatestId(){
-        try {
-            const res = await fetch('/api_live_invoices.php', { cache: 'no-store' });
-            if (!res.ok) throw new Error('Network');
-            const data = await res.json();
-            if (data && data.success){
-                lastId = data.latest_id || 0;
-            }
-        } catch (e) { console.warn('fetchLatestId error', e); }
-    }
-
-    async function poll(){
-        if (inFlight) return;
-        inFlight = true;
-        try {
-            const url = '/api_live_invoices.php' + (lastId ? ('?last_id=' + encodeURIComponent(lastId)) : '');
-            const res = await fetch(url, { cache: 'no-store' });
-            if (!res.ok) throw new Error('Network');
-            const data = await res.json();
-            if (data && data.success){
-                if (data.new_count && data.new_count > 0){
-                    // Update badge and show animated notification
-                    updateBadge(parseInt(notifBadge.textContent || '0') + data.new_count);
-                    // Play sound once
-                    playBeep();
-                    // animate bell
-                    animateBell();
-                    // show browser notification for the most recent invoice
-                    const latestInvoice = data.invoices[data.invoices.length - 1];
-                    if (latestInvoice){
-                        const title = `New Invoice #${latestInvoice.id}`;
-                        const body = `${latestInvoice.customer_name || 'Unknown'} — ${latestInvoice.plate_number || ''} — ${latestInvoice.grand_total ? '$'+latestInvoice.grand_total : ''}`;
-                        showBrowserNotification(title, body, latestInvoice.id);
-                        // show an animated in-page notification for latest invoice
-                        showAnimatedNotification(`${title}: ${latestInvoice.customer_name || ''}`, latestInvoice.id);
+                const audioEl = document.getElementById('notifAudio');
+                if (audioEl){
+                    audioEl.currentTime = 0;
+                    const p = audioEl.play();
+                    if (p && typeof p.then === 'function'){
+                        p.catch(()=>{
+                            // If play() is rejected (autoplay policy), fall back to WebAudio
+                            tryWebAudio();
+                        });
                     }
-                    // keep lastId advanced
-                    lastId = data.latest_id || lastId;
+                    return;
+                }
+            } catch (e) { console.warn('notifAudio play error', e); }
+
+            // WebAudio fallback
+            function tryWebAudio(){
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioCtx();
+                    const now = ctx.currentTime;
+                    // Two short tones for a pleasant notification
+                    const tones = [880, 660];
+                    tones.forEach((freq, i) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sine';
+                        o.frequency.value = freq;
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        g.gain.setValueAtTime(0.0001, now + i*0.12);
+                        g.gain.exponentialRampToValueAtTime(0.12, now + i*0.12 + 0.02);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.12 + 0.10);
+                        o.start(now + i*0.12);
+                        o.stop(now + i*0.12 + 0.11);
+                    });
+                } catch (e) {
+                    // Final fallback: small embedded WAV via Audio object
+                    try {
+                        const fallback = new Audio();
+                        fallback.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+                        fallback.play().catch(()=>{});
+                    } catch (err) { console.warn('Audio fallback failed', err); }
                 }
             }
-        } catch (e) {
-            console.warn('poll error', e);
-        } finally {
-            inFlight = false;
-        }
-    }
 
-    // Initial setup
-    (function init(){
-        // Request Notification permission if not denied
-        if (window.Notification && Notification.permission === 'default'){
-            try { Notification.requestPermission(); } catch(e) {}
+            tryWebAudio();
         }
-        // fetch start id then start polling
-        fetchLatestId().then(()=>{ poll(); pollingTimer = setInterval(poll, pollingInterval); });
+
+        function ensureNotifContainer(){
+            let c = document.getElementById('notifContainer');
+            if (!c){ c = document.createElement('div'); c.id = 'notifContainer'; document.body.appendChild(c); }
+            return c;
+        }
+
+        function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]; }); }
+
+        function showAnimatedNotification(text, invoiceId){
+            const container = ensureNotifContainer();
+            const item = document.createElement('div');
+            item.className = 'notif-item';
+            item.innerHTML = `<div style="display:flex;align-items:flex-start;gap:0.5rem"><div style="flex:1"><div style="font-weight:600">${escapeHtml(text)}</div><div style="font-size:12px;color:#6b7280;margin-top:6px">Click to open</div></div><button class="notif-dismiss" aria-label="Dismiss">×</button></div>`;
+            item.addEventListener('click', (e)=>{ if (!e.target.classList.contains('notif-dismiss')) window.open('view_invoice.php?id='+invoiceId,'_blank'); });
+            item.querySelector('.notif-dismiss').addEventListener('click', (e)=>{ e.stopPropagation(); hide(); });
+
+            function hide(){ item.style.transform = 'translateX(24px)'; item.style.opacity = '0'; setTimeout(()=>{ item.remove(); }, 300); }
+
+            container.appendChild(item);
+            // auto-hide after 7s
+            setTimeout(hide, 7000);
+        }
+
+        function animateBell(){ if (!notifButton) return; notifButton.classList.add('notif-bell-anim'); setTimeout(()=> notifButton.classList.remove('notif-bell-anim'), 1000); }
+
+        function showToast(text, invoiceId){
+            // Keep backward-compatible toast (small fade) but also show animated notification
+            showAnimatedNotification(text, invoiceId);
+        }
+
+        function showBrowserNotification(title, body, invoiceId){
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'granted'){
+                const n = new Notification(title, { body });
+                n.onclick = () => { window.focus(); window.open('view_invoice.php?id='+invoiceId, '_blank'); };
+            }
+        }
+
+        function updateBadge(count){
+            if (!notifBadge) return;
+            if (count <= 0){ notifBadge.classList.add('hidden'); notifBadge.textContent = '0'; }
+            else { notifBadge.classList.remove('hidden'); notifBadge.textContent = count > 99 ? '99+' : ''+count; }
+        }
+
+        async function fetchLatestId(){
+            try {
+                const res = await fetch('/api_live_invoices.php', { cache: 'no-store' });
+                if (!res.ok) throw new Error('Network');
+                const data = await res.json();
+                if (data && data.success){
+                    lastId = data.latest_id || 0;
+                }
+            } catch (e) { console.warn('fetchLatestId error', e); }
+        }
+
+        async function poll(){
+            if (inFlight) return;
+            inFlight = true;
+            try {
+                const url = '/api_live_invoices.php' + (lastId ? ('?last_id=' + encodeURIComponent(lastId)) : '');
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Network');
+                const data = await res.json();
+                if (data && data.success){
+                    if (data.new_count && data.new_count > 0){
+                        // Update badge and show animated notification
+                        updateBadge(parseInt(notifBadge.textContent || '0') + data.new_count);
+                        // Play sound once
+                        playBeep();
+                        // animate bell
+                        animateBell();
+                        // show browser notification for the most recent invoice
+                        const latestInvoice = data.invoices[data.invoices.length - 1];
+                        if (latestInvoice){
+                            const title = `New Invoice #${latestInvoice.id}`;
+                            const body = `${latestInvoice.customer_name || 'Unknown'} — ${latestInvoice.plate_number || ''} — ${latestInvoice.grand_total ? '$'+latestInvoice.grand_total : ''}`;
+                            showBrowserNotification(title, body, latestInvoice.id);
+                            // show an animated in-page notification for latest invoice
+                            showAnimatedNotification(`${title}: ${latestInvoice.customer_name || ''}`, latestInvoice.id);
+                        }
+                        // keep lastId advanced
+                        lastId = data.latest_id || lastId;
+                    }
+                }
+            } catch (e) {
+                console.warn('poll error', e);
+            } finally {
+                inFlight = false;
+            }
+        }
+
+        // Initial setup
+        (function init(){
+            // Request Notification permission if not denied
+            if (window.Notification && Notification.permission === 'default'){
+                try { Notification.requestPermission(); } catch(e) {}
+            }
+            // fetch start id then start polling
+            fetchLatestId().then(()=>{ poll(); pollingTimer = setInterval(poll, pollingInterval); });
+        })();
+
+        // clicking bell opens manager panel
+        if (notifButton){ notifButton.addEventListener('click', ()=>{ window.location.href = 'manager.php'; }); }
+
+        // Mute/unmute and test controls
+        const notifTestButton = document.getElementById('notifTestButton');
+        const notifMuteButton = document.getElementById('notifMuteButton');
+        const audioEl = document.getElementById('notifAudio');
+        const MUTE_KEY = 'autoshop_notif_muted';
+        function isMuted(){ return localStorage.getItem(MUTE_KEY) === '1'; }
+        function setMuted(v){ localStorage.setItem(MUTE_KEY, v ? '1' : '0'); updateMuteUI(); }
+        function updateMuteUI(){ if (!notifMuteButton) return; notifMuteButton.textContent = isMuted() ? '🔇' : '🔈'; notifMuteButton.title = isMuted() ? 'Unmute notifications' : 'Mute notifications'; }
+        updateMuteUI();
+
+        async function checkFileExists(url){
+            try {
+                const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                return res.ok;
+            } catch (e){ return false; }
+        }
+
+        async function testAudio(){
+            try {
+                if (isMuted()){ showAnimatedNotification('Muted — unmute to hear sound', 0); return; }
+
+                // Prefer DOM audio; try to load a presented source so we can detect issues
+                if (audioEl){
+                    // quick diagnostics: check mp3 and ogg exist
+                    const mp3Ok = await checkFileExists('assets/sounds/notify.mp3');
+                    const oggOk = await checkFileExists('assets/sounds/notify.ogg');
+                    if (!mp3Ok && !oggOk){
+                        showAnimatedNotification('No notify.mp3/notify.ogg found — server fallback will be used', 0);
+                    }
+                    audioEl.currentTime = 0;
+                    await audioEl.play();
+                    showAnimatedNotification('Sound played', 0);
+                    return;
+                }
+                // otherwise fall back to WebAudio directly
+                playBeep();
+                showAnimatedNotification('Sound played (WebAudio fallback)', 0);
+            } catch (e){
+                console.warn('testAudio error', e);
+                showAnimatedNotification('Unable to play sound — check browser autoplay settings or file existence', 0);
+            }
+        }
+
+        if (notifTestButton) notifTestButton.addEventListener('click', testAudio);
+        if (notifMuteButton) notifMuteButton.addEventListener('click', ()=>{ setMuted(!isMuted()); });
+
+        // Expose for console debugging
+        window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
     })();
-
-    // clicking bell opens manager panel
-    if (notifButton){ notifButton.addEventListener('click', ()=>{ window.location.href = 'manager.php'; }); }
-
-    // Mute/unmute and test controls
-    const notifTestButton = document.getElementById('notifTestButton');
-    const notifMuteButton = document.getElementById('notifMuteButton');
-    const audioEl = document.getElementById('notifAudio');
-    const MUTE_KEY = 'autoshop_notif_muted';
-    function isMuted(){ return localStorage.getItem(MUTE_KEY) === '1'; }
-    function setMuted(v){ localStorage.setItem(MUTE_KEY, v ? '1' : '0'); updateMuteUI(); }
-    function updateMuteUI(){ if (!notifMuteButton) return; notifMuteButton.textContent = isMuted() ? '🔇' : '🔈'; notifMuteButton.title = isMuted() ? 'Unmute notifications' : 'Mute notifications'; }
-    updateMuteUI();
-
-    async function checkFileExists(url){
-        try {
-            const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-            return res.ok;
-        } catch (e){ return false; }
-    }
-
-    async function testAudio(){
-        try {
-            if (isMuted()){ showAnimatedNotification('Muted — unmute to hear sound', 0); return; }
-
-            // Prefer DOM audio; try to load a presented source so we can detect issues
-            if (audioEl){
-                // quick diagnostics: check mp3 and ogg exist
-                const mp3Ok = await checkFileExists('assets/sounds/notify.mp3');
-                const oggOk = await checkFileExists('assets/sounds/notify.ogg');
-                if (!mp3Ok && !oggOk){
-                    showAnimatedNotification('No notify.mp3/notify.ogg found — server fallback will be used', 0);
-                }
-                audioEl.currentTime = 0;
-                await audioEl.play();
-                showAnimatedNotification('Sound played', 0);
-                return;
-            }
-            // otherwise fall back to WebAudio directly
-            playBeep();
-            showAnimatedNotification('Sound played (WebAudio fallback)', 0);
-        } catch (e){
-            console.warn('testAudio error', e);
-            showAnimatedNotification('Unable to play sound — check browser autoplay settings or file existence', 0);
-        }
-    }
-
-    if (notifTestButton) notifTestButton.addEventListener('click', testAudio);
-    if (notifMuteButton) notifMuteButton.addEventListener('click', ()=>{ setMuted(!isMuted()); });
-
-    // Expose for console debugging
-    window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
-})();
 </script>
 
-<script>
-// Menu style picker: persists selection and applies attribute to <nav>
-(function(){
-    const SELECT_KEY = 'autoshop_menu_style';
-    const nav = document.querySelector('nav');
-    const sel = document.getElementById('menu-style-select');
-    function applyStyle(s){
-        if (!nav) return;
-        const style = s || 'default';
-        nav.setAttribute('data-menu-style', style);
-        // show/hide subtle scroll hints when center menu is scrollable
-        const center = nav.querySelector('.max-w-4xl');
-        if (center) {
-            const left = nav.querySelector('.scroll-fade-left');
-            const right = nav.querySelector('.scroll-fade-right');
-            if (!left && !right) {
-                const l = document.createElement('div'); l.className = 'scroll-fade-left'; nav.appendChild(l);
-                const r = document.createElement('div'); r.className = 'scroll-fade-right'; nav.appendChild(r);
-            }
-            requestAnimationFrame(() => {
-                const scrollable = center.scrollWidth > center.clientWidth + 1;
-                const leftEl = nav.querySelector('.scroll-fade-left');
-                const rightEl = nav.querySelector('.scroll-fade-right');
-                if (leftEl) leftEl.style.display = scrollable ? 'block' : 'none';
-                if (rightEl) rightEl.style.display = scrollable ? 'block' : 'none';
-            });
-        }
+<style>
+    /* Ensure main content has left margin on md+ screens so sidebar doesn't overlap */
+    @media (min-width: 768px) {
+        main, .container, .max-w-7xl { margin-left: 16rem; }
     }
-    function init(){
-        const stored = localStorage.getItem(SELECT_KEY) || 'default';
-        applyStyle(stored);
-        if (sel){ sel.value = stored; sel.addEventListener('change', (e)=>{ localStorage.setItem(SELECT_KEY, e.target.value); applyStyle(e.target.value); }); }
-        // react to window resize (if menu becomes scrollable)
-        window.addEventListener('resize', () => { setTimeout(()=> applyStyle(localStorage.getItem(SELECT_KEY) || 'default'), 200); });
-    }
-    document.addEventListener('DOMContentLoaded', init);
-})();
-</script>
-
-<script>
-// Dropdown & accordion behavior (desktop and mobile)
-(function(){
-    document.addEventListener('click', (e)=>{
-        // Close open desktop dropdowns when clicking outside
-        if (!e.target.closest('nav')) {
-            document.querySelectorAll('.group.open').forEach(p=>{
-                p.classList.remove('open');
-                const btn = p.querySelector('button.menu-parent'); if (btn) btn.setAttribute('aria-expanded','false');
-            });
-        }
-    });
-
-    // Desktop: toggle dropdown on click (useful for touch devices)
-    document.addEventListener('DOMContentLoaded', ()=>{
-        document.querySelectorAll('button.menu-parent').forEach(btn=>{
-            btn.addEventListener('click', (ev)=>{
-                ev.preventDefault(); ev.stopPropagation();
-                const parent = btn.closest('.group');
-                const isOpen = parent.classList.toggle('open');
-                btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-                // close siblings
-                document.querySelectorAll('.group.open').forEach(p=>{ if (p !== parent) { p.classList.remove('open'); const b=p.querySelector('button.menu-parent'); if (b) b.setAttribute('aria-expanded','false'); } });
-            });
-
-            // keyboard support: Enter or Space toggles
-            btn.addEventListener('keydown', (k)=>{ if (k.key === 'Enter' || k.key === ' ') { k.preventDefault(); btn.click(); } });
-        });
-
-        // Mobile: accordion toggles
-        document.querySelectorAll('button.mobile-toggle').forEach(btn=>{
-            const submenu = btn.nextElementSibling;
-            btn.addEventListener('click', ()=>{
-                const expanded = btn.getAttribute('aria-expanded') === 'true';
-                btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-                if (submenu){
-                    submenu.classList.toggle('hidden'); submenu.classList.toggle('expanded');
-                    // update page padding (submenu affects height)
-                    try { window.dispatchEvent(new Event('resize')); } catch(e){}
-                }
-            });
-            btn.addEventListener('keydown', (k)=>{ if (k.key === 'Enter' || k.key === ' ') { k.preventDefault(); btn.click(); } });
-        });
-    });
-})();
-</script>
+</style>
 
 <?php if (!empty($_SESSION['created_items'])): $created_items = $_SESSION['created_items']; unset($_SESSION['created_items']); ?>
 <script>

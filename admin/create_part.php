@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="bg-gray-100 min-h-screen p-6 font-sans">
     <?php include '../partials/sidebar.php'; ?>
-    <div class="max-w-3xl mx-auto">
+    <div class="ml-0 md:ml-64 max-w-3xl mx-auto">
         <h1 class="text-2xl font-bold mb-4">Create Part</h1>
         <?php if ($success): ?>
             <div class="mb-4 p-3 bg-green-100 text-green-800 rounded"><?php echo htmlspecialchars($success); ?></div>

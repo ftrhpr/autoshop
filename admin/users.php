@@ -101,7 +101,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body class="bg-gray-100 min-h-screen">
     <?php include '../partials/sidebar.php'; ?>
 
-    <div class="min-h-full overflow-auto pt-4 pl-4">
+    <div class="min-h-full overflow-auto ml-0 md:ml-64 pt-4 pl-4">
         <div class="p-6">
             <h1 class="text-3xl font-bold mb-6">Manage Users</h1>
 
