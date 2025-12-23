@@ -66,6 +66,8 @@ if ($loadId) {
                 'mileage' => $inv['mileage'],
                 'service_manager' => $inv['service_manager'],
                 'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
+                'technician' => $inv['technician'] ?? '',
+                'technician_id' => isset($inv['technician_id']) ? (int)$inv['technician_id'] : 0,
                 'items' => $inv_items,
                 'images' => !empty($inv['images']) ? json_decode($inv['images'], true) : [],
                 'grand_total' => (float)$inv['grand_total'],
@@ -264,6 +266,9 @@ if ($loadId) {
                 <input type="hidden" name="service_total" id="hidden_service_total">
                 <input type="hidden" name="grand_total" id="hidden_grand_total">
                 <input type="hidden" name="print_after_save" id="print_after_save">
+                <!-- Technician selection hidden fields -->
+                <input type="hidden" name="technician" id="hidden_technician">
+                <input type="hidden" name="technician_id" id="hidden_technician_id">
                 <?php if ($serverInvoice): ?>
                 <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="<?php echo $serverInvoice['id']; ?>">
                 <?php endif; ?>
@@ -296,6 +301,12 @@ if ($loadId) {
                             <div>
                                 <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2">Plate Number</label>
                                 <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_technician" class="block text-sm font-medium text-gray-700 mb-2">Technician</label>
+                                <select id="input_technician" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                                    <option value="">— Select Technician —</option>
+                                </select>
                             </div>
                             <div>
                                 <label for="input_vin" class="block text-sm font-medium text-gray-700 mb-2">VIN</label>
@@ -1310,6 +1321,15 @@ if (!empty($serverInvoice)) {
                 tr.querySelector('.item-tech').value = it.tech || '';
             });
             calculateTotals();
+
+            // Set technician selection and hidden fields
+            const techSel = document.getElementById('input_technician');
+            if (techSel) {
+                if (inv.technician_id) techSel.value = inv.technician_id;
+                else if (inv.technician) { for (const opt of techSel.options) if (opt.text === inv.technician) { techSel.value = opt.value; break; } }
+            }
+            const hTech = document.getElementById('hidden_technician'); if (hTech) hTech.value = inv.technician || (techSel && techSel.options[techSel.selectedIndex] ? techSel.options[techSel.selectedIndex].text : '');
+            const hTechId = document.getElementById('hidden_technician_id'); if (hTechId) hTechId.value = inv.technician_id || (techSel ? techSel.value : '');
         }
 
         function removeRow(id) {
@@ -1531,6 +1551,11 @@ if (!empty($serverInvoice)) {
             document.getElementById('hidden_parts_total').value = partsTotal.toFixed(2);
             document.getElementById('hidden_service_total').value = serviceTotal.toFixed(2);
             document.getElementById('hidden_grand_total').value = grandTotal.toFixed(2);
+
+            // Copy technician selection into hidden fields
+            const techSel = document.getElementById('input_technician');
+            document.getElementById('hidden_technician').value = (techSel && techSel.options[techSel.selectedIndex]) ? techSel.options[techSel.selectedIndex].text : '';
+            document.getElementById('hidden_technician_id').value = techSel ? techSel.value : '';
 
             // Ensure service manager is set (prevent empty)
             const smEl = document.getElementById('input_service_manager');
@@ -1891,5 +1916,25 @@ if (!empty($serverInvoice)) {
             </div>
         </div>
     </div>
+
+<script>
+// Populate technician select for invoices and prefill when editing
+document.addEventListener('DOMContentLoaded', async function(){
+    try{
+        const res = await fetch('api_technicians_list.php'); const d = await res.json();
+        if (d.success && Array.isArray(d.technicians)){
+            const sel = document.getElementById('input_technician');
+            if (sel){
+                d.technicians.forEach(t=>{ const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.name; sel.appendChild(opt); });
+                if (window.serverInvoice){
+                    if (window.serverInvoice.technician_id) sel.value = window.serverInvoice.technician_id;
+                    else if (window.serverInvoice.technician){ for (const opt of sel.options) if (opt.text === window.serverInvoice.technician) { sel.value = opt.value; break; } }
+                }
+            }
+        }
+    }catch(e){ console.warn('Failed to load technicians', e); }
+});
+</script>
+
 </body>
 </html>

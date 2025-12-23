@@ -49,6 +49,15 @@ $items = json_decode($invoice['items'], true);
                     }
                     ?>
                     <p><strong>Service Manager:</strong> <?php echo htmlspecialchars($invoice['service_manager']); ?><?php echo !empty($smu['username']) ? ' ('.$smu['username'].')' : ''; ?></p>
+                    <?php
+                    $tech_name = '';
+                    if (!empty($invoice['technician_id'])){
+                        $stmt = $pdo->prepare('SELECT name FROM technicians WHERE id = ? LIMIT 1');
+                        $stmt->execute([(int)$invoice['technician_id']]);
+                        $tch = $stmt->fetch(); if ($tch) $tech_name = $tch['name'];
+                    }
+                    ?>
+                    <p><strong>Technician:</strong> <?php echo htmlspecialchars($invoice['technician'] ?: $tech_name); ?></p>
                     <p><strong>Customer:</strong> <?php echo htmlspecialchars($invoice['customer_name']); ?></p>
                     <p><strong>Phone:</strong> <?php echo htmlspecialchars($invoice['phone']); ?></p>
                     <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>

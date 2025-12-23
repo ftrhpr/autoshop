@@ -464,6 +464,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($um) $serviceManagerName = $um['username'];
     }
 
+    // Resolve technician display name when an id is provided
+    $technicianName = $data['technician'] ?? '';
+    if (!empty($data['technician_id'])) {
+        $stmt = $pdo->prepare('SELECT name FROM technicians WHERE id = ? LIMIT 1');
+        $stmt->execute([(int)$data['technician_id']]);
+        $tm = $stmt->fetch();
+        if ($tm) $technicianName = $tm['name'];
+    }
+
     // Ensure service manager defaults to current logged-in user if empty
     if (empty($serviceManagerName) && !empty($_SESSION['username'])) {
         $serviceManagerName = $_SESSION['username'];
@@ -507,12 +516,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $vin = trim($data['vin'] ?? '');
 
     if ($existing_id) {
-        // Update existing invoice (include VIN)
-        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, vehicle_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
+        // Update existing invoice (include VIN, technician)
+        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, technician = ?, technician_id = ?, vehicle_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
             !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
+            $technicianName,
+            !empty($data['technician_id']) ? (int)$data['technician_id'] : NULL,
             $vehicle_id,
             $data['customer_name'],
             $data['phone_number'],
@@ -528,12 +539,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         ]);
         $invoice_id = $existing_id;
     } else {
-        // Insert new invoice (include VIN)
-        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, vehicle_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        // Insert new invoice (include VIN, technician)
+        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, technician, technician_id, vehicle_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
             !empty($data['service_manager_id']) ? (int)$data['service_manager_id'] : NULL,
+            $technicianName,
+            !empty($data['technician_id']) ? (int)$data['technician_id'] : NULL,
             $vehicle_id,
             $data['customer_name'],
             $data['phone_number'],

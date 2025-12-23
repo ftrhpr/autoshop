@@ -27,6 +27,20 @@ try {
     $pdo->exec($sql1);
     $pdo->exec($sql2);
     echo "technicians & payroll_rules tables created or already exist." . PHP_EOL;
+
+    // Add technician columns to invoices table if missing
+    $colCheck = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoices' AND COLUMN_NAME = ?");
+    $colCheck->execute(['technician_id']);
+    if ($colCheck->fetchColumn() == 0){
+        $pdo->exec("ALTER TABLE invoices ADD COLUMN technician_id INT NULL");
+        echo "Added column technician_id to invoices." . PHP_EOL;
+    }
+    $colCheck->execute(['technician']);
+    if ($colCheck->fetchColumn() == 0){
+        $pdo->exec("ALTER TABLE invoices ADD COLUMN technician VARCHAR(255) NULL");
+        echo "Added column technician to invoices." . PHP_EOL;
+    }
+
 } catch (PDOException $e) {
     echo "Error creating technicians tables: " . $e->getMessage() . PHP_EOL;
 }

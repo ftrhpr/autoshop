@@ -35,6 +35,15 @@ if (!empty($invoice['service_manager_id'])) {
     if ($sm) $sm_username = $sm['username'];
 }
 
+// Resolve technician name if id present
+$tech_name = $invoice['technician'] ?? '';
+if (!empty($invoice['technician_id'])) {
+    $stmt = $pdo->prepare('SELECT name FROM technicians WHERE id = ? LIMIT 1');
+    $stmt->execute([(int)$invoice['technician_id']]);
+    $tm = $stmt->fetch();
+    if ($tm) $tech_name = $tm['name'];
+}
+
 // Totals
 $partsTotal = number_format((float)$invoice['parts_total'], 2);
 $svcTotal = number_format((float)$invoice['service_total'], 2);
