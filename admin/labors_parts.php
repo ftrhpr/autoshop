@@ -279,12 +279,16 @@ try {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded');
             // Tab switching
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
+            console.log('Found tab buttons:', tabButtons.length);
+            console.log('Found tab contents:', tabContents.length);
 
             tabButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
+                    console.log('Tab clicked:', this.dataset.tab);
                     // Remove active class from all buttons
                     tabButtons.forEach(b => b.classList.remove('tab-active'));
                     
@@ -296,9 +300,13 @@ try {
                     
                     // Show corresponding tab content
                     const tabId = this.dataset.tab + '-tab';
+                    console.log('Looking for tab:', tabId);
                     const tabContent = document.getElementById(tabId);
                     if (tabContent) {
+                        console.log('Found tab content, showing');
                         tabContent.classList.remove('hidden');
+                    } else {
+                        console.log('Tab content not found');
                     }
                 });
             });
