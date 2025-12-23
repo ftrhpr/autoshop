@@ -8,47 +8,73 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'mana
 
 // Handle add/edit/delete for labors
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $type = $_POST['type'] ?? '';
-    $action = $_POST['action'] ?? '';
-
-    if ($type === 'labor') {
-        $table = 'labors';
-    } elseif ($type === 'part') {
-        $table = 'parts';
-    } else {
-        die('Invalid type');
+    // Check if tables exist
+    $tablesExist = true;
+    try {
+        $pdo->query("SELECT 1 FROM labors LIMIT 1");
+        $pdo->query("SELECT 1 FROM parts LIMIT 1");
+    } catch (Exception $e) {
+        $tablesExist = false;
+        $error = "Database tables not found. Please run the migration script: <code>migrate_add_labors_parts.php</code>";
     }
 
-    if ($action === 'add' || $action === 'edit') {
-        $name = trim($_POST['name'] ?? '');
-        $description = trim($_POST['description'] ?? '');
-        $default_price = (float)($_POST['default_price'] ?? 0);
+    if ($tablesExist) {
+        $type = $_POST['type'] ?? '';
+        $action = $_POST['action'] ?? '';
 
-        if (empty($name)) {
-            $error = 'Name is required';
+        if ($type === 'labor') {
+            $table = 'labors';
+        } elseif ($type === 'part') {
+            $table = 'parts';
         } else {
-            if ($action === 'add') {
-                $stmt = $pdo->prepare("INSERT INTO $table (name, description, default_price, created_by) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$name, $description, $default_price, $_SESSION['user_id']]);
-                $success = ucfirst($type) . ' added successfully';
-            } elseif ($action === 'edit') {
-                $id = (int)$_POST['id'];
-                $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ? WHERE id = ?");
-                $stmt->execute([$name, $description, $default_price, $id]);
-                $success = ucfirst($type) . ' updated successfully';
+            $error = 'Invalid type';
+        }
+
+        if (!isset($error) && ($action === 'add' || $action === 'edit')) {
+            $name = trim($_POST['name'] ?? '');
+            $description = trim($_POST['description'] ?? '');
+            $default_price = (float)($_POST['default_price'] ?? 0);
+
+            if (empty($name)) {
+                $error = 'Name is required';
+            } else {
+                try {
+                    if ($action === 'add') {
+                        $stmt = $pdo->prepare("INSERT INTO $table (name, description, default_price, created_by) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([$name, $description, $default_price, $_SESSION['user_id']]);
+                        $success = ucfirst($type) . ' added successfully';
+                    } elseif ($action === 'edit') {
+                        $id = (int)$_POST['id'];
+                        $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ? WHERE id = ?");
+                        $stmt->execute([$name, $description, $default_price, $id]);
+                        $success = ucfirst($type) . ' updated successfully';
+                    }
+                } catch (Exception $e) {
+                    $error = 'Database error: ' . $e->getMessage();
+                }
+            }
+        } elseif (!isset($error) && $action === 'delete') {
+            $id = (int)$_POST['id'];
+            try {
+                $stmt = $pdo->prepare("DELETE FROM $table WHERE id = ?");
+                $stmt->execute([$id]);
+                $success = ucfirst($type) . ' deleted successfully';
+            } catch (Exception $e) {
+                $error = 'Database error: ' . $e->getMessage();
             }
         }
-    } elseif ($action === 'delete') {
-        $id = (int)$_POST['id'];
-        $stmt = $pdo->prepare("DELETE FROM $table WHERE id = ?");
-        $stmt->execute([$id]);
-        $success = ucfirst($type) . ' deleted successfully';
     }
 }
 
 // Fetch labors and parts
-$labors = $pdo->query("SELECT * FROM labors ORDER BY name")->fetchAll();
-$parts = $pdo->query("SELECT * FROM parts ORDER BY name")->fetchAll();
+$labors = [];
+$parts = [];
+try {
+    $labors = $pdo->query("SELECT * FROM labors ORDER BY name")->fetchAll();
+    $parts = $pdo->query("SELECT * FROM parts ORDER BY name")->fetchAll();
+} catch (Exception $e) {
+    // Tables don't exist, show empty arrays
+}
 ?>
 
 <!DOCTYPE html>
