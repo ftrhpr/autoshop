@@ -1208,7 +1208,7 @@ if (!empty($serverInvoice)) {
             tr.id = `row-${rowCount}`;
             tr.innerHTML = `
                 <td class="px-3 py-3 font-medium text-center text-gray-400 row-number"></td>
-                <td class="px-3 py-3 relative"><input type="text" placeholder="Description" class="item-name w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><div class="suggestions absolute z-10 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
+                <td class="px-3 py-3 relative flex items-center"><input type="text" placeholder="Description" class="item-name flex-1 border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><button class="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="openItemSearch(this)" title="Search items"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button><div class="suggestions absolute z-10 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
                 <td class="px-3 py-3"><input type="number" min="1" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-part w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-svc w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
@@ -1606,7 +1606,7 @@ if (!empty($serverInvoice)) {
         let currentInput = null;
 
         function showSuggestions(input, suggestions) {
-            const container = input.nextElementSibling;
+            const container = input.parentElement.querySelector('.suggestions');
             container.innerHTML = '';
             if (Array.isArray(suggestions) && suggestions.length > 0) {
                 suggestions.forEach(suggestion => {
@@ -1689,7 +1689,7 @@ if (!empty($serverInvoice)) {
 
         document.addEventListener('keydown', function(e) {
             if (e.target.classList.contains('item-name')) {
-                const container = e.target.nextElementSibling;
+                const container = e.target.parentElement.querySelector('.suggestions');
                 if (e.key === 'Escape') {
                     hideSuggestions();
                 } else if (e.key === 'ArrowDown' && !container.classList.contains('hidden')) {
@@ -1699,10 +1699,130 @@ if (!empty($serverInvoice)) {
             }
         });
 
+        // Item Search Modal Functions
+        let currentSearchInput = null;
+
+        function openItemSearch(button) {
+            currentSearchInput = button.previousElementSibling; // The input before the button
+            document.getElementById('item-search-modal').classList.remove('hidden');
+            document.getElementById('item-search-input').focus();
+            document.getElementById('item-search-results').innerHTML = '<p class="text-gray-500 text-center py-4">Start typing to search...</p>';
+        }
+
+        function closeItemSearch() {
+            document.getElementById('item-search-modal').classList.add('hidden');
+            currentSearchInput = null;
+        }
+
+        function performItemSearch(query) {
+            if (query.length < 2) {
+                document.getElementById('item-search-results').innerHTML = '<p class="text-gray-500 text-center py-4">Start typing to search...</p>';
+                return;
+            }
+            const vehicle = (document.getElementById('input_car_mark')?.value || '').trim();
+            const params = new URLSearchParams({ q: query });
+            if (vehicle) params.set('vehicle', vehicle);
+
+            fetch(`admin/api_labors_parts.php?` + params.toString())
+                .then(response => response.json())
+                .then(resp => {
+                    const data = resp && resp.data ? resp.data : resp;
+                    const results = Array.isArray(data) ? data : [];
+                    displaySearchResults(results);
+                })
+                .catch(error => {
+                    console.error('Error fetching search results:', error);
+                    document.getElementById('item-search-results').innerHTML = '<p class="text-red-500 text-center py-4">Error loading results</p>';
+                });
+        }
+
+        function displaySearchResults(results) {
+            const container = document.getElementById('item-search-results');
+            if (results.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No items found</p>';
+                return;
+            }
+            container.innerHTML = results.map(item => `
+                <div class="border-b border-gray-200 p-3 hover:bg-gray-50 cursor-pointer" data-id="${item.id}" data-name="${item.name.replace(/"/g, '&quot;')}" data-type="${item.type}" data-price="${item.default_price || 0}" onclick="selectSearchItem(this)">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-medium">${item.name}</div>
+                            <div class="text-sm text-gray-600">${item.description || ''}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-blue-600">${item.default_price > 0 ? item.default_price + ' ₾' : ''}</div>
+                            <div class="text-xs text-gray-500 uppercase">${item.type}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectSearchItem(element) {
+            const id = element.dataset.id;
+            const name = element.dataset.name;
+            const type = element.dataset.type;
+            const price = parseFloat(element.dataset.price) || 0;
+            selectItem(id, name, type, price);
+        }
+
+        function selectItem(id, name, type, price) {
+            if (currentSearchInput) {
+                currentSearchInput.value = name;
+                const row = currentSearchInput.closest('tr');
+
+                // Record matched DB item id/type on the row for server-side processing
+                if (id) row.dataset.itemDbId = id;
+                if (type) row.dataset.itemDbType = type;
+
+                // Fill appropriate price field depending on type
+                if (type === 'part') {
+                    const partInput = row.querySelector('.item-price-part');
+                    if (price > 0 && (!partInput.value || partInput.value == '0')) {
+                        partInput.value = price;
+                    }
+                } else if (type === 'labor') {
+                    const svcInput = row.querySelector('.item-price-svc');
+                    if (price > 0 && (!svcInput.value || svcInput.value == '0')) {
+                        svcInput.value = price;
+                    }
+                }
+
+                calculateTotals();
+                closeItemSearch();
+            }
+        }
+
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
+            // Add event listener for search input
+            document.getElementById('item-search-input').addEventListener('input', function() {
+                performItemSearch(this.value.trim());
+            });
             // ... existing code ...
         });
     </script>
+
+    <!-- Item Search Modal -->
+    <div id="item-search-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Search Items</h3>
+                    <button onclick="closeItemSearch()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <input type="text" id="item-search-input" placeholder="Type to search labors and parts..." class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div id="item-search-results" class="max-h-96 overflow-y-auto">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
