@@ -61,11 +61,7 @@ function svgIcon($name){
             </div>
 
             <!-- Desktop Menu -->
-            <div class="hidden lg:flex items-center space-x-1 xl:space-x-2 2xl:space-x-4 flex-1 justify-center max-w-5xl overflow-hidden">
-                <div class="flex items-center space-x-1 xl:space-x-2 2xl:space-x-4">
-                <?php 
-                $desktopMenu = array_slice($menu, 0, 6); // Limit to 6 items max for desktop
-                foreach ($desktopMenu as $item):
+            <div class="hidden lg:flex items-center space-x-1 xl:space-x-3 2xl:space-x-6 flex-1 justify-center max-w-4xl overflow-x-auto flex-nowrap no-scrollbar px-2" style="-webkit-overflow-scrolling: touch;">
                 <?php foreach ($menu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
                     if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -85,7 +81,7 @@ function svgIcon($name){
 
                     $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
                 ?>
-                <a href="<?php echo htmlspecialchars($href); ?>" class="group relative flex items-center gap-1.5 xl:gap-2 2xl:gap-3 px-3 xl:px-4 2xl:px-6 py-2 xl:py-3 2xl:py-3 rounded-xl xl:rounded-2xl hover:bg-white/10 transition-all duration-300 text-xs xl:text-sm 2xl:text-base font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-lg scale-105' : 'text-blue-100 hover:text-white hover:scale-105'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                <a href="<?php echo htmlspecialchars($href); ?>" class="group flex-shrink-0 relative flex items-center gap-1.5 xl:gap-2 2xl:gap-3 px-3 xl:px-4 2xl:px-6 py-2 xl:py-3 2xl:py-3 rounded-xl xl:rounded-2xl hover:bg-white/10 transition-all duration-300 text-xs xl:text-sm 2xl:text-base font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-lg scale-105' : 'text-blue-100 hover:text-white hover:scale-105'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
                     <span class="w-4 h-4 xl:w-5 xl:h-5 2xl:w-6 2xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
                     <span class="relative whitespace-nowrap">
                         <?php echo htmlspecialchars($item['label']); ?>
@@ -96,14 +92,12 @@ function svgIcon($name){
                     <?php endif; ?>
                 </a>
                 <?php endforeach; ?>
-                </div>
             </div>
 
             <!-- Tablet Menu (Simplified) -->
-            <div class="hidden md:flex lg:hidden items-center space-x-1 flex-1 justify-center max-w-sm">
+            <div class="hidden md:flex lg:hidden items-center space-x-1 flex-1 justify-center max-w-md">
                 <?php 
-                $tabletMenu = array_slice($menu, 0, 3); // Show only first 3 items on tablet for better fit
-                foreach ($tabletMenu as $item):
+                $tabletMenu = array_slice($menu, 0, 4); // Show only first 4 items on tablet
                 foreach ($tabletMenu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
                     if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -169,7 +163,7 @@ function svgIcon($name){
         </div>
 
         <!-- Mobile Menu Dropdown -->
-        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-40 max-h-[70vh] overflow-y-auto">
+        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-40 max-h-screen overflow-y-auto">
             <div class="max-w-7xl mx-auto px-4 py-4">
                 <div class="grid grid-cols-1 gap-2">
                     <?php foreach ($menu as $item):
@@ -240,34 +234,22 @@ function svgIcon($name){
     background: rgba(255, 255, 255, 0.5);
 }
 
-/* Content spacing for fixed navigation */
-main.pt-4,
-div.pt-4.min-h-full,
-div.pt-4.min-h-screen,
-div.pt-4.h-full {
-    padding-top: 5rem !important; /* Add extra padding for pages with minimal padding */
+/* Ensure main content has proper top padding for fixed nav */
+:root { --nav-height: 5rem; }
+main, .container, .max-w-7xl {
+    padding-top: var(--nav-height);
 }
 
+/* Responsive adjustments (kept as variable-driven, JS will update --nav-height on resize/menu open) */
 @media (max-width: 1023px) {
-    main.pt-4,
-    div.pt-4.min-h-full,
-    div.pt-4.min-h-screen,
-    div.pt-4.h-full {
-        padding-top: 4.75rem !important;
+    main, .container, .max-w-7xl {
+        padding-top: var(--nav-height);
     }
 }
 
-@media (max-width: 767px) {
-    main.pt-4,
-    div.pt-4.min-h-full,
-    div.pt-4.min-h-screen,
-    div.pt-4.h-full {
-        padding-top: 4.5rem !important;
-    }
-}
-
-/* Specific rules for pages using div containers instead of main */
-/* Note: These pages already have their own padding, so we don't override */
+/* Utility to hide scrollbars where we enable horizontal scroll */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* Enhanced focus states */
 nav a:focus,
@@ -315,6 +297,29 @@ nav * {
             }
         });
     }
+})();
+
+// Dynamically adjust page top padding so nav (and expanded mobile menu) never overlap content
+(function adjustNavPadding(){
+    const nav = document.querySelector('nav');
+    const mobileMenuEl = document.getElementById('mobile-menu');
+    const update = () => {
+        if (!nav) return;
+        const navH = Math.ceil(nav.getBoundingClientRect().height);
+        let extra = 0;
+        if (mobileMenuEl && !mobileMenuEl.classList.contains('hidden')) {
+            extra = Math.ceil(mobileMenuEl.getBoundingClientRect().height);
+        }
+        document.documentElement.style.setProperty('--nav-height', (navH + extra) + 'px');
+    };
+    update();
+    window.addEventListener('resize', () => requestAnimationFrame(update));
+    // Observe mobile menu class changes (open/close)
+    if (mobileMenuEl && window.MutationObserver) {
+        const obs = new MutationObserver(update);
+        obs.observe(mobileMenuEl, { attributes: true, attributeFilter: ['class'] });
+    }
+    if (mobileMenuEl) mobileMenuEl.addEventListener('transitionend', update);
 })();
 </script>
 

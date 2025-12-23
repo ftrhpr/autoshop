@@ -36,25 +36,13 @@
 
         /* Ensure main content has proper top padding for fixed nav */
         main {
-            padding-top: 5rem; /* 80px for lg+ screens */
+            padding-top: 5rem;
         }
 
-        /* Responsive padding adjustments to match nav height */
+        /* Responsive adjustments */
         @media (max-width: 1023px) {
             main {
-                padding-top: 4.5rem; /* 72px for md screens */
-            }
-        }
-
-        @media (max-width: 767px) {
-            main {
-                padding-top: 4rem; /* 64px for sm screens */
-            }
-        }
-
-        @media (max-width: 639px) {
-            main {
-                padding-top: 4rem; /* 64px for xs screens */
+                padding-top: 5rem;
             }
         }
 
@@ -220,14 +208,13 @@
             <h1 class="text-3xl font-bold text-gray-900 mb-6">AutoShop Navigation Test</h1>
 
             <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                <h2 class="text-xl font-semibold mb-4">Responsive Navigation Features (Updated)</h2>
+                <h2 class="text-xl font-semibold mb-4">Responsive Navigation Features</h2>
                 <ul class="space-y-2 text-gray-700">
-                    <li><strong>Mobile (≤768px):</strong> Hamburger menu with dropdown (max 70vh height)</li>
-                    <li><strong>Tablet (768px-1024px):</strong> Icon-only menu with 3 main items (Dashboard, Invoices, Customers)</li>
-                    <li><strong>Desktop (≥1024px):</strong> Full menu with 6 items max, responsive spacing</li>
-                    <li><strong>Content Spacing:</strong> Responsive padding-top (4rem-5rem) to prevent overlap</li>
+                    <li><strong>Mobile (≤768px):</strong> Hamburger menu with full dropdown</li>
+                    <li><strong>Tablet (768px-1024px):</strong> Icon-only menu with 4 main items</li>
+                    <li><strong>Desktop (≥1024px):</strong> Full menu with text labels</li>
                     <li><strong>Logo:</strong> Responsive sizing (8px → 9px → 10px)</li>
-                    <li><strong>Notifications:</strong> Test/mute buttons on large screens only</li>
+                    <li><strong>Notifications:</strong> Test and mute buttons on large screens</li>
                     <li><strong>Logout:</strong> Hidden on small screens, icon-only on medium, full text on large</li>
                 </ul>
             </div>
