@@ -131,15 +131,7 @@ function svgIcon($name){
     var openBtn = document.getElementById('openSidebar');
     var closeBtn = document.getElementById('closeSidebar');
     if (openBtn) openBtn.addEventListener('click', open);
-    if (closeBtn) closeBtn.addEventListener('click', function(){
-        const sidebar = document.getElementById('site-sidebar');
-        const isOpen = !sidebar.classList.contains('-translate-x-full');
-        if (isOpen) {
-            close();
-        } else {
-            open();
-        }
-    });
+    if (closeBtn) closeBtn.addEventListener('click', close);
     // Close on escape
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
     // Close when tapping outside on mobile

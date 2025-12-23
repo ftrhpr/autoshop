@@ -163,6 +163,7 @@ if ($loadId) {
             </nav>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center">
+                    <button id="openSidebarDesktop" class="hidden md:block mr-4 p-2 bg-gray-200 rounded hover:bg-gray-300" title="Open menu">☰</button>
                     <button id="closeSidebarMain" class="md:hidden mr-4 p-2 bg-gray-200 rounded hover:bg-gray-300" title="Close menu">✕</button>
                     <h1 class="text-4xl font-bold text-gray-900 flex items-center">
                         <svg class="w-10 h-10 mr-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -558,6 +559,17 @@ if (!empty($serverInvoice)) {
                 if (main && window.innerWidth >= 768) {
                     main.classList.remove('md:ml-64');
                     main.classList.add('md:ml-0');
+                }
+            });
+
+            // Open sidebar button for desktop
+            const openBtnDesktop = document.getElementById('openSidebarDesktop');
+            if (openBtnDesktop) openBtnDesktop.addEventListener('click', () => {
+                document.getElementById('site-sidebar').classList.remove('-translate-x-full');
+                const main = document.querySelector('main.ml-0');
+                if (main && window.innerWidth >= 768) {
+                    main.classList.add('md:ml-64');
+                    main.classList.remove('md:ml-0');
                 }
             });
 
