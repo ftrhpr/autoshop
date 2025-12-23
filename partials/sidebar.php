@@ -208,6 +208,15 @@ function svgIcon($name){
 #site-sidebar.collapsed a {
     justify-content: center;
 }
+
+/* Focus ring and press animation for interactive buttons */
+button:focus-visible, [role="menuitem"]:focus-visible { outline: 3px solid rgba(99,102,241,0.95); outline-offset: 2px; border-radius: 6px; }
+button.btn-press-anim:active { transform: translateY(1px) scale(0.995); transition: transform 80ms ease; }
+
+/* Tooltip */
+.sidebar-tooltip { position: fixed; z-index: 60; background: rgba(20,20,20,0.95); color: #fff; padding: 6px 8px; font-size: 12px; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); pointer-events: none; transform-origin: center bottom; opacity: 0; transition: opacity 120ms ease, transform 120ms cubic-bezier(.2,.9,.2,1); }
+.sidebar-tooltip.show { opacity: 1; transform: translateY(-6px) scale(1); }
+
 </style>
 
 
@@ -242,6 +251,49 @@ function svgIcon($name){
     const closeMobileBtn = document.getElementById('closeSidebarMobile');
     if (closeMobileBtn) closeMobileBtn.addEventListener('click', close);
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && sidebar && !sidebar.classList.contains('-translate-x-full')) close(); });
+
+    // Tooltip helper (hover on desktop, long-press on touch devices)
+    (function(){
+        const tooltipEl = document.createElement('div');
+        tooltipEl.id = 'sidebarTooltip';
+        tooltipEl.className = 'sidebar-tooltip';
+        document.body.appendChild(tooltipEl);
+
+        function showTooltipFor(btn, text){
+            if (!btn || !tooltipEl) return;
+            tooltipEl.textContent = text;
+            tooltipEl.classList.add('show');
+            // position
+            const r = btn.getBoundingClientRect();
+            // allow browser to measure
+            const tRect = tooltipEl.getBoundingClientRect();
+            let left = r.left + (r.width - tRect.width) / 2;
+            left = Math.max(6, left);
+            let top = r.top - tRect.height - 8;
+            if (top < 6) top = r.bottom + 8;
+            tooltipEl.style.left = left + 'px';
+            tooltipEl.style.top = top + 'px';
+            btn.setAttribute('aria-describedby', 'sidebarTooltip');
+        }
+        function hideTooltipFor(btn){ if (!tooltipEl) return; tooltipEl.classList.remove('show'); if (btn) btn.removeAttribute('aria-describedby'); }
+
+        function attach(btn, text){
+            if (!btn) return;
+            btn.classList.add('btn-press-anim');
+            let longpress = null;
+            btn.addEventListener('mouseenter', ()=> showTooltipFor(btn, text));
+            btn.addEventListener('mouseleave', ()=> hideTooltipFor(btn));
+            btn.addEventListener('focus', ()=> showTooltipFor(btn, text));
+            btn.addEventListener('blur', ()=> hideTooltipFor(btn));
+            btn.addEventListener('pointerdown', ()=> { longpress = setTimeout(()=> showTooltipFor(btn, text), 600); });
+            btn.addEventListener('pointerup', ()=> { if (longpress) clearTimeout(longpress); });
+            btn.addEventListener('pointercancel', ()=> { if (longpress) clearTimeout(longpress); });
+        }
+
+        attach(openBtn, 'Open menu');
+        attach(closeMobileBtn, 'Close menu');
+        attach(document.getElementById('collapseSidebar'), 'Collapse sidebar');
+    })();
 
     if (collapseBtn) {
         collapseBtn.setAttribute('aria-pressed', 'false');
