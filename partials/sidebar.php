@@ -61,7 +61,11 @@ function svgIcon($name){
             </div>
 
             <!-- Desktop Menu -->
-            <div class="hidden lg:flex items-center space-x-1 xl:space-x-3 2xl:space-x-6 flex-1 justify-center max-w-4xl">
+            <div class="hidden lg:flex items-center space-x-1 xl:space-x-2 2xl:space-x-4 flex-1 justify-center max-w-5xl overflow-hidden">
+                <div class="flex items-center space-x-1 xl:space-x-2 2xl:space-x-4">
+                <?php 
+                $desktopMenu = array_slice($menu, 0, 6); // Limit to 6 items max for desktop
+                foreach ($desktopMenu as $item):
                 <?php foreach ($menu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
                     if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -92,12 +96,14 @@ function svgIcon($name){
                     <?php endif; ?>
                 </a>
                 <?php endforeach; ?>
+                </div>
             </div>
 
             <!-- Tablet Menu (Simplified) -->
-            <div class="hidden md:flex lg:hidden items-center space-x-1 flex-1 justify-center max-w-md">
+            <div class="hidden md:flex lg:hidden items-center space-x-1 flex-1 justify-center max-w-sm">
                 <?php 
-                $tabletMenu = array_slice($menu, 0, 4); // Show only first 4 items on tablet
+                $tabletMenu = array_slice($menu, 0, 3); // Show only first 3 items on tablet for better fit
+                foreach ($tabletMenu as $item):
                 foreach ($tabletMenu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
                     if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -163,7 +169,7 @@ function svgIcon($name){
         </div>
 
         <!-- Mobile Menu Dropdown -->
-        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-40 max-h-screen overflow-y-auto">
+        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-40 max-h-[70vh] overflow-y-auto">
             <div class="max-w-7xl mx-auto px-4 py-4">
                 <div class="grid grid-cols-1 gap-2">
                     <?php foreach ($menu as $item):
@@ -235,14 +241,26 @@ function svgIcon($name){
 }
 
 /* Ensure main content has proper top padding for fixed nav */
-main, .container, .max-w-7xl {
-    padding-top: 5rem;
+main, .container, .max-w-7xl, body > div:first-child {
+    padding-top: 5rem !important; /* 80px for lg+ screens */
 }
 
-/* Responsive adjustments */
+/* Responsive padding adjustments to match nav height */
 @media (max-width: 1023px) {
-    main, .container, .max-w-7xl {
-        padding-top: 5rem;
+    main, .container, .max-w-7xl, body > div:first-child {
+        padding-top: 4.5rem !important; /* 72px for md screens */
+    }
+}
+
+@media (max-width: 767px) {
+    main, .container, .max-w-7xl, body > div:first-child {
+        padding-top: 4rem !important; /* 64px for sm screens */
+    }
+}
+
+@media (max-width: 639px) {
+    main, .container, .max-w-7xl, body > div:first-child {
+        padding-top: 4rem !important; /* 64px for xs screens */
     }
 }
 
