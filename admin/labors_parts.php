@@ -288,6 +288,7 @@ try {
 
             tabButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
+                    alert('clicked ' + this.dataset.tab);
                     console.log('Tab clicked:', this.dataset.tab);
                     // Remove active class from all buttons
                     tabButtons.forEach(b => b.classList.remove('tab-active'));
