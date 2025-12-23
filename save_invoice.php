@@ -207,6 +207,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
 
                         if (!$pv) {
+                            // Token OR matching: check if any token from typed value matches stored vehicle (e.g., 'Audi Q5' -> token 'q5' matches stored 'Q5')
+                            $tokens = preg_split('/\s+/', $vLower);
+                            foreach ($tokens as $t) {
+                                $t = trim($t); if ($t === '') continue;
+                                $pvStmtTok = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                                $pvStmtTok->execute(['part', $it['db_id'], "%{$t}%"]);
+                                $pv = $pvStmtTok->fetch();
+                                if ($pv) break;
+                            }
+                        }
+
+                        if (!$pv) {
                             // Try token AND-matching (all tokens must appear in vehicle_make_model)
                             $tokens = preg_split('/\s+/', $vLower);
                             $ands = [];
@@ -286,6 +298,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
 
                         if (!$pv) {
+                            // Token OR matching: check if any token from typed value matches stored vehicle (e.g., 'Audi Q5' -> token 'q5' matches stored 'Q5')
+                            $tokens = preg_split('/\s+/', $vLower);
+                            foreach ($tokens as $t) {
+                                $t = trim($t); if ($t === '') continue;
+                                $pvStmtTok = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                                $pvStmtTok->execute(['labor', $it['db_id'], "%{$t}%"]);
+                                $pv = $pvStmtTok->fetch();
+                                if ($pv) break;
+                            }
+                        }
                             // Try token AND-matching (all tokens must appear in vehicle_make_model)
                             $tokens = preg_split('/\s+/', $vLower);
                             $ands = [];

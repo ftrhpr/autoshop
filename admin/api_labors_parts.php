@@ -38,8 +38,9 @@ try {
             if ($vehicle !== '') {
                 $vLower = strtolower($vehicle);
                 $vLike = "%{$vLower}%";
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE ((vehicle_make_model IS NOT NULL AND LOWER(vehicle_make_model) LIKE ?) OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 ELSE 2 END, name LIMIT 10");
-                $stmt->execute([$vLike, $like, $like, $vLower, $vLike]);
+                // Include all matching labors but prioritize by: exact vehicle match -> vehicle contains typed -> typed contains vehicle -> others
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 WHEN LOWER(?) LIKE CONCAT('%', LOWER(vehicle_make_model), '%') THEN 2 ELSE 3 END, name LIMIT 10");
+                $stmt->execute([$like, $like, $vLower, $vLike, $vLower]);
             } else {
                 $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
                 $stmt->execute([$like, $like]);
@@ -49,8 +50,9 @@ try {
             if ($vehicle !== '') {
                 $vLower = strtolower($vehicle);
                 $vLike = "%{$vLower}%";
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE ((vehicle_make_model IS NOT NULL AND LOWER(vehicle_make_model) LIKE ?) OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 ELSE 2 END, name LIMIT 10");
-                $stmt->execute([$vLike, $like, $like, $vLower, $vLike]);
+                // Include all matching parts but prioritize by: exact vehicle match -> vehicle contains typed -> typed contains vehicle -> others
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 WHEN LOWER(?) LIKE CONCAT('%', LOWER(vehicle_make_model), '%') THEN 2 ELSE 3 END, name LIMIT 10");
+                $stmt->execute([$like, $like, $vLower, $vLike, $vLower]);
             } else {
                 $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
                 $stmt->execute([$like, $like]);
@@ -72,8 +74,16 @@ try {
                     $s->execute([$itemType, $itemId, "%{$vLower}%"]);
                     $row = $s->fetch(PDO::FETCH_ASSOC);
                     if ($row) return $row;
-                    // Token AND matching (all words present)
+                    // Token OR matching: check if any token from typed value matches stored vehicle (e.g., typed 'Audi Q5' matches stored 'Q5')
                     $tokens = preg_split('/\s+/', $vLower);
+                    foreach ($tokens as $t) {
+                        $t = trim($t); if ($t === '') continue;
+                        $s = $pdo->prepare("SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1");
+                        $s->execute([$itemType, $itemId, "%{$t}%"]);
+                        $row = $s->fetch(PDO::FETCH_ASSOC);
+                        if ($row) return $row;
+                    }
+                    // Token AND matching (all words present)
                     $ands = [];
                     $params = [$itemType, $itemId];
                     foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
