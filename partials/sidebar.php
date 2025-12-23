@@ -60,7 +60,7 @@ function svgIcon($name){
                 </div>
             </div>
 
-            <!-- Desktop Menu -->
+            <!-- Desktop Menu (supports one-level dropdowns) -->
             <div class="hidden lg:flex items-center space-x-1 xl:space-x-3 2xl:space-x-6 flex-1 justify-center max-w-4xl overflow-x-auto flex-nowrap no-scrollbar px-2" style="-webkit-overflow-scrolling: touch;">
                 <?php foreach ($menu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
@@ -80,7 +80,40 @@ function svgIcon($name){
                     }
 
                     $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
+                    $hasChildren = !empty($item['children']) && is_array($item['children']);
                 ?>
+                <?php if ($hasChildren): ?>
+                <div class="relative group flex-shrink-0">
+                    <button class="menu-parent group relative flex items-center gap-1.5 xl:gap-2 2xl:gap-3 px-3 xl:px-4 2xl:px-6 py-2 xl:py-3 rounded-xl xl:rounded-2xl hover:bg-white/10 transition-all duration-300 text-xs xl:text-sm 2xl:text-base font-medium text-blue-100 hover:text-white" aria-haspopup="true" aria-expanded="false" type="button">
+                        <span class="w-4 h-4 xl:w-5 xl:h-5 2xl:w-6 2xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
+                        <span class="relative whitespace-nowrap">
+                            <?php echo htmlspecialchars($item['label']); ?>
+                        </span>
+                        <svg class="ml-1 w-3 h-3 text-blue-100 group-hover:text-white transition-transform duration-200" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+
+                    <div class="dropdown hidden group-hover:block group-focus-within:block absolute left-0 mt-2 py-2 min-w-[12rem] bg-slate-900/95 border border-white/5 rounded-lg shadow-lg z-50">
+                        <?php foreach ($item['children'] as $child):
+                            if ($child['permission'] && !function_exists('currentUserCan')) continue;
+                            if ($child['permission'] && !currentUserCan($child['permission'])) continue;
+
+                            $cr = $child['href'];
+                            if (preg_match('#^https?://#i', $cr)) { $chref = $cr; }
+                            else {
+                                $cparts = array_values(array_filter(explode('/', $cr), 'strlen'));
+                                $cclean = [];
+                                foreach ($cparts as $p) { if (count($cclean) === 0 || end($cclean) !== $p) $cclean[] = $p; }
+                                $chref = rtrim($appRoot, '/') . '/' . implode('/', $cclean);
+                            }
+                            $cActive = strpos($_SERVER['SCRIPT_NAME'], $chref) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($chref);
+                        ?>
+                        <a href="<?php echo htmlspecialchars($chref); ?>" class="block px-4 py-2 text-sm <?php echo $cActive ? 'text-white bg-white/5 font-semibold' : 'text-blue-100 hover:text-white hover:bg-white/3'; ?> transition-all" title="<?php echo htmlspecialchars($child['label']); ?>">
+                            <span class="inline-flex items-center gap-2"><?php echo svgIcon($child['icon']); ?><?php echo htmlspecialchars($child['label']); ?></span>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php else: ?>
                 <a href="<?php echo htmlspecialchars($href); ?>" class="group flex-shrink-0 relative flex items-center gap-1.5 xl:gap-2 2xl:gap-3 px-3 xl:px-4 2xl:px-6 py-2 xl:py-3 2xl:py-3 rounded-xl xl:rounded-2xl hover:bg-white/10 transition-all duration-300 text-xs xl:text-sm 2xl:text-base font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-lg scale-105' : 'text-blue-100 hover:text-white hover:scale-105'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
                     <span class="w-4 h-4 xl:w-5 xl:h-5 2xl:w-6 2xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
                     <span class="relative whitespace-nowrap">
@@ -91,6 +124,7 @@ function svgIcon($name){
                     <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
                     <?php endif; ?>
                 </a>
+                <?php endif; ?>
                 <?php endforeach; ?>
             </div>
 
@@ -194,7 +228,37 @@ function svgIcon($name){
                         }
 
                         $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
+                        $hasChildren = !empty($item['children']) && is_array($item['children']);
                     ?>
+                    <?php if ($hasChildren): ?>
+                    <div class="flex flex-col">
+                        <button class="mobile-toggle w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl hover:bg-white/10 transition-all duration-200 text-left text-blue-100" aria-expanded="false" type="button">
+                            <span class="flex items-center gap-3"><span class="w-6 h-6 flex-shrink-0 p-1 rounded-xl bg-white/10"><?php echo svgIcon($item['icon']); ?></span><span class="font-medium"><?php echo htmlspecialchars($item['label']); ?></span></span>
+                            <svg class="w-4 h-4 text-blue-100 transition-transform duration-200" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <div class="mobile-submenu hidden mt-2 pl-6 space-y-1">
+                            <?php foreach ($item['children'] as $child):
+                                if ($child['permission'] && !function_exists('currentUserCan')) continue;
+                                if ($child['permission'] && !currentUserCan($child['permission'])) continue;
+
+                                $cr = $child['href'];
+                                if (preg_match('#^https?://#i', $cr)) { $chref = $cr; }
+                                else {
+                                    $cparts = array_values(array_filter(explode('/', $cr), 'strlen'));
+                                    $cclean = [];
+                                    foreach ($cparts as $p) { if (count($cclean) === 0 || end($cclean) !== $p) $cclean[] = $p; }
+                                    $chref = rtrim($appRoot, '/') . '/' . implode('/', $cclean);
+                                }
+                                $cActive = strpos($_SERVER['SCRIPT_NAME'], $chref) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($chref);
+                            ?>
+                            <a href="<?php echo htmlspecialchars($chref); ?>" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/8 transition-all duration-150 <?php echo $cActive ? 'bg-white/10 text-white font-medium' : 'text-blue-100 hover:text-white'; ?>">
+                                <span class="w-5 h-5 flex-shrink-0 p-1 rounded-lg bg-white/8"><?php echo svgIcon($child['icon']); ?></span>
+                                <span class="font-medium"><?php echo htmlspecialchars($child['label']); ?></span>
+                            </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php else: ?>
                     <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-white/10 transition-all duration-300 <?php echo $isActive ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:text-white'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
                         <span class="w-6 h-6 flex-shrink-0 p-1 rounded-xl bg-white/10"><?php echo svgIcon($item['icon']); ?></span>
                         <span class="font-medium"><?php echo htmlspecialchars($item['label']); ?></span>
@@ -202,6 +266,7 @@ function svgIcon($name){
                         <div class="ml-auto w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
                         <?php endif; ?>
                     </a>
+                    <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
                 <div class="border-t border-white/10 mt-4 pt-4">
@@ -307,6 +372,20 @@ nav[data-menu-style="pill"] .group:hover {
 nav .scroll-fade-left, nav .scroll-fade-right { position: absolute; top: 0; bottom: 0; width: 2.4rem; pointer-events: none; z-index: 55; }
 nav .scroll-fade-left { left: 0; background: linear-gradient(90deg, rgba(15,23,42,0.9), transparent); display: none; }
 nav .scroll-fade-right { right: 0; background: linear-gradient(270deg, rgba(15,23,42,0.9), transparent); display: none; }
+
+/* Dropdown panel styles (desktop) */
+.dropdown { display: none; opacity: 0; transform-origin: top center; transition: opacity 160ms ease, transform 160ms ease; }
+.group.open .dropdown, .group:hover .dropdown, .group:focus-within .dropdown { display: block; opacity: 1; transform: translateY(0); }
+.dropdown a { display: block; }
+.dropdown a + a { border-top: 1px solid rgba(255,255,255,0.03); }
+
+/* Mobile submenu accordion */
+.mobile-submenu { transition: max-height 220ms ease, opacity 160ms ease; overflow: hidden; }
+.mobile-submenu.hidden { max-height: 0; opacity: 0; }
+.mobile-submenu.expanded { max-height: 480px; opacity: 1; }
+
+/* caret rotation when expanded */
+.mobile-toggle[aria-expanded="true"] svg, .group.open > button.menu-parent[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 </style>
 
@@ -633,6 +712,53 @@ nav .scroll-fade-right { right: 0; background: linear-gradient(270deg, rgba(15,2
         window.addEventListener('resize', () => { setTimeout(()=> applyStyle(localStorage.getItem(SELECT_KEY) || 'default'), 200); });
     }
     document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+
+<script>
+// Dropdown & accordion behavior (desktop and mobile)
+(function(){
+    document.addEventListener('click', (e)=>{
+        // Close open desktop dropdowns when clicking outside
+        if (!e.target.closest('nav')) {
+            document.querySelectorAll('.group.open').forEach(p=>{
+                p.classList.remove('open');
+                const btn = p.querySelector('button.menu-parent'); if (btn) btn.setAttribute('aria-expanded','false');
+            });
+        }
+    });
+
+    // Desktop: toggle dropdown on click (useful for touch devices)
+    document.addEventListener('DOMContentLoaded', ()=>{
+        document.querySelectorAll('button.menu-parent').forEach(btn=>{
+            btn.addEventListener('click', (ev)=>{
+                ev.preventDefault(); ev.stopPropagation();
+                const parent = btn.closest('.group');
+                const isOpen = parent.classList.toggle('open');
+                btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                // close siblings
+                document.querySelectorAll('.group.open').forEach(p=>{ if (p !== parent) { p.classList.remove('open'); const b=p.querySelector('button.menu-parent'); if (b) b.setAttribute('aria-expanded','false'); } });
+            });
+
+            // keyboard support: Enter or Space toggles
+            btn.addEventListener('keydown', (k)=>{ if (k.key === 'Enter' || k.key === ' ') { k.preventDefault(); btn.click(); } });
+        });
+
+        // Mobile: accordion toggles
+        document.querySelectorAll('button.mobile-toggle').forEach(btn=>{
+            const submenu = btn.nextElementSibling;
+            btn.addEventListener('click', ()=>{
+                const expanded = btn.getAttribute('aria-expanded') === 'true';
+                btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+                if (submenu){
+                    submenu.classList.toggle('hidden'); submenu.classList.toggle('expanded');
+                    // update page padding (submenu affects height)
+                    try { window.dispatchEvent(new Event('resize')); } catch(e){}
+                }
+            });
+            btn.addEventListener('keydown', (k)=>{ if (k.key === 'Enter' || k.key === ' ') { k.preventDefault(); btn.click(); } });
+        });
+    });
 })();
 </script>
 
