@@ -69,12 +69,17 @@ try {
 
     if ($method === 'POST') {
         $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
         if (!is_array($data)) $data = $_POST;
 
         $op = $data['action'] ?? '';
         $type = $data['type'] ?? '';
+        $debug = !empty($data['debug']);
         if (!in_array($type, ['labor','part'])) throw new Exception('Invalid type');
         $table = $type === 'part' ? 'parts' : 'labors';
+
+        // gather debug info to return when requested
+        $debugInfo = ['raw_input' => $rawInput, '_GET' => $_GET, '_POST' => $_POST, 'session_user' => $_SESSION['user_id'] ?? null, 'session_role' => $_SESSION['role'] ?? null];
 
         if ($op === 'add') {
             $name = trim($data['name'] ?? '');
@@ -85,7 +90,9 @@ try {
             $stmt->execute([$name, $description, $default_price, $_SESSION['user_id']]);
             $id = $pdo->lastInsertId();
             $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
-            echo json_encode(['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)]);
+            $response = ['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)];
+            if ($debug) $response['debug'] = $debugInfo;
+            echo json_encode($response);
             exit;
         }
 
@@ -99,7 +106,9 @@ try {
             $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ? WHERE id = ?");
             $stmt->execute([$name, $description, $default_price, $id]);
             $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
-            echo json_encode(['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)]);
+            $response = ['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)];
+            if ($debug) $response['debug'] = $debugInfo;
+            echo json_encode($response);
             exit;
         }
 
@@ -108,7 +117,9 @@ try {
             if ($id <= 0) throw new Exception('Invalid id');
             $stmt = $pdo->prepare("DELETE FROM $table WHERE id = ?");
             $stmt->execute([$id]);
-            echo json_encode(['success' => true]);
+            $response = ['success' => true];
+            if ($debug) $response['debug'] = $debugInfo;
+            echo json_encode($response);
             exit;
         }
 

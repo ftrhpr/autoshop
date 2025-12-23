@@ -77,6 +77,7 @@ try {
                 <button id="export-labors" class="px-3 py-2 bg-gray-200 rounded-md">Export Labors</button>
                 <button id="export-parts" class="px-3 py-2 bg-gray-200 rounded-md">Export Parts</button>
                 <button id="test-api" class="px-3 py-2 bg-yellow-200 rounded-md">Test API</button>
+                <button id="test-add-part" class="px-3 py-2 bg-green-200 rounded-md">Test Add Part</button>
             </div>
         </div>
 
@@ -337,6 +338,26 @@ document.getElementById('test-api').addEventListener('click', async function(){
     } catch (err) {
         console.error('API status fetch error:', err);
         toast('API request failed — check server and session', 'error');
+    }
+});
+
+// Test Add Part button (sends debug payload to API and prints response)
+document.getElementById('test-add-part').addEventListener('click', async function(){
+    const payload = { action: 'add', type: 'part', name: 'Debug Part (JS Test)', description: 'Debug from test button', default_price: 1.00, debug: true };
+    try {
+        console.log('Test Add Part payload:', payload);
+        const res = await apiPost(payload);
+        console.log('Test Add Part response:', res);
+        if (res && res.success) {
+            toast('Test Add Part succeeded');
+            await loadList('part');
+        } else {
+            toast('Test Add Part failed: ' + (res && res.message ? res.message : 'unknown'), 'error');
+            console.error('Test Add response:', res);
+        }
+    } catch (err) {
+        console.error('Test Add Part error:', err);
+        toast('Test Add request failed: ' + (err.message || 'network'), 'error');
     }
 });
 
