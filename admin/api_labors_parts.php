@@ -79,21 +79,40 @@ try {
         $table = $type === 'part' ? 'parts' : 'labors';
 
         // gather debug info to return when requested
-        $debugInfo = ['raw_input' => $rawInput, '_GET' => $_GET, '_POST' => $_POST, 'session_user' => $_SESSION['user_id'] ?? null, 'session_role' => $_SESSION['role'] ?? null];
+        // Check table existence and basic DB health
+        $tablesExist = [];
+        foreach (['labors', 'parts'] as $t) {
+            try {
+                $cstmt = $pdo->prepare("SELECT 1 FROM $t LIMIT 1");
+                $cstmt->execute();
+                $tablesExist[$t] = true;
+            } catch (Exception $te) {
+                $tablesExist[$t] = false;
+            }
+        }
+        $debugInfo = ['raw_input' => $rawInput, '_GET' => $_GET, '_POST' => $_POST, 'session_user' => $_SESSION['user_id'] ?? null, 'session_role' => $_SESSION['role'] ?? null, 'tables_exist' => $tablesExist];
 
         if ($op === 'add') {
             $name = trim($data['name'] ?? '');
             $description = trim($data['description'] ?? '');
             $default_price = (float)($data['default_price'] ?? 0);
             if ($name === '') throw new Exception('Name required');
-            $stmt = $pdo->prepare("INSERT INTO $table (name, description, default_price, created_by) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $description, $default_price, $_SESSION['user_id']]);
-            $id = $pdo->lastInsertId();
-            $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
-            $response = ['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)];
-            if ($debug) $response['debug'] = $debugInfo;
-            echo json_encode($response);
-            exit;
+            try {
+                $stmt = $pdo->prepare("INSERT INTO $table (name, description, default_price, created_by) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$name, $description, $default_price, $_SESSION['user_id']]);
+                $id = $pdo->lastInsertId();
+                $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
+                $response = ['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)];
+                if ($debug) $response['debug'] = $debugInfo;
+                echo json_encode($response);
+                exit;
+            } catch (Exception $e) {
+                error_log('api_labors_parts.php - Insert error: ' . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database insert failed'];
+                if ($debug) $response['debug'] = array_merge($debugInfo, ['insert_error' => $e->getMessage()]);
+                echo json_encode($response);
+                exit;
+            }
         }
 
         if ($op === 'edit') {
