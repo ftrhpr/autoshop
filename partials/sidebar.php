@@ -240,29 +240,10 @@ function svgIcon($name){
     background: rgba(255, 255, 255, 0.5);
 }
 
-/* Ensure main content has proper top padding for fixed nav */
-main, .container, .max-w-7xl, body > div:first-child {
-    padding-top: 5rem !important; /* 80px for lg+ screens */
-}
+/* Content spacing for fixed navigation - pages should handle their own padding */
 
-/* Responsive padding adjustments to match nav height */
-@media (max-width: 1023px) {
-    main, .container, .max-w-7xl, body > div:first-child {
-        padding-top: 4.5rem !important; /* 72px for md screens */
-    }
-}
-
-@media (max-width: 767px) {
-    main, .container, .max-w-7xl, body > div:first-child {
-        padding-top: 4rem !important; /* 64px for sm screens */
-    }
-}
-
-@media (max-width: 639px) {
-    main, .container, .max-w-7xl, body > div:first-child {
-        padding-top: 4rem !important; /* 64px for xs screens */
-    }
-}
+/* Specific rules for pages using div containers instead of main */
+/* Note: These pages already have their own padding, so we don't override */
 
 /* Enhanced focus states */
 nav a:focus,
