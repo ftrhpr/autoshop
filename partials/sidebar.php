@@ -44,119 +44,65 @@ function svgIcon($name){
 }
 ?>
 
-<!-- Bootstrap CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <!-- Sidebar (desktop) & Off-canvas (mobile) -->
-<div class="bg-dark text-white position-fixed start-0 top-0 vh-100 shadow d-none d-md-block" id="site-sidebar" style="width: 250px; z-index: 1040;">
-    <div class="d-flex flex-column h-100">
-        <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3">
-                <div class="fw-bold fs-5">AutoShop</div>
+<div class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform -translate-x-full md:translate-x-0 transition-all duration-300 shadow-lg" id="site-sidebar" aria-hidden="false">
+    <div class="h-full flex flex-col">
+        <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="font-bold text-lg">AutoShop</div>
                 <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-                <div class="position-relative">
-                    <button id="notifButton" class="btn btn-link text-secondary p-1" title="Notifications">
-                        <svg class="bi bi-bell" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C10.134 8.197 10 6.628 10 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 .99 1.74A3.002 3.002 0 0 1 5 6c0 .646.124 2.368.51 3.822.126.63.272 1.272.45 1.878h6.1z"/></svg>
+                <div id="notif-root" class="relative">
+                    <button id="notifButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </button>
-                    <button id="notifTestButton" class="btn btn-link text-secondary p-1" title="Test sound">🔊</button>
-                    <button id="notifMuteButton" class="btn btn-link text-secondary p-1" title="Mute notifications">🔈</button>
-                    <audio id="notifAudio" preload="auto" style="display:none">
+                    <button id="notifTestButton" class="ml-2 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Test sound" aria-label="Test sound">🔊</button>
+                    <button id="notifMuteButton" class="ml-1 text-slate-300 hover:text-white p-1 rounded focus:outline-none" title="Mute notifications" aria-label="Mute notifications">🔈</button>
+                    <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.mp3" type="audio/mpeg">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.ogg" type="audio/ogg">
+                        <!-- Fallback to server-served WAV if mp3/ogg not present -->
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.php" type="audio/wav">
                     </audio>
-                    <span id="notifBadge" class="badge bg-danger position-absolute top-0 start-100 translate-middle d-none">0</span>
+                    <span id="notifBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
                 </div>
                 <?php endif; ?>
             </div>
-            <button id="closeSidebar" class="btn btn-link text-secondary">✕</button>
-            <button id="collapseSidebar" class="btn btn-link text-secondary d-none d-md-inline" title="Collapse sidebar">◀</button>
+            <button id="closeSidebar" class="text-slate-300 hover:text-white">✕</button>
+            <button id="collapseSidebar" class="hidden md:block text-slate-300 hover:text-white ml-2" title="Collapse sidebar">◀</button>
         </div>
 
-        <nav class="flex-grow-1 overflow-auto p-3">
-            <ul class="nav flex-column">
-                <?php foreach ($menu as $item):
-                    if ($item['permission'] && !function_exists('currentUserCan')) continue;
-                    if ($item['permission'] && !currentUserCan($item['permission'])) continue;
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1" aria-label="Primary">
+            <?php foreach ($menu as $item):
+                if ($item['permission'] && !function_exists('currentUserCan')) continue;
+                if ($item['permission'] && !currentUserCan($item['permission'])) continue;
 
-                    $raw = $item['href'];
-                    if (preg_match('#^https?://#i', $raw)) {
-                        $href = $raw;
-                    } else {
-                        $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
-                        $clean = [];
-                        foreach ($parts as $p) {
-                            if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
-                        }
-                        $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
+                $raw = $item['href'];
+                if (preg_match('#^https?://#i', $raw)) {
+                    $href = $raw;
+                } else {
+                    // Collapse duplicate segments and ensure path relative to app root
+                    $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
+                    $clean = [];
+                    foreach ($parts as $p) {
+                        if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
                     }
+                    $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
+                }
 
-                    $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
-                ?>
-                <li class="nav-item">
-                    <a href="<?php echo htmlspecialchars($href); ?>" class="nav-link d-flex align-items-center gap-3 py-2 px-3 rounded <?php echo $isActive ? 'bg-warning text-dark fw-bold' : 'text-white'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                        <span><?php echo svgIcon($item['icon']); ?></span>
-                        <span class="sidebar-text"><?php echo htmlspecialchars($item['label']); ?></span>
-                    </a>
-                </li>
-                <?php endforeach; ?>
-            </ul>
+                $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
+            ?>
+            <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold shadow-md' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                <span class="w-5 h-5 flex-shrink-0"><?php echo svgIcon($item['icon']); ?></span>
+                <span class="sidebar-text transition-opacity duration-300"><?php echo htmlspecialchars($item['label']); ?></span>
+            </a>
+            <?php endforeach; ?>
         </nav>
 
-        <div class="p-3 border-top border-secondary">
-            <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="btn btn-danger w-100">Logout</a>
+        <div class="p-4 border-t border-slate-700">
+            <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white text-center">Logout</a>
         </div>
     </div>
 </div>
-
-<!-- Mobile Offcanvas Sidebar -->
-<div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
-    <div class="offcanvas-header border-bottom border-secondary">
-        <h5 class="offcanvas-title" id="mobileSidebarLabel">AutoShop</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body d-flex flex-column">
-        <nav class="flex-grow-1">
-            <ul class="nav flex-column">
-                <?php foreach ($menu as $item):
-                    if ($item['permission'] && !function_exists('currentUserCan')) continue;
-                    if ($item['permission'] && !currentUserCan($item['permission'])) continue;
-
-                    $raw = $item['href'];
-                    if (preg_match('#^https?://#i', $raw)) {
-                        $href = $raw;
-                    } else {
-                        $parts = array_values(array_filter(explode('/', $raw), 'strlen'));
-                        $clean = [];
-                        foreach ($parts as $p) {
-                            if (count($clean) === 0 || end($clean) !== $p) $clean[] = $p;
-                        }
-                        $href = rtrim($appRoot, '/') . '/' . implode('/', $clean);
-                    }
-
-                    $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
-                ?>
-                <li class="nav-item">
-                    <a href="<?php echo htmlspecialchars($href); ?>" class="nav-link text-white d-flex align-items-center gap-3 py-2 px-3 rounded <?php echo $isActive ? 'bg-warning text-dark fw-bold' : ''; ?>">
-                        <span><?php echo svgIcon($item['icon']); ?></span>
-                        <span><?php echo htmlspecialchars($item['label']); ?></span>
-                    </a>
-                </li>
-                <?php endforeach; ?>
-            </ul>
-        </nav>
-        <div class="mt-auto">
-            <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="btn btn-danger w-100">Logout</a>
-        </div>
-    </div>
-</div>
-
-<!-- Mobile menu button -->
-<button class="btn btn-dark position-fixed bottom-4 start-4 d-md-none shadow" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar">
-    <svg class="bi bi-list" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>
-</button>
 
 <style>
 #site-sidebar.collapsed {
@@ -166,124 +112,294 @@ function svgIcon($name){
     opacity: 0;
     pointer-events: none;
 }
-#site-sidebar.collapsed .nav-link {
+#site-sidebar.collapsed a {
     justify-content: center;
 }
 </style>
 
+<!-- Mobile: floating menu button -->
+<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+
 <script>
 (function(){
-    // Desktop sidebar collapse
-    const collapseBtn = document.getElementById('collapseSidebar');
-    if (collapseBtn) {
-        collapseBtn.addEventListener('click', function(){
-            const sidebar = document.getElementById('site-sidebar');
-            const main = document.querySelector('main.ml-0, div.ml-0');
-            sidebar.classList.toggle('collapsed');
-            this.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
-            if (main && window.innerWidth >= 768) {
-                if (sidebar.classList.contains('collapsed')) {
-                    main.classList.remove('md:ml-64');
-                    main.classList.add('md:ml-16');
-                } else {
-                    main.classList.remove('md:ml-16');
-                    main.classList.add('md:ml-64');
-                }
-            }
-        });
+    function open() { 
+        document.getElementById('site-sidebar').classList.remove('-translate-x-full'); 
+        document.body.classList.add('overflow-hidden');
+        const main = document.querySelector('main.ml-0, div.ml-0');
+        if (main && window.innerWidth >= 768) {
+            main.classList.add('md:ml-64');
+            main.classList.remove('md:ml-0');
+        }
     }
-
-    // Close sidebar on desktop
-    const closeBtn = document.getElementById('closeSidebar');
-    if (closeBtn) closeBtn.addEventListener('click', function(){
-        const sidebar = document.getElementById('site-sidebar');
-        sidebar.style.transform = 'translateX(-100%)';
+    function close() { 
+        document.getElementById('site-sidebar').classList.add('-translate-x-full'); 
+        document.body.classList.remove('overflow-hidden');
         const main = document.querySelector('main.ml-0, div.ml-0');
         if (main && window.innerWidth >= 768) {
             main.classList.remove('md:ml-64');
             main.classList.add('md:ml-0');
         }
+    }
+    var openBtn = document.getElementById('openSidebar');
+    var closeBtn = document.getElementById('closeSidebar');
+    var collapseBtn = document.getElementById('collapseSidebar');
+    if (openBtn) openBtn.addEventListener('click', open);
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    if (collapseBtn) collapseBtn.addEventListener('click', function(){
+        const sidebar = document.getElementById('site-sidebar');
+        const main = document.querySelector('main.ml-0, div.ml-0');
+        sidebar.classList.toggle('collapsed');
+        this.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        if (main && window.innerWidth >= 768) {
+            if (sidebar.classList.contains('collapsed')) {
+                main.classList.remove('md:ml-64');
+                main.classList.add('md:ml-16');
+            } else {
+                main.classList.remove('md:ml-16');
+                main.classList.add('md:ml-64');
+            }
+        }
     });
+    // Close on escape
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+    // Close when tapping outside on mobile
+    document.addEventListener('click', function(e){
+        var sidebar = document.getElementById('site-sidebar');
+        if (!sidebar.contains(e.target) && !openBtn.contains(e.target) && window.innerWidth < 768) close();
+    });
+})();
+</script>
 
-    // Notification system
+<!-- Mobile overlay and toggle -->
+<button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>
+
+<script>
+    const sidebar = document.getElementById('site-sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    const closeBtn = document.getElementById('closeSidebar');
+    if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+    if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+
+    // Notification system: polls server for new invoices and shows badge/toasts/sound
     (function(){
         const notifButton = document.getElementById('notifButton');
         const notifBadge = document.getElementById('notifBadge');
         let lastId = null;
-        let pollingInterval = 8000;
+        let pollingInterval = 8000; // 8 seconds
         let pollingTimer = null;
         let inFlight = false;
 
-        function poll(){
-            if (inFlight) return;
-            inFlight = true;
-            fetch('<?php echo $appRoot; ?>/api_live_invoices.php?action=latest_id')
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success && data.id !== lastId) {
-                        lastId = data.id;
-                        updateBadge(data.count || 0);
-                        if (data.count > 0 && !isMuted()) {
-                            playSound();
-                            showAnimatedNotification(`New invoice(s) created! (${data.count})`, 0);
-                        }
+        // Create and append minimal styles for animated notifications and bell animation
+        (function addNotifStyles(){
+            const css = `
+                @keyframes notif-slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity:1; } }
+                @keyframes bell-pulse { 0%{ transform: scale(1); } 30%{ transform: scale(1.15) rotate(-8deg);} 60%{ transform: scale(1.03) rotate(6deg);} 100%{transform: scale(1);} }
+                .notif-bell-anim { animation: bell-pulse 0.9s ease; }
+                #notifContainer { position: fixed; top: 3.5rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+                .notif-item { width: 20rem; max-width: calc(100vw - 4rem); background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(0,0,0,0.08); padding: 0.75rem; cursor: pointer; transform: translateX(24px); opacity:0; animation: notif-slide-in 320ms forwards ease; }
+                .notif-item .notif-dismiss{ background: transparent; border: 0; font-size: 1.05rem; line-height: 1; cursor: pointer; color: #6b7280; }
+            `;
+            const s = document.createElement('style'); s.appendChild(document.createTextNode(css)); document.head.appendChild(s);
+        })();
+
+        function playBeep(){
+            // Prefer a DOM audio element when available (better compatibility on some mobile browsers)
+            try {
+                const audioEl = document.getElementById('notifAudio');
+                if (audioEl){
+                    audioEl.currentTime = 0;
+                    const p = audioEl.play();
+                    if (p && typeof p.then === 'function'){
+                        p.catch(()=>{
+                            // If play() is rejected (autoplay policy), fall back to WebAudio
+                            tryWebAudio();
+                        });
                     }
-                })
-                .catch(e => console.warn('Poll error', e))
-                .finally(() => inFlight = false);
+                    return;
+                }
+            } catch (e) { console.warn('notifAudio play error', e); }
+
+            // WebAudio fallback
+            function tryWebAudio(){
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioCtx();
+                    const now = ctx.currentTime;
+                    // Two short tones for a pleasant notification
+                    const tones = [880, 660];
+                    tones.forEach((freq, i) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sine';
+                        o.frequency.value = freq;
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        g.gain.setValueAtTime(0.0001, now + i*0.12);
+                        g.gain.exponentialRampToValueAtTime(0.12, now + i*0.12 + 0.02);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.12 + 0.10);
+                        o.start(now + i*0.12);
+                        o.stop(now + i*0.12 + 0.11);
+                    });
+                } catch (e) {
+                    // Final fallback: small embedded WAV via Audio object
+                    try {
+                        const fallback = new Audio();
+                        fallback.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+                        fallback.play().catch(()=>{});
+                    } catch (err) { console.warn('Audio fallback failed', err); }
+                }
+            }
+
+            tryWebAudio();
+        }
+
+        function ensureNotifContainer(){
+            let c = document.getElementById('notifContainer');
+            if (!c){ c = document.createElement('div'); c.id = 'notifContainer'; document.body.appendChild(c); }
+            return c;
+        }
+
+        function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]; }); }
+
+        function showAnimatedNotification(text, invoiceId){
+            const container = ensureNotifContainer();
+            const item = document.createElement('div');
+            item.className = 'notif-item';
+            item.innerHTML = `<div style="display:flex;align-items:flex-start;gap:0.5rem"><div style="flex:1"><div style="font-weight:600">${escapeHtml(text)}</div><div style="font-size:12px;color:#6b7280;margin-top:6px">Click to open</div></div><button class="notif-dismiss" aria-label="Dismiss">×</button></div>`;
+            item.addEventListener('click', (e)=>{ if (!e.target.classList.contains('notif-dismiss')) window.open('view_invoice.php?id='+invoiceId,'_blank'); });
+            item.querySelector('.notif-dismiss').addEventListener('click', (e)=>{ e.stopPropagation(); hide(); });
+
+            function hide(){ item.style.transform = 'translateX(24px)'; item.style.opacity = '0'; setTimeout(()=>{ item.remove(); }, 300); }
+
+            container.appendChild(item);
+            // auto-hide after 7s
+            setTimeout(hide, 7000);
+        }
+
+        function animateBell(){ if (!notifButton) return; notifButton.classList.add('notif-bell-anim'); setTimeout(()=> notifButton.classList.remove('notif-bell-anim'), 1000); }
+
+        function showToast(text, invoiceId){
+            // Keep backward-compatible toast (small fade) but also show animated notification
+            showAnimatedNotification(text, invoiceId);
+        }
+
+        function showBrowserNotification(title, body, invoiceId){
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'granted'){
+                const n = new Notification(title, { body });
+                n.onclick = () => { window.focus(); window.open('view_invoice.php?id='+invoiceId, '_blank'); };
+            }
         }
 
         function updateBadge(count){
-            if (count > 0) {
-                notifBadge.textContent = count > 99 ? '99+' : count;
-                notifBadge.classList.remove('d-none');
-            } else {
-                notifBadge.classList.add('d-none');
+            if (!notifBadge) return;
+            if (count <= 0){ notifBadge.classList.add('hidden'); notifBadge.textContent = '0'; }
+            else { notifBadge.classList.remove('hidden'); notifBadge.textContent = count > 99 ? '99+' : ''+count; }
+        }
+
+        async function fetchLatestId(){
+            try {
+                const res = await fetch('/api_live_invoices.php', { cache: 'no-store' });
+                if (!res.ok) throw new Error('Network');
+                const data = await res.json();
+                if (data && data.success){
+                    lastId = data.latest_id || 0;
+                }
+            } catch (e) { console.warn('fetchLatestId error', e); }
+        }
+
+        async function poll(){
+            if (inFlight) return;
+            inFlight = true;
+            try {
+                const url = '/api_live_invoices.php' + (lastId ? ('?last_id=' + encodeURIComponent(lastId)) : '');
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Network');
+                const data = await res.json();
+                if (data && data.success){
+                    if (data.new_count && data.new_count > 0){
+                        // Update badge and show animated notification
+                        updateBadge(parseInt(notifBadge.textContent || '0') + data.new_count);
+                        // Play sound once
+                        playBeep();
+                        // animate bell
+                        animateBell();
+                        // show browser notification for the most recent invoice
+                        const latestInvoice = data.invoices[data.invoices.length - 1];
+                        if (latestInvoice){
+                            const title = `New Invoice #${latestInvoice.id}`;
+                            const body = `${latestInvoice.customer_name || 'Unknown'} — ${latestInvoice.plate_number || ''} — ${latestInvoice.grand_total ? '$'+latestInvoice.grand_total : ''}`;
+                            showBrowserNotification(title, body, latestInvoice.id);
+                            // show an animated in-page notification for latest invoice
+                            showAnimatedNotification(`${title}: ${latestInvoice.customer_name || ''}`, latestInvoice.id);
+                        }
+                        // keep lastId advanced
+                        lastId = data.latest_id || lastId;
+                    }
+                }
+            } catch (e) {
+                console.warn('poll error', e);
+            } finally {
+                inFlight = false;
             }
         }
 
-        function playSound(){
-            const audio = document.getElementById('notifAudio');
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(e => console.warn('Audio play failed', e));
+        // Initial setup
+        (function init(){
+            // Request Notification permission if not denied
+            if (window.Notification && Notification.permission === 'default'){
+                try { Notification.requestPermission(); } catch(e) {}
             }
+            // fetch start id then start polling
+            fetchLatestId().then(()=>{ poll(); pollingTimer = setInterval(poll, pollingInterval); });
+        })();
+
+        // clicking bell opens manager panel
+        if (notifButton){ notifButton.addEventListener('click', ()=>{ window.location.href = 'manager.php'; }); }
+
+        // Mute/unmute and test controls
+        const notifTestButton = document.getElementById('notifTestButton');
+        const notifMuteButton = document.getElementById('notifMuteButton');
+        const audioEl = document.getElementById('notifAudio');
+        const MUTE_KEY = 'autoshop_notif_muted';
+        function isMuted(){ return localStorage.getItem(MUTE_KEY) === '1'; }
+        function setMuted(v){ localStorage.setItem(MUTE_KEY, v ? '1' : '0'); updateMuteUI(); }
+        function updateMuteUI(){ if (!notifMuteButton) return; notifMuteButton.textContent = isMuted() ? '🔇' : '🔈'; notifMuteButton.title = isMuted() ? 'Unmute notifications' : 'Mute notifications'; }
+        updateMuteUI();
+
+        async function checkFileExists(url){
+            try {
+                const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                return res.ok;
+            } catch (e){ return false; }
         }
 
-        function isMuted(){
-            return localStorage.getItem('invoiceNotifMuted') === 'true';
-        }
+        async function testAudio(){
+            try {
+                if (isMuted()){ showAnimatedNotification('Muted — unmute to hear sound', 0); return; }
 
-        function setMuted(muted){
-            localStorage.setItem('invoiceNotifMuted', muted);
-            if (muted) {
-                notifMuteButton.textContent = '🔇';
-                notifMuteButton.title = 'Unmute notifications';
-            } else {
-                notifMuteButton.textContent = '🔈';
-                notifMuteButton.title = 'Mute notifications';
-            }
-        }
-
-        function showAnimatedNotification(text, type){
-            // Assume showToast or similar function exists
-            if (typeof showToast === 'function') {
-                showToast(text, type);
-            } else {
-                console.log(text);
-            }
-        }
-
-        function testAudio(){
-            const audio = document.getElementById('notifAudio');
-            if (!audio) return;
-            audio.currentTime = 0;
-            audio.play().then(() => {
-                showAnimatedNotification('Sound test played', 0);
-            }).catch(e => {
+                // Prefer DOM audio; try to load a presented source so we can detect issues
+                if (audioEl){
+                    // quick diagnostics: check mp3 and ogg exist
+                    const mp3Ok = await checkFileExists('assets/sounds/notify.mp3');
+                    const oggOk = await checkFileExists('assets/sounds/notify.ogg');
+                    if (!mp3Ok && !oggOk){
+                        showAnimatedNotification('No notify.mp3/notify.ogg found — server fallback will be used', 0);
+                    }
+                    audioEl.currentTime = 0;
+                    await audioEl.play();
+                    showAnimatedNotification('Sound played', 0);
+                    return;
+                }
+                // otherwise fall back to WebAudio directly
+                playBeep();
+                showAnimatedNotification('Sound played (WebAudio fallback)', 0);
+            } catch (e){
                 console.warn('testAudio error', e);
                 showAnimatedNotification('Unable to play sound — check browser autoplay settings or file existence', 0);
-            });
+            }
         }
 
         if (notifTestButton) notifTestButton.addEventListener('click', testAudio);
@@ -292,7 +408,6 @@ function svgIcon($name){
         // Expose for console debugging
         window.__invoiceNotifications = { poll, fetchLatestId, testAudio, setMuted };
     })();
-})();
 </script>
 
 <style>
