@@ -112,8 +112,7 @@ function svgIcon($name){
                 <?php endif; ?>
             </div>
             <!-- Mobile close button (explicit close affordance) -->
-            <button id="closeSidebarMobile" class="md:hidden ml-2 text-slate-300 hover:text-white p-2 rounded" title="Close menu" aria-label="Close menu" aria-controls="site-sidebar">✕</button>
-            <button id="collapseSidebar" class="ml-auto hidden md:inline-flex items-center justify-center text-slate-300 hover:text-white p-2 rounded" title="Collapse sidebar" aria-label="Collapse sidebar" aria-pressed="false" aria-controls="site-sidebar">◀</button> 
+            <button id="closeSidebarMobile" class="md:hidden ml-2 text-slate-300 hover:text-white p-2 rounded" title="Close menu" aria-label="Close menu" aria-controls="site-sidebar">✕</button> 
         </div>
 
         <nav class="flex-1 overflow-y-auto p-3" aria-label="Primary navigation">
@@ -223,7 +222,6 @@ button.btn-press-anim:active { transform: translateY(1px) scale(0.995); transiti
 
 <script>
 (function(){
-    var collapseBtn = document.getElementById('collapseSidebar');
     var openBtn = document.getElementById('openSidebar');
     var overlay = document.getElementById('sidebarOverlay');
     var sidebar = document.getElementById('site-sidebar');
@@ -292,43 +290,10 @@ button.btn-press-anim:active { transform: translateY(1px) scale(0.995); transiti
 
         attach(openBtn, 'Open menu');
         attach(closeMobileBtn, 'Close menu');
-        attach(document.getElementById('collapseSidebar'), 'Collapse sidebar');
     })();
 
-    if (collapseBtn) {
-        collapseBtn.setAttribute('aria-pressed', 'false');
-        collapseBtn.addEventListener('click', function(){
-            const main = document.querySelector('main, .container, .max-w-7xl');
-            sidebar.classList.toggle('collapsed');
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            try { sessionStorage.setItem('sidebar_collapsed', isCollapsed ? '1' : '0'); } catch(e){}
-            this.textContent = isCollapsed ? '▶' : '◀';
-            this.setAttribute('aria-pressed', isCollapsed ? 'true' : 'false');
-            if (main) {
-                if (isCollapsed) {
-                    main.classList.remove('ml-64');
-                    main.classList.add('ml-16');
-                } else {
-                    main.classList.remove('ml-16');
-                    main.classList.add('ml-64');
-                }
-            }
-        });
 
-        // Apply saved collapsed state on load
-        try {
-            const saved = sessionStorage.getItem('sidebar_collapsed');
-            if (saved === '1') {
-                if (sidebar) {
-                    sidebar.classList.add('collapsed');
-                    collapseBtn.textContent = '▶';
-                    collapseBtn.setAttribute('aria-pressed','true');
-                    const main = document.querySelector('main, .container, .max-w-7xl');
-                    if (main) { main.classList.remove('ml-64'); main.classList.add('ml-16'); }
-                }
-            }
-        } catch(e){}
-    }
+
 
 
     // --- Accordion behavior: nested menus, keyboard navigable ---
