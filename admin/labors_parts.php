@@ -76,6 +76,7 @@ try {
                 <input id="global-search" placeholder="Search labors / parts" class="px-3 py-2 border rounded-md" />
                 <button id="export-labors" class="px-3 py-2 bg-gray-200 rounded-md">Export Labors</button>
                 <button id="export-parts" class="px-3 py-2 bg-gray-200 rounded-md">Export Parts</button>
+                <button id="test-api" class="px-3 py-2 bg-yellow-200 rounded-md">Test API</button>
             </div>
         </div>
 
@@ -207,7 +208,15 @@ function toast(message, type = 'success'){
 
 async function apiPost(payload){
     const res = await fetch(apiUrl, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    return res.json();
+    let text = await res.text();
+    try {
+        const json = text ? JSON.parse(text) : {};
+        if (!res.ok) throw new Error((json && json.message) ? json.message : ('HTTP ' + res.status));
+        return json;
+    } catch (err) {
+        console.error('apiPost parsing/error:', err, 'raw:', text);
+        throw err;
+    }
 }
 
 function renderRows(type, rows){
@@ -313,6 +322,23 @@ document.getElementById('modal-cancel').addEventListener('click', function(){ do
 // Export buttons
 document.getElementById('export-labors').addEventListener('click', function(){ window.location = apiUrl + '?action=export&type=labors'; });
 document.getElementById('export-parts').addEventListener('click', function(){ window.location = apiUrl + '?action=export&type=parts'; });
+
+// Test API button
+document.getElementById('test-api').addEventListener('click', async function(){
+    try {
+        const res = await fetch('api_status.php');
+        const json = await res.json();
+        if (res.ok && json.success) {
+            toast('API OK — user ' + json.user_id + ' role: ' + (json.role || 'none'));
+        } else {
+            toast('API error: ' + (json.message || 'unknown'), 'error');
+            console.error('API status response:', json);
+        }
+    } catch (err) {
+        console.error('API status fetch error:', err);
+        toast('API request failed — check server and session', 'error');
+    }
+});
 
 // Search filtering across both lists (simple client-side)
 document.getElementById('global-search').addEventListener('input', function(){
