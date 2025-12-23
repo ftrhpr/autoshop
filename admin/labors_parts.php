@@ -103,6 +103,8 @@ window.testAddPartHandler = async function(btn){
             <h1 class="text-2xl font-bold">Labors & Parts</h1>
             <div class="flex items-center space-x-3">
                 <input id="global-search" placeholder="Search labors / parts" class="px-3 py-2 border rounded-md" />
+                <a href="create_labor.php" class="px-3 py-2 bg-blue-600 text-white rounded-md">Create Labor</a>
+                <a href="create_part.php" class="px-3 py-2 bg-blue-600 text-white rounded-md">Create Part</a>
                 <button id="export-labors" class="px-3 py-2 bg-gray-200 rounded-md">Export Labors</button>
                 <button id="export-parts" class="px-3 py-2 bg-gray-200 rounded-md">Export Parts</button>
                 <button id="test-api" class="px-3 py-2 bg-yellow-200 rounded-md">Test API</button>
