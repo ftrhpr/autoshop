@@ -4,6 +4,12 @@ require '../config.php';
 // Full JSON API for Labors and Parts with CRUD & CSV export
 header('Content-Type: application/json; charset=utf-8');
 
+// Debug logging for incoming requests (remove in production)
+error_log('api_labors_parts.php - REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD']);
+error_log('api_labors_parts.php - raw input: ' . file_get_contents('php://input'));
+error_log('api_labors_parts.php - _GET: ' . print_r($_GET, true));
+error_log('api_labors_parts.php - _POST: ' . print_r($_POST, true));
+
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);

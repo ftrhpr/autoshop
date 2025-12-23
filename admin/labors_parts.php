@@ -275,10 +275,27 @@ document.getElementById('add-labor-form').addEventListener('submit', async funct
 
 document.getElementById('add-part-form').addEventListener('submit', async function(e){
     e.preventDefault();
-    const fd = new FormData(this);
-    const payload = {action:'add', type:'part', name:fd.get('name'), description:fd.get('description'), default_price:fd.get('default_price')};
-    const res = await apiPost(payload);
-    if(res.success){ toast('Part added'); this.reset(); loadList('part'); } else toast(res.message || 'Error','error');
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    try {
+        const fd = new FormData(this);
+        const payload = {action:'add', type:'part', name:fd.get('name'), description:fd.get('description'), default_price:fd.get('default_price')};
+        console.log('Adding part payload:', payload);
+        const res = await apiPost(payload);
+        console.log('Add part response:', res);
+        if(res && res.success){
+            toast('Part added');
+            this.reset();
+            await loadList('part');
+        } else {
+            toast(res && res.message ? res.message : 'Error adding part', 'error');
+        }
+    } catch (err) {
+        console.error('Add part error:', err);
+        toast('Network or server error', 'error');
+    } finally {
+        submitBtn.disabled = false;
+    }
 });
 
 // Modal save
