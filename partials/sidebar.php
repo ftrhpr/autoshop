@@ -67,8 +67,7 @@ function svgIcon($name){
                 </div>
                 <?php endif; ?>
             </div>
-            <button id="closeSidebar" class="text-slate-300 hover:text-white">✕</button>
-            <button id="collapseSidebar" class="hidden md:block text-slate-300 hover:text-white ml-2" title="Collapse sidebar">◀</button>
+            <button id="collapseSidebar" class="hidden md:block text-slate-300 hover:text-white ml-2" title="Collapse sidebar">◀</button> 
         </div>
 
         <nav class="flex-1 overflow-y-auto p-4 space-y-1" aria-label="Primary">
@@ -143,11 +142,10 @@ function svgIcon($name){
         }
     }
     var openBtn = document.getElementById('openSidebar');
-    var closeBtn = document.getElementById('closeSidebar');
     var collapseBtn = document.getElementById('collapseSidebar');
     if (openBtn) openBtn.addEventListener('click', open);
-    if (closeBtn) closeBtn.addEventListener('click', close);
     if (collapseBtn) collapseBtn.addEventListener('click', function(){
+
         const sidebar = document.getElementById('site-sidebar');
         const main = document.querySelector('main.ml-0, div.ml-0');
         sidebar.classList.toggle('collapsed');
@@ -178,9 +176,8 @@ function svgIcon($name){
 <script>
     const sidebar = document.getElementById('site-sidebar');
     const toggle = document.getElementById('sidebarToggle');
-    const closeBtn = document.getElementById('closeSidebar');
     if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
-    if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+
 
     // Notification system: polls server for new invoices and shows badge/toasts/sound
     (function(){
