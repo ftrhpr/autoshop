@@ -146,6 +146,8 @@ function svgIcon($name){
                                     <span class="flex items-center gap-2">
                                         <?php if ($badge > 0): ?>
                                             <span id="badge-<?php echo htmlspecialchars($item['badge_key']); ?>" class="inline-flex items-center justify-center bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full"><?php echo $badge; ?></span>
+                                        <?php else: ?>
+                                            <?php if (isset($item['badge_key'])): ?><span id="badge-<?php echo htmlspecialchars($item['badge_key']); ?>" class="inline-flex items-center justify-center bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full hidden">0</span><?php endif; ?>
                                         <?php endif; ?>
                                         <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                     </span>
@@ -170,7 +172,7 @@ function svgIcon($name){
                                     <span class="w-5 h-5 flex-shrink-0" aria-hidden="true"><?php echo svgIcon($item['icon'] ?? 'file-text'); ?></span>
                                     <span class="sidebar-text"><?php echo htmlspecialchars($item['label']); ?></span>
                                     <?php if ($badge > 0): ?>
-                                        <span class="ml-auto inline-flex items-center justify-center bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full"><?php echo $badge; ?></span>
+                                        <span id="badge-<?php echo htmlspecialchars($item['badge_key']); ?>" class="ml-auto inline-flex items-center justify-center bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full"><?php echo $badge; ?></span>
                                     <?php endif; ?>
                                 </a>
                             <?php endif; ?>
@@ -452,6 +454,22 @@ function svgIcon($name){
             }
         }
 
+        // Inbox count poller
+        async function fetchInboxCount(){
+            try {
+                const res = await fetch('/api_inbox_count.php', { cache: 'no-store' });
+                if (!res.ok) throw new Error('Network');
+                const data = await res.json();
+                if (data && data.success){
+                    const el = document.getElementById('badge-inbox');
+                    if (!el) return;
+                    const n = parseInt(data.unread_count || 0);
+                    if (n > 0){ el.textContent = n; el.classList.remove('hidden'); }
+                    else { el.textContent = '0'; el.classList.add('hidden'); }
+                }
+            } catch (e) { /* ignore inbox errors silently */ }
+        }
+
         // Initial setup
         (function init(){
             // Request Notification permission if not denied
@@ -460,6 +478,8 @@ function svgIcon($name){
             }
             // fetch start id then start polling
             fetchLatestId().then(()=>{ poll(); pollingTimer = setInterval(poll, pollingInterval); });
+            // Start inbox polling independent of invoice poll
+            fetchInboxCount(); setInterval(fetchInboxCount, 15000);
         })();
 
         // clicking bell opens manager panel
