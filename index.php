@@ -302,10 +302,7 @@ if ($loadId) {
                                 <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2">Plate Number</label>
                                 <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
-                            <div>
-                                <label for="input_technician" class="block text-sm font-medium text-gray-700 mb-2">Technician</label>
-                                <input type="text" id="input_technician" autocomplete="off" placeholder="Search technician by name..." class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition" aria-autocomplete="list" aria-controls="technician-suggestions">
-                            </div>
+
                             <div>
                                 <label for="input_vin" class="block text-sm font-medium text-gray-700 mb-2">VIN</label>
                                 <input type="text" id="input_vin" placeholder="Vehicle VIN" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
@@ -387,6 +384,11 @@ if ($loadId) {
                             </svg>
                             Add Item
                         </button>
+                        <div class="mt-4 mb-4">
+                            <label for="input_technician" class="block text-sm font-medium text-gray-700 mb-2">Invoice Technician</label>
+                            <input type="text" id="input_technician" autocomplete="off" placeholder="Search technician by name..." class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition" aria-autocomplete="list" aria-controls="technician-suggestions">
+                        </div>
+
                         <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <p class="text-xs text-gray-600">Parts Total</p>
