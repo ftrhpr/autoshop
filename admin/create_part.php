@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="flex items-center space-x-3">
                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Create Part</button>
-                <a href="labors_parts.php" class="text-sm text-gray-600">Back to management</a>
+                <a href="labors_parts_pro.php" class="text-sm text-gray-600">Back to management</a>
             </div>
         </form>
     </div>

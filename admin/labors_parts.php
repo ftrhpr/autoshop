@@ -1,4 +1,5 @@
 <?php
+// Redirect legacy management page to PRO version
 require '../config.php';
 
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
@@ -6,71 +7,10 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'mana
     exit;
 }
 
-// Handle form submissions
-$message = '';
-$messageType = 'success';
+// Safe redirect to PRO page
+header('Location: labors_parts_pro.php');
+exit;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    $type = $_POST['type'] ?? '';
-    $table = ($type === 'part') ? 'parts' : 'labors';
-
-    try {
-        if ($action === 'add') {
-            $name = trim($_POST['name'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $price = (float)($_POST['default_price'] ?? 0);
-
-            if (empty($name)) {
-                throw new Exception('Name is required.');
-            }
-
-            $stmt = $pdo->prepare("INSERT INTO $table (name, description, default_price, created_by) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $description, $price, $_SESSION['user_id']]);
-            $message = ucfirst($type) . ' added successfully.';
-
-        } elseif ($action === 'edit') {
-            $id = (int)($_POST['id'] ?? 0);
-            $name = trim($_POST['name'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $price = (float)($_POST['default_price'] ?? 0);
-
-            if ($id <= 0 || empty($name)) {
-                throw new Exception('Invalid data.');
-            }
-
-            $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ? WHERE id = ?");
-            $stmt->execute([$name, $description, $price, $id]);
-            $message = ucfirst($type) . ' updated successfully.';
-
-        } elseif ($action === 'delete') {
-            $id = (int)($_POST['id'] ?? 0);
-
-            if ($id <= 0) {
-                throw new Exception('Invalid ID.');
-            }
-
-            $stmt = $pdo->prepare("DELETE FROM $table WHERE id = ?");
-            $stmt->execute([$id]);
-            $message = ucfirst($type) . ' deleted successfully.';
-        }
-    } catch (Exception $e) {
-        $message = 'Error: ' . $e->getMessage();
-        $messageType = 'error';
-    }
-}
-
-// Fetch data from database
-$labors = [];
-$parts = [];
-try {
-    $labors = $pdo->query("SELECT id, name, description, default_price FROM labors ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-    $parts = $pdo->query("SELECT id, name, description, default_price FROM parts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    $message = 'Database error: ' . $e->getMessage();
-    $messageType = 'error';
-}
-?>
 
 <!DOCTYPE html>
 <html lang="en">

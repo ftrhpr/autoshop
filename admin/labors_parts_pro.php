@@ -105,7 +105,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Labors & Parts — PRO</h1>
         <div class="flex items-center space-x-3">
-            <a href="labors_parts.php" class="px-3 py-2 bg-gray-200 rounded">Legacy UI</a>
+
             <a href="labors_parts_pro.php?type=part" class="px-3 py-2 bg-blue-600 text-white rounded">Parts</a>
             <a href="labors_parts_pro.php?type=labor" class="px-3 py-2 bg-blue-600 text-white rounded">Labors</a>
         </div>

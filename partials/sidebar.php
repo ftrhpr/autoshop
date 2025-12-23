@@ -13,7 +13,7 @@ $menu = [
     ['label' => 'Dashboard', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => null],
     ['label' => 'Invoices', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
     ['label' => 'Customers', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
-    ['label' => 'Labors & Parts', 'href' => $appRoot . '/admin/labors_parts.php', 'icon' => 'wrench', 'permission' => null],
+    ['label' => 'Labors & Parts', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => null],
     ['label' => 'Export CSV', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_csv'],
     ['label' => 'Users', 'href' => $appRoot . '/admin/index.php', 'icon' => 'user', 'permission' => 'manage_users'],
     ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'icon' => 'shield', 'permission' => null],
