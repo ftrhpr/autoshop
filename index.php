@@ -148,10 +148,10 @@ if ($loadId) {
             animation: slideInRight 0.3s ease-out;
         }    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-blue-50 h-screen overflow-hidden font-sans text-gray-800 antialiased pb-20">
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen overflow-auto font-sans text-gray-800 antialiased pb-20">
     <?php include 'partials/sidebar.php'; ?>
 
-    <main class="h-full overflow-hidden ml-0 md:ml-64 pt-4 pl-4" role="main">
+    <main class="min-h-full overflow-auto ml-0 md:ml-64 pt-4 pl-4" role="main">
         <!-- Header -->
         <header class="flex-shrink-0 p-4 md:p-8 print-hidden">
             <nav aria-label="Breadcrumb" class="mb-6">
@@ -162,7 +162,8 @@ if ($loadId) {
                 </ol>
             </nav>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
+                <div class="flex items-center">
+                    <button id="closeSidebarMain" class="md:hidden mr-4 p-2 bg-gray-200 rounded hover:bg-gray-300" title="Close menu">✕</button>
                     <h1 class="text-4xl font-bold text-gray-900 flex items-center">
                         <svg class="w-10 h-10 mr-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -548,6 +549,13 @@ if (!empty($serverInvoice)) {
 
         // Initialize with 4 rows
         document.addEventListener('DOMContentLoaded', () => {
+            // Close sidebar button in main
+            const closeBtn = document.getElementById('closeSidebarMain');
+            if (closeBtn) closeBtn.addEventListener('click', () => {
+                document.getElementById('site-sidebar').classList.add('-translate-x-full');
+                document.body.classList.remove('overflow-hidden');
+            });
+
             for(let i=0; i<4; i++) addItemRow();
             calculateTotals();
 
