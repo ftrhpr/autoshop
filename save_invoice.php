@@ -160,13 +160,81 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (!empty($it['db_id']) && !empty($it['db_type'])) {
             // Verify existence and fetch vehicle_make_model
             if ($it['db_type'] === 'part') {
-                $v = $pdo->prepare('SELECT id, vehicle_make_model FROM parts WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
+                $v = $pdo->prepare('SELECT id, vehicle_make_model, default_price FROM parts WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
                 $vv = $v->fetch();
-                if (!$vv) { $it['db_id'] = null; $it['db_type'] = null; } else { $it['db_vehicle'] = $vv['vehicle_make_model'] ?? null; }
+                if (!$vv) { $it['db_id'] = null; $it['db_type'] = null; } else { $it['db_vehicle'] = $vv['vehicle_make_model'] ?? null; $defaultPrice = floatval($vv['default_price'] ?? 0); }
             } else {
-                $v = $pdo->prepare('SELECT id, vehicle_make_model FROM labors WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
+                $v = $pdo->prepare('SELECT id, vehicle_make_model, default_price FROM labors WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
                 $vv = $v->fetch();
-                if (!$vv) { $it['db_id'] = null; $it['db_type'] = null; } else { $it['db_vehicle'] = $vv['vehicle_make_model'] ?? null; }
+                if (!$vv) { $it['db_id'] = null; $it['db_type'] = null; } else { $it['db_vehicle'] = $vv['vehicle_make_model'] ?? null; $defaultPrice = floatval($vv['default_price'] ?? 0); }
+            }
+        }
+
+        // If db_id is set, do price lookup and management
+        if (!empty($it['db_id']) && !empty($it['db_type'])) {
+            if (empty($it['price_part']) && $it['db_type'] === 'part') $it['price_part'] = $defaultPrice;
+            if (empty($it['price_svc']) && $it['db_type'] === 'labor') $it['price_svc'] = $defaultPrice;
+
+            if ($vehicleMake !== '') {
+                // Smart lookup for vehicle price
+                $pv = false;
+                $vLower = strtolower(trim($vehicleMake));
+
+                $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
+                $pvStmt->execute([$it['db_type'], $it['db_id'], $vLower]);
+                $pv = $pvStmt->fetch();
+
+                if (!$pv) {
+                    $pvStmt2 = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                    $pvStmt2->execute([$it['db_type'], $it['db_id'], "%{$vLower}%"]);
+                    $pv = $pvStmt2->fetch();
+                }
+
+                if (!$pv) {
+                    $tokens = preg_split('/\s+/', $vLower);
+                    foreach ($tokens as $t) {
+                        $t = trim($t); if ($t === '') continue;
+                        $pvStmtTok = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                        $pvStmtTok->execute([$it['db_type'], $it['db_id'], "%{$t}%"]);
+                        $pv = $pvStmtTok->fetch();
+                        if ($pv) break;
+                    }
+                }
+
+                if (!$pv) {
+                    $tokens = preg_split('/\s+/', $vLower);
+                    $ands = [];
+                    $params = [$it['db_type'], $it['db_id']];
+                    foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                    if (!empty($ands)) {
+                        $sql = 'SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
+                        $pvStmt3 = $pdo->prepare($sql);
+                        $pvStmt3->execute($params);
+                        $pv = $pvStmt3->fetch();
+                    }
+                }
+
+                $priceField = $it['db_type'] === 'part' ? 'price_part' : 'price_svc';
+
+                if ($pv) {
+                    if (empty($it[$priceField]) || floatval($it[$priceField]) == floatval($pv['price'])) {
+                        $it[$priceField] = $pv['price'];
+                        $it['db_vehicle'] = $pv['vehicle_make_model'];
+                    } else {
+                        // Update existing vehicle price
+                        $pdo->prepare("UPDATE item_prices SET price = ?, created_by = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?")->execute([floatval($it[$priceField]), $_SESSION['user_id'], $pv['id']]);
+                        $it['db_vehicle'] = $pv['vehicle_make_model'];
+                    }
+                } else {
+                    if (!empty($it[$priceField]) && floatval($it[$priceField]) != $defaultPrice) {
+                        // Create new vehicle price
+                        $vehicleCanonical = trim($vehicleMake);
+                        $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)");
+                        $ins->execute([$it['db_type'], $it['db_id'], $vehicleCanonical, floatval($it[$priceField]), $_SESSION['user_id']]);
+                        $it['db_vehicle'] = $vehicleCanonical;
+                        $created_items[] = ['type' => $it['db_type'] . '_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it[$priceField]), 'item_id' => $it['db_id']];
+                    }
+                }
             }
         }
 
@@ -189,7 +257,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $it['db_id'] = $found['id'];
                     $it['db_type'] = 'part';
                     $it['db_vehicle'] = $found['vehicle_make_model'] ?? null;
-                    if (empty($it['price_part']) && !empty($found['default_price'])) $it['price_part'] = $found['default_price'];
+                    $defaultPrice = floatval($found['default_price'] ?? 0);
+                    if (empty($it['price_part'])) $it['price_part'] = $defaultPrice;
 
                     // If vehicle provided, check item_prices for existing vehicle price and use it; otherwise, if invoice contains price, create price entry
                     if ($vehicleMake !== '') {
@@ -230,33 +299,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $sql = 'SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
                                 $pvStmt3 = $pdo->prepare($sql);
                                 $pvStmt3->execute($params);
-                                $pv = $pvStmt3->fetch();
+                                $pv = $pv;
                             }
                         }
 
                         if ($pv) {
-                            $it['price_part'] = $pv['price'];
-                            $it['db_vehicle'] = $pv['vehicle_make_model'];
+                            if (empty($it['price_part']) || floatval($it['price_part']) == floatval($pv['price'])) {
+                                $it['price_part'] = $pv['price'];
+                                $it['db_vehicle'] = $pv['vehicle_make_model'];
+                            } else {
+                                // Update existing vehicle price
+                                $pdo->prepare("UPDATE item_prices SET price = ?, created_by = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?")->execute([floatval($it['price_part']), $_SESSION['user_id'], $pv['id']]);
+                                $it['db_vehicle'] = $pv['vehicle_make_model'];
+                            }
                         } else {
-                            // No existing vehicle price found; create one only if invoice provided a price
-                            if (!empty($it['price_part']) && floatval($it['price_part']) > 0) {
-                                // Normalize/canonicalize vehicle make/model string
+                            if (!empty($it['price_part']) && floatval($it['price_part']) != $defaultPrice) {
+                                // Create new vehicle price
                                 $vehicleCanonical = trim($vehicleMake);
-                                if ($vehicleCanonical === '') $vehicleCanonical = $vehicleMake;
-
-                                // Use upsert to avoid duplicates and ensure we save the price for the canonical model
-                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
+                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)");
                                 $ins->execute(['part', $it['db_id'], $vehicleCanonical, floatval($it['price_part']), $_SESSION['user_id']]);
-
-                                // Fetch the stored row to ensure consistent vehicle name and price are used
-                                $pvFetch = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
-                                $pvFetch->execute(['part', $it['db_id'], $vehicleCanonical]);
-                                $pvRow = $pvFetch->fetch(PDO::FETCH_ASSOC);
-                                if ($pvRow) {
-                                    $it['price_part'] = (float)$pvRow['price'];
-                                    $it['db_vehicle'] = $pvRow['vehicle_make_model'];
-                                }
-
+                                $it['db_vehicle'] = $vehicleCanonical;
                                 $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_part']), 'item_id' => $it['db_id']];
                             }
                         }
@@ -280,7 +342,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $it['db_id'] = $found['id'];
                     $it['db_type'] = 'labor';
                     $it['db_vehicle'] = $found['vehicle_make_model'] ?? null;
-                    if (empty($it['price_svc']) && !empty($found['default_price'])) $it['price_svc'] = $found['default_price'];
+                    $defaultPrice = floatval($found['default_price'] ?? 0);
+                    if (empty($it['price_svc'])) $it['price_svc'] = $defaultPrice;
 
                     // vehicle-specific price logic
                     if ($vehicleMake !== '') {
@@ -324,26 +387,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
 
                         if ($pv) {
-                            $it['price_svc'] = $pv['price'];
-                            $it['db_vehicle'] = $pv['vehicle_make_model'];
+                            if (empty($it['price_svc']) || floatval($it['price_svc']) == floatval($pv['price'])) {
+                                $it['price_svc'] = $pv['price'];
+                                $it['db_vehicle'] = $pv['vehicle_make_model'];
+                            } else {
+                                // Update existing vehicle price
+                                $pdo->prepare("UPDATE item_prices SET price = ?, created_by = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?")->execute([floatval($it['price_svc']), $_SESSION['user_id'], $pv['id']]);
+                                $it['db_vehicle'] = $pv['vehicle_make_model'];
+                            }
                         } else {
-                            // No existing vehicle price found; create one only if invoice provided a price
-                            if (!empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
-                                // Normalize/canonicalize vehicle make/model string
+                            if (!empty($it['price_svc']) && floatval($it['price_svc']) != $defaultPrice) {
+                                // Create new vehicle price
                                 $vehicleCanonical = trim($vehicleMake);
-                                if ($vehicleCanonical === '') $vehicleCanonical = $vehicleMake;
-
-                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
+                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)");
                                 $ins->execute(['labor', $it['db_id'], $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
-
-                                $pvFetch = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
-                                $pvFetch->execute(['labor', $it['db_id'], $vehicleCanonical]);
-                                $pvRow = $pvFetch->fetch(PDO::FETCH_ASSOC);
-                                if ($pvRow) {
-                                    $it['price_svc'] = (float)$pvRow['price'];
-                                    $it['db_vehicle'] = $pvRow['vehicle_make_model'];
-                                }
-
+                                $it['db_vehicle'] = $vehicleCanonical;
                                 $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $it['db_id']];
                             }
                         }
