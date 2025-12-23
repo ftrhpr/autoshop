@@ -222,6 +222,7 @@ const btnAddRule = document.getElementById('btnAddRule'); if (btnAddRule) btnAdd
 });
 
 
+});
 </script>
 
     <?php include __DIR__ . '/../partials/footer.php'; ?>
