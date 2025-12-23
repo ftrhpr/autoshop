@@ -59,7 +59,14 @@ try {
         if (in_array($listType, ['labor','part'])) {
             $table = $listType === 'part' ? 'parts' : 'labors';
             $rows = $pdo->query("SELECT * FROM $table ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['success' => true, 'data' => $rows]);
+            // Log row count and a small sample for debugging
+            error_log('api_labors_parts.php - GET list ' . $table . ' rows: ' . count($rows));
+            if (!empty($_GET['debug'])) {
+                error_log('api_labors_parts.php - sample rows: ' . json_encode(array_slice($rows, 0, 5)));
+            }
+            $response = ['success' => true, 'data' => $rows];
+            if (!empty($_GET['debug'])) $response['debug'] = ['table' => $table, 'rows_count' => count($rows)];
+            echo json_encode($response);
             exit;
         }
 
