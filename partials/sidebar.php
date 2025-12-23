@@ -49,6 +49,18 @@ if (isset($_SESSION['role']) && $_SESSION['role'] === 'manager') {
 
 $logoutHref = $appRoot . '/logout.php';
 
+// Load initial inbox badge count from DB (if messages table and user exist)
+try {
+    if (isset($_SESSION['user_id']) && isset($pdo)) {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages WHERE recipient_id = ? AND is_read = 0");
+        $stmt->execute([ (int)$_SESSION['user_id'] ]);
+        $unread = (int)$stmt->fetchColumn();
+        if ($unread > 0) $badges['inbox'] = $unread;
+    }
+} catch (Exception $e) {
+    // ignore if table doesn't exist
+}
+
 // Helper to check permission & active state
 function isItemVisible($it){
     if (isset($it['permission']) && $it['permission'] && function_exists('currentUserCan')) return currentUserCan($it['permission']);
@@ -133,7 +145,7 @@ function svgIcon($name){
                                     </span>
                                     <span class="flex items-center gap-2">
                                         <?php if ($badge > 0): ?>
-                                            <span class="inline-flex items-center justify-center bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full"><?php echo $badge; ?></span>
+                                            <span id="badge-<?php echo htmlspecialchars($item['badge_key']); ?>" class="inline-flex items-center justify-center bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full"><?php echo $badge; ?></span>
                                         <?php endif; ?>
                                         <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                     </span>
