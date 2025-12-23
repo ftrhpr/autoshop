@@ -89,6 +89,22 @@ $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
 $stmt->execute();
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Fetch vehicle-specific prices for items shown on this page to display alongside the default price
+$pricesByItem = [];
+if (!empty($rows)) {
+    $ids = array_column($rows, 'id');
+    // Build placeholders for IN clause
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $priceSql = "SELECT item_id, vehicle_make_model, price FROM item_prices WHERE item_type = ? AND item_id IN ($placeholders) ORDER BY vehicle_make_model";
+    $pstmt = $pdo->prepare($priceSql);
+    $paramsExec = array_merge([$type === 'part' ? 'part' : 'labor'], $ids);
+    $pstmt->execute($paramsExec);
+    $priceRows = $pstmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($priceRows as $pr) {
+        $pricesByItem[(int)$pr['item_id']][] = $pr;
+    }
+}
+
 // helper for pagination links
 function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$p}" . ($q?('&q='.urlencode($q)):''); }
 
@@ -179,7 +195,16 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
                     <td class="p-2 font-medium"><?php echo h($r['name']); ?></td>
                     <td class="p-2"><?php echo h($r['description']); ?></td>
                     <td class="p-2"><?php echo h($r['vehicle_make_model'] ?? ''); ?></td>
-                    <td class="p-2"><?php echo number_format($r['default_price'], 2); ?></td>
+                    <td class="p-2">
+                        <?php echo number_format($r['default_price'], 2); ?>
+                        <?php if (!empty($pricesByItem[(int)$r['id']])): ?>
+                            <div class="mt-2">
+                                <?php foreach ($pricesByItem[(int)$r['id']] as $pp): ?>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800 mr-1"><?php echo htmlspecialchars($pp['vehicle_make_model']); ?>: <?php echo number_format($pp['price'], 2); ?> ₾</span>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </td>
                     <td class="p-2 text-right">
                         <form method="post" class="inline" onsubmit="return confirm('Delete?');">
                             <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
