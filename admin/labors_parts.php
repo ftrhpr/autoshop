@@ -125,10 +125,31 @@ try {
 
             <!-- Labors Tab -->
             <div id="labors-tab" class="tab-content">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold">Labors</h2>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 add-btn" data-type="labor">Add Labor</button>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Add New Labor</h3>
+                    <form method="post" class="bg-gray-50 p-4 rounded-lg">
+                        <input type="hidden" name="type" value="labor">
+                        <input type="hidden" name="action" value="add">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Name *</label>
+                                <input type="text" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                                <input type="text" name="description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Default Price (₾)</label>
+                                <input type="number" name="default_price" step="0.01" min="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Labor</button>
+                        </div>
+                    </form>
                 </div>
+
                 <div class="bg-white shadow overflow-hidden sm:rounded-md">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -163,10 +184,31 @@ try {
 
             <!-- Parts Tab -->
             <div id="parts-tab" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold">Parts</h2>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 add-btn" data-type="part">Add Part</button>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Add New Part</h3>
+                    <form method="post" class="bg-gray-50 p-4 rounded-lg">
+                        <input type="hidden" name="type" value="part">
+                        <input type="hidden" name="action" value="add">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Name *</label>
+                                <input type="text" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                                <input type="text" name="description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Default Price (₾)</label>
+                                <input type="number" name="default_price" step="0.01" min="0" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Part</button>
+                        </div>
+                    </form>
                 </div>
+
                 <div class="bg-white shadow overflow-hidden sm:rounded-md">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -205,10 +247,10 @@ try {
     <div id="modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3">
-                <h3 class="text-lg font-medium text-gray-900 mb-4" id="modal-title">Add Labor</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4" id="modal-title">Edit Labor</h3>
                 <form method="post">
                     <input type="hidden" name="type" id="modal-type">
-                    <input type="hidden" name="action" id="modal-action" value="add">
+                    <input type="hidden" name="action" id="modal-action" value="edit">
                     <input type="hidden" name="id" id="modal-id">
                     
                     <div class="mb-4">
@@ -228,7 +270,7 @@ try {
                     
                     <div class="flex justify-end">
                         <button type="button" class="mr-2 px-4 py-2 text-gray-500 bg-gray-200 rounded hover:bg-gray-300" onclick="closeModal()">Cancel</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update</button>
                     </div>
                 </form>
             </div>
@@ -246,21 +288,6 @@ try {
                 this.classList.add('tab-active', 'border-blue-500', 'text-blue-600');
                 this.classList.remove('text-gray-500', 'hover:text-gray-700');
                 document.getElementById(this.dataset.tab + '-tab').classList.remove('hidden');
-            });
-        });
-
-        // Add buttons
-        document.querySelectorAll('.add-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const type = this.dataset.type;
-                document.getElementById('modal-title').textContent = 'Add ' + (type === 'labor' ? 'Labor' : 'Part');
-                document.getElementById('modal-type').value = type;
-                document.getElementById('modal-action').value = 'add';
-                document.getElementById('modal-id').value = '';
-                document.getElementById('modal-name').value = '';
-                document.getElementById('modal-description').value = '';
-                document.getElementById('modal-price').value = '';
-                document.getElementById('modal').classList.add('show');
             });
         });
 
