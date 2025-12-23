@@ -11,7 +11,8 @@ $title = 'Technicians';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Technicians - AutoShop</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use a compiled local Tailwind CSS build in production instead of the CDN -->
+    <link rel="stylesheet" href="../dist/output.css">
 </head>
 <body class="bg-gray-50 min-h-screen overflow-auto font-sans antialiased pb-20">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
@@ -40,7 +41,9 @@ $title = 'Technicians';
                 <th class="px-4 py-2 text-left text-slate-500 font-medium">Email</th>
                 <th class="px-4 py-2 text-left text-slate-500 font-medium">Actions</th>
                     <th class="px-4 py-2 text-left text-slate-500 font-medium">Earnings (30d)</th>
-        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            </tr></thead>
+            <tbody></tbody>
+        <div id="modalNewTech" class="bg-white rounded-lg shadow-lg max-w-md w-full p-6 hidden">
             <h2 class="text-lg font-semibold mb-4">Add Technician</h2>
             <label class="block text-sm">Name</label>
             <input id="modalName" class="w-full border p-2 rounded mb-3" />
@@ -80,11 +83,19 @@ $title = 'Technicians';
 </main>
 
 <script>
+document.addEventListener('DOMContentLoaded', function(){
+
 async function fetchTechs(){
     const res = await fetch('api_technicians.php?action=list');
     const data = await res.json(); if (!data.success) return;
-    const tbody = document.querySelector('#techTable tbody'); tbody.innerHTML='';
-    const sel = document.getElementById('selectTech'); sel.innerHTML='';
+    let tbody = document.querySelector('#techTable tbody');
+    if (!tbody){
+        const table = document.getElementById('techTable'); if (!table) return;
+        tbody = table.querySelector('tbody') || document.createElement('tbody');
+        if (!table.contains(tbody)) table.appendChild(tbody);
+    }
+    tbody.innerHTML='';
+    const sel = document.getElementById('selectTech'); if (sel) sel.innerHTML='';
     data.technicians.forEach(t=>{
         const tr = document.createElement('tr');
         tr.className = 'border-b';
@@ -99,11 +110,11 @@ async function fetchTechs(){
             </td>
             <td class="px-4 py-3 text-slate-700" id="earnings-${t.id}">—</td>`;
         tbody.appendChild(tr);
-        const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.name; sel.appendChild(opt);
+        if (sel){ const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.name; sel.appendChild(opt); }
     });
 }
 
-function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":"&#39;"})[c]); }
 
 fetchTechs();
 
@@ -112,31 +123,39 @@ const modal = document.getElementById('modalNewTech');
 const modalName = document.getElementById('modalName');
 const modalEmail = document.getElementById('modalEmail');
 let editId = null;
-document.getElementById('btnNewTech').addEventListener('click', ()=>{
-    editId = null; modalName.value = ''; modalEmail.value = ''; modal.classList.remove('hidden');
-});
-document.getElementById('modalCancel').addEventListener('click', ()=>{ modal.classList.add('hidden'); });
-document.getElementById('modalSave').addEventListener('click', ()=>{
-    const name = modalName.value.trim(); const email = modalEmail.value.trim();
-    if (!name) return alert('Name required');
-    const params = new URLSearchParams({name, email});
-    if (editId) params.append('id', editId);
-    const action = editId ? 'update' : 'create';
-    fetch('api_technicians.php?action='+action, {method:'POST', body: params}).then(r=>r.json()).then(d=>{ if (d.success){ fetchTechs(); modal.classList.add('hidden'); } else alert(d.message||'Failed'); });
-});
+const btnNew = document.getElementById('btnNewTech');
+if (btnNew){
+    btnNew.addEventListener('click', ()=>{
+        editId = null; if (modalName) modalName.value = ''; if (modalEmail) modalEmail.value = ''; if (modal) modal.classList.remove('hidden');
+    });
+}
+const modalCancel = document.getElementById('modalCancel');
+if (modalCancel && modal) modalCancel.addEventListener('click', ()=>{ modal.classList.add('hidden'); });
+const modalSave = document.getElementById('modalSave');
+if (modalSave){
+    modalSave.addEventListener('click', ()=>{
+        const name = modalName ? modalName.value.trim() : ''; const email = modalEmail ? modalEmail.value.trim() : '';
+        if (!name) return alert('Name required');
+        const params = new URLSearchParams({name, email});
+        if (editId) params.append('id', editId);
+        const action = editId ? 'update' : 'create';
+        fetch('api_technicians.php?action='+action, {method:'POST', body: params}).then(r=>r.json()).then(d=>{ if (d.success){ fetchTechs(); if (modal) modal.classList.add('hidden'); } else alert(d.message||'Failed'); });
+    });
+}
 
 // Refresh
-document.getElementById('btnRefresh').addEventListener('click', fetchTechs);
+const btnRefresh = document.getElementById('btnRefresh'); if (btnRefresh) btnRefresh.addEventListener('click', fetchTechs);
 
 // Delegate delete/edit/compute for rows
-document.querySelector('#techTable').addEventListener('click', (e)=>{
+const techTable = document.getElementById('techTable');
+if (techTable) techTable.addEventListener('click', (e)=>{
     if (e.target.classList.contains('btnDel')){
         const id = e.target.getAttribute('data-id'); if (!confirm('Delete?')) return;
         fetch('api_technicians.php?action=delete',{method:'POST', body:new URLSearchParams({id})}).then(r=>r.json()).then(d=>{ if (d.success) fetchTechs(); else alert(d.message||'Failed'); });
     }
     if (e.target.classList.contains('btnEdit')){
         const id = e.target.getAttribute('data-id'); const name = e.target.getAttribute('data-name'); const email = e.target.getAttribute('data-email');
-        editId = id; modalName.value = name; modalEmail.value = email; modal.classList.remove('hidden');
+        editId = id; if (modalName) modalName.value = name; if (modalEmail) modalEmail.value = email; if (modal) modal.classList.remove('hidden');
     }
     if (e.target.classList.contains('btnCompute')){
         const id = e.target.getAttribute('data-id');
@@ -145,36 +164,37 @@ document.querySelector('#techTable').addEventListener('click', (e)=>{
 });
 
 // Show panel
-document.getElementById('selectTech').addEventListener('change', ()=> loadRules());
-document.getElementById('btnCompute').addEventListener('click', async ()=>{
-    const tech = document.getElementById('selectTech').value; if (!tech) return alert('Select');
-    const start = document.getElementById('startDate').value; const end = document.getElementById('endDate').value;
+const selectTech = document.getElementById('selectTech'); if (selectTech) selectTech.addEventListener('change', ()=> loadRules());
+const btnCompute = document.getElementById('btnCompute'); if (btnCompute) btnCompute.addEventListener('click', async ()=>{
+    const tech = selectTech ? selectTech.value : null; if (!tech) return alert('Select');
+    const start = document.getElementById('startDate') ? document.getElementById('startDate').value : ''; const end = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
     const res = await fetch('api_technicians.php?action=compute_earnings&technician_id='+encodeURIComponent(tech)+(start?('&start='+encodeURIComponent(start)):'')+(end?('&end='+encodeURIComponent(end)):''));
     const d = await res.json(); if (!d.success) return alert(d.message||'Failed');
-    document.getElementById('earningsResult').innerHTML = `<div>Total labor: <strong>${d.total_labor}</strong></div><div>Total earned: <strong>${d.total_earned}</strong></div>`;
+    const earningsResult = document.getElementById('earningsResult');
+    if (earningsResult) earningsResult.innerHTML = `<div>Total labor: <strong>${d.total_labor}</strong></div><div>Total earned: <strong>${d.total_earned}</strong></div>`;
     let html = '<h4 class="mt-4">Details</h4><table class="w-full text-sm"><thead><tr><th>ID</th><th>Labor</th><th>Earnings</th></tr></thead><tbody>';
     d.details.forEach(row=> html += `<tr><td>${row.invoice_id}</td><td>${row.labor}</td><td>${row.earnings}</td></tr>`);
-    html += '</tbody></table>'; document.getElementById('earningsResult').innerHTML += html;
+    html += '</tbody></table>'; if (earningsResult) earningsResult.innerHTML += html;
     // update earnings placeholder in table if present
-    const total = d.total_earned || 0; const el = document.getElementById('earnings-'+document.getElementById('selectTech').value); if (el) el.textContent = total;
+    const total = d.total_earned || 0; const el = document.getElementById('earnings-'+tech); if (el) el.textContent = total;
 });
 
 // Rules
 async function loadRules(){
-    const tech = document.getElementById('selectTech').value; if (!tech) return;
+    const tech = selectTech ? selectTech.value : null; if (!tech) return;
     const res = await fetch('api_technicians.php?action=list_rules&technician_id='+encodeURIComponent(tech)); const d = await res.json(); if (!d.success) return;
-    const container = document.getElementById('rulesList'); container.innerHTML = '';
+    const container = document.getElementById('rulesList'); if (!container) return; container.innerHTML = '';
     d.rules.forEach(r=>{ 
         const el = document.createElement('div'); el.className='p-2 border rounded mb-2 flex items-center justify-between gap-3';
         el.innerHTML = `<div><strong>${r.rule_type}</strong> — ${r.value} ${r.description?(' — '+r.description):''}</div><div class="flex gap-2"><button data-id="${r.id}" class="btnEditRule bg-yellow-400 px-2 py-1 rounded">Edit</button><button data-id="${r.id}" class="btnDelRule bg-red-500 px-2 py-1 rounded text-white">Delete</button></div>`; 
         container.appendChild(el); 
     });
     // show panel
-    document.getElementById('panel').classList.remove('hidden');
+    const panel = document.getElementById('panel'); if (panel) panel.classList.remove('hidden');
 }
 
 // Delete rule handler (delegate)
-document.getElementById('rulesList').addEventListener('click', (e)=>{
+const rulesList = document.getElementById('rulesList'); if (rulesList) rulesList.addEventListener('click', (e)=>{
     if (e.target.classList.contains('btnDelRule')){
         const id = e.target.getAttribute('data-id'); if (!confirm('Delete rule?')) return;
         fetch('api_technicians.php?action=delete_rule',{method:'POST', body:new URLSearchParams({id})}).then(r=>r.json()).then(d=>{ if (d.success) loadRules(); else alert('Failed'); });
@@ -190,12 +210,13 @@ function computeForTech(techId){
     // default last 30 days
     const end = new Date(); const start = new Date(); start.setDate(end.getDate()-30);
     const s = start.toISOString().slice(0,10); const e = end.toISOString().slice(0,10);
-    document.getElementById('selectTech').value = techId; loadRules();
-    document.getElementById('startDate').value = s; document.getElementById('endDate').value = e; document.getElementById('btnCompute').click();
+    if (selectTech) selectTech.value = techId; loadRules();
+    const sEl = document.getElementById('startDate'); const eEl = document.getElementById('endDate'); const btn = document.getElementById('btnCompute');
+    if (sEl) sEl.value = s; if (eEl) eEl.value = e; if (btn) btn.click();
 }
 
-document.getElementById('btnAddRule').addEventListener('click', ()=>{
-    const tech = document.getElementById('selectTech').value; if (!tech) return alert('Select tech');
+const btnAddRule = document.getElementById('btnAddRule'); if (btnAddRule) btnAddRule.addEventListener('click', ()=>{
+    const tech = selectTech ? selectTech.value : null; if (!tech) return alert('Select tech');
     const type = document.getElementById('ruleType').value; const value = document.getElementById('ruleValue').value; const desc = document.getElementById('ruleDesc').value;
     fetch('api_technicians.php?action=add_rule',{method:'POST', body:new URLSearchParams({technician_id:tech, rule_type:type, value, description:desc})}).then(r=>r.json()).then(d=>{ if (d.success) loadRules(); else alert(d.message||'Failed'); });
 });
@@ -203,7 +224,6 @@ document.getElementById('btnAddRule').addEventListener('click', ()=>{
 
 </script>
 
-    </main>
     <?php include __DIR__ . '/../partials/footer.php'; ?>
 </body>
 </html>
