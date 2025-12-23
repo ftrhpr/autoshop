@@ -45,7 +45,7 @@ function svgIcon($name){
 ?>
 
 <!-- Sidebar (desktop) & Off-canvas (mobile) -->
-<div class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform -translate-x-full md:translate-x-0 transition-all duration-300 shadow-lg" id="site-sidebar" aria-hidden="false">
+<div id="site-sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white shadow-lg" aria-hidden="false">
     <div class="h-full flex flex-col">
         <div class="p-4 border-b border-slate-700 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -116,23 +116,14 @@ function svgIcon($name){
 }
 </style>
 
-<!-- Mobile: floating menu button -->
-<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu" aria-expanded="false" aria-controls="site-sidebar">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-</button>
+
 
 <script>
 (function(){
     function open() { 
-        document.getElementById('site-sidebar').classList.remove('-translate-x-full'); 
-        document.body.classList.add('overflow-hidden');
-        const main = document.querySelector('main.ml-0, div.ml-0');
-        if (main && window.innerWidth >= 768) {
-            main.classList.add('md:ml-64');
-            main.classList.remove('md:ml-0');
-        }
+        // Sidebar is persistently visible; no-op
     }
-    var openBtn = document.getElementById('openSidebar');
+    // open button removed (sidebar permanently visible)
     var collapseBtn = document.getElementById('collapseSidebar');
 
     if (openBtn) {
@@ -419,10 +410,8 @@ function svgIcon($name){
 </script>
 
 <style>
-    /* Ensure main content has left margin on md+ screens so sidebar doesn't overlap */
-    @media (min-width: 768px) {
-        main, .container, .max-w-7xl { margin-left: 16rem; }
-    }
+    /* Sidebar is fixed; ensure main content accounts for it across all sizes */
+    main, .container, .max-w-7xl { margin-left: 16rem; }
 </style>
 
 <?php if (!empty($_SESSION['created_items'])): $created_items = $_SESSION['created_items']; unset($_SESSION['created_items']); ?>
