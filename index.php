@@ -654,6 +654,9 @@ if (!empty($serverInvoice)) {
                 }));
 
                 document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) box.innerHTML = ''; });
+            
+            // make available globally in case other inline scripts run before this definition (defensive)
+            try{ window.attachTypeahead = attachTypeahead; }catch(e){}
             }
 
             // Attach service manager typeahead
@@ -1253,13 +1256,16 @@ if (!empty($serverInvoice)) {
                 <input type="hidden" name="item_db_price_source_${rowCount}" class="item-db-price-source">
             `;
             tbody.appendChild(tr);
-            // Attach per-row technician typeahead
+            // Attach per-row technician typeahead (defensive: may be defined later)
             const techInput = tr.querySelector('.item-tech');
             if (techInput){
-                attachTypeahead(techInput, 'api_technicians_search.php?q=', t => t.name, (it) => {
-                    techInput.value = it.name || '';
-                    tr.dataset.itemTechId = it.id;
-                });
+                const at = (typeof attachTypeahead === 'function') ? attachTypeahead : (window.attachTypeahead || null);
+                if (at) {
+                    at(techInput, 'api_technicians_search.php?q=', t => t.name, (it) => {
+                        techInput.value = it.name || '';
+                        tr.dataset.itemTechId = it.id;
+                    });
+                }
                 // Clear stored technician id when user types custom text
                 techInput.addEventListener('input', ()=>{ if (tr.dataset && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
             }
