@@ -119,7 +119,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 <?php include '../partials/sidebar.php'; ?>
-<div class="ml-0 md:ml-64 p-6 max-w-5xl mx-auto">
+<div class="p-6 max-w-5xl mx-auto">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Labors & Parts — PRO</h1>
         <div class="flex items-center space-x-3">

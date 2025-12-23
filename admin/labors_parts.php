@@ -27,7 +27,7 @@ exit;
 <body class="bg-gray-100 min-h-screen">
     <?php include '../partials/sidebar.php'; ?>
 
-    <div class="ml-0 md:ml-64 p-6">
+    <div class="p-6">
         <div class="max-w-7xl mx-auto">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-bold text-gray-900">Labors & Parts Management</h1>
