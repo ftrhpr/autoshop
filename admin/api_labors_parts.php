@@ -234,7 +234,14 @@ try {
             $itemType = in_array($data['item_type'] ?? '', ['part','labor']) ? $data['item_type'] : null;
             $vehicle = trim($data['vehicle_make_model'] ?? $data['vehicle'] ?? '');
             $price = (float)($data['price'] ?? 0);
-            if (!$itemId || !$itemType || $vehicle === '') throw new Exception('Missing parameters');
+            if (!$itemType && $itemId > 0) {
+                // Determine item_type from item_id
+                $stmt = $pdo->prepare("SELECT 'part' AS type FROM parts WHERE id = ? UNION SELECT 'labor' AS type FROM labors WHERE id = ? LIMIT 1");
+                $stmt->execute([$itemId, $itemId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row) $itemType = $row['type'];
+            }
+            if (!$itemId || !$itemType || $vehicle === '' || $price <= 0) throw new Exception('Missing or invalid parameters');
             $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
             $ins->execute([$itemType, $itemId, $vehicle, $price, $_SESSION['user_id']]);
             $row = $pdo->prepare('SELECT * FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1'); $row->execute([$itemType, $itemId, $vehicle]);
