@@ -113,7 +113,7 @@ function svgIcon($name){
     function open() { 
         document.getElementById('site-sidebar').classList.remove('-translate-x-full'); 
         document.body.classList.add('overflow-hidden');
-        const main = document.querySelector('main');
+        const main = document.querySelector('main.ml-0, div.ml-0');
         if (main && window.innerWidth >= 768) {
             main.classList.add('md:ml-64');
             main.classList.remove('md:ml-0');
@@ -122,7 +122,7 @@ function svgIcon($name){
     function close() { 
         document.getElementById('site-sidebar').classList.add('-translate-x-full'); 
         document.body.classList.remove('overflow-hidden');
-        const main = document.querySelector('main');
+        const main = document.querySelector('main.ml-0, div.ml-0');
         if (main && window.innerWidth >= 768) {
             main.classList.remove('md:ml-64');
             main.classList.add('md:ml-0');

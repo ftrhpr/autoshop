@@ -554,6 +554,11 @@ if (!empty($serverInvoice)) {
             if (closeBtn) closeBtn.addEventListener('click', () => {
                 document.getElementById('site-sidebar').classList.add('-translate-x-full');
                 document.body.classList.remove('overflow-hidden');
+                const main = document.querySelector('main.ml-0');
+                if (main && window.innerWidth >= 768) {
+                    main.classList.remove('md:ml-64');
+                    main.classList.add('md:ml-0');
+                }
             });
 
             for(let i=0; i<4; i++) addItemRow();
