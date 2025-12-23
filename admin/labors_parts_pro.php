@@ -227,7 +227,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
                     <input type="number" name="default_price" id="edit-price" step="0.01" class="border p-2 w-full rounded">
                 </div>
                 <div class="mb-2">
-                    <label class="block text-sm">Vehicle Make/Model (optional)</label>
+                    <label class="block text-sm">Vehicle Make/Model (optional) <span class="text-xs text-gray-500"> <button type="button" title="Format: 'Make Model' - e.g. 'Toyota Corolla'" class="ml-1 text-gray-400 hover:text-gray-600">ℹ️</button></span></label>
                     <input type="text" name="vehicle_make_model" id="edit-vehicle" class="border p-2 w-full rounded" placeholder="e.g. Toyota Corolla">
                 </div>
                 <div class="flex justify-end space-x-2">

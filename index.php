@@ -290,7 +290,7 @@ if ($loadId) {
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">Car Make/Model</label>
+                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">Car Make/Model <span class="text-xs text-gray-500"> <button type="button" title="Format: 'Make Model' - e.g., 'Toyota Corolla'" class="ml-1 text-gray-400 hover:text-gray-600">ℹ️</button></span></label>
                                 <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
                             <div>
