@@ -14,10 +14,10 @@ $menu = [
     ['label' => 'Invoices', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
     ['label' => 'Customers', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
     ['label' => 'Labors & Parts', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => null],
-    ['label' => 'Export CSV', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_csv'],
+    ['label' => 'Manage Prices', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'download', 'permission' => 'manage_prices'],
     ['label' => 'Users', 'href' => $appRoot . '/admin/users.php', 'icon' => 'user', 'permission' => 'manage_users'],
-    ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'icon' => 'shield', 'permission' => null],
-    ['label' => 'Audit Logs', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
+    ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'icon' => 'shield', 'permission' => 'manage_permissions'],
+    ['label' => 'Audit Logs', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs'],
 ];
 
 // If current user is a manager, restrict sidebar to only New Invoice and Invoices
@@ -67,7 +67,7 @@ function svgIcon($name){
                 </div>
                 <?php endif; ?>
             </div>
-            <button id="collapseSidebar" class="hidden md:block text-slate-300 hover:text-white ml-2" title="Collapse sidebar">◀</button> 
+            <button id="collapseSidebar" class="ml-auto hidden md:inline-flex items-center justify-center text-slate-300 hover:text-white p-2 rounded" title="Collapse sidebar" aria-label="Collapse sidebar" aria-pressed="false" aria-controls="site-sidebar">◀</button> 
         </div>
 
         <nav class="flex-1 overflow-y-auto p-4 space-y-1" aria-label="Primary">
@@ -117,7 +117,7 @@ function svgIcon($name){
 </style>
 
 <!-- Mobile: floating menu button -->
-<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu">
+<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-full shadow-lg" aria-label="Open menu" aria-expanded="false" aria-controls="site-sidebar">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
 </button>
 
@@ -132,34 +132,55 @@ function svgIcon($name){
             main.classList.remove('md:ml-0');
         }
     }
-    function close() { 
-        document.getElementById('site-sidebar').classList.add('-translate-x-full'); 
-        document.body.classList.remove('overflow-hidden');
-        const main = document.querySelector('main.ml-0, div.ml-0');
-        if (main && window.innerWidth >= 768) {
-            main.classList.remove('md:ml-64');
-            main.classList.add('md:ml-0');
-        }
-    }
     var openBtn = document.getElementById('openSidebar');
     var collapseBtn = document.getElementById('collapseSidebar');
-    if (openBtn) openBtn.addEventListener('click', open);
-    if (collapseBtn) collapseBtn.addEventListener('click', function(){
 
-        const sidebar = document.getElementById('site-sidebar');
-        const main = document.querySelector('main.ml-0, div.ml-0');
-        sidebar.classList.toggle('collapsed');
-        this.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
-        if (main && window.innerWidth >= 768) {
-            if (sidebar.classList.contains('collapsed')) {
-                main.classList.remove('md:ml-64');
-                main.classList.add('md:ml-16');
-            } else {
-                main.classList.remove('md:ml-16');
-                main.classList.add('md:ml-64');
+    if (openBtn) {
+        openBtn.setAttribute('aria-expanded', 'false');
+        openBtn.addEventListener('click', function(){
+            open();
+            openBtn.setAttribute('aria-expanded', 'true');
+            const sidebarEl = document.getElementById('site-sidebar');
+            if (sidebarEl) { sidebarEl.setAttribute('tabindex', '-1'); sidebarEl.focus(); }
+        });
+    }
+
+    if (collapseBtn) {
+        collapseBtn.setAttribute('aria-pressed', 'false');
+        collapseBtn.addEventListener('click', function(){
+            const sidebar = document.getElementById('site-sidebar');
+            const main = document.querySelector('main.ml-0, div.ml-0');
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            try { sessionStorage.setItem('sidebar_collapsed', isCollapsed ? '1' : '0'); } catch(e){}
+            this.textContent = isCollapsed ? '▶' : '◀';
+            this.setAttribute('aria-pressed', isCollapsed ? 'true' : 'false');
+            if (main && window.innerWidth >= 768) {
+                if (isCollapsed) {
+                    main.classList.remove('md:ml-64');
+                    main.classList.add('md:ml-16');
+                } else {
+                    main.classList.remove('md:ml-16');
+                    main.classList.add('md:ml-64');
+                }
             }
-        }
-    });
+        });
+
+        // Apply saved collapsed state on load
+        try {
+            const saved = sessionStorage.getItem('sidebar_collapsed');
+            if (saved === '1') {
+                const sidebar = document.getElementById('site-sidebar');
+                if (sidebar) {
+                    sidebar.classList.add('collapsed');
+                    collapseBtn.textContent = '▶';
+                    collapseBtn.setAttribute('aria-pressed','true');
+                    const main = document.querySelector('main.ml-0, div.ml-0');
+                    if (main && window.innerWidth >= 768) { main.classList.remove('md:ml-64'); main.classList.add('md:ml-16'); }
+                }
+            }
+        } catch(e){}
+    }
 
 })();
 </script>
