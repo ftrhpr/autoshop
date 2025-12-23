@@ -286,6 +286,8 @@ async function loadList(type){
         const res = await fetch(apiUrl + '?type=' + (type === 'part' ? 'part' : 'labor'));
         const json = await res.json().catch(()=>null);
         console.log('loadList', type, json);
+        // also show response in the on-page debug panel for easy copy/paste
+        try { debugLog('loadList ' + type + ': ' + (json ? JSON.stringify(json) : 'no-json')); } catch(e){}
         if(json && json.success){
             renderRows(type, json.data);
             attachRowEvents();
