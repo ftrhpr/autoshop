@@ -4,18 +4,44 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin','manager'
     header('Location: ../admin/index.php'); exit;
 }
 $title = 'Technicians';
-include __DIR__ . '/../partials/header.php';
+// Use the standard sidebar layout
+include __DIR__ . '/../partials/sidebar.php';
 ?>
-<div class="max-w-7xl mx-auto p-6">
+<main class="min-h-full overflow-auto ml-0 md:ml-64 pt-6 pl-6" role="main">
+    <div class="max-w-7xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Technicians</h1>
-        <button id="btnNewTech" class="bg-blue-600 text-white px-4 py-2 rounded">Add Technician</button>
+        <div class="flex items-center gap-3">
+            <button id="btnNewTech" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">Add Technician</button>
+            <button id="btnRefresh" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-2 rounded shadow">Refresh</button>
+        </div>
     </div>
-    <div class="bg-white shadow rounded-lg p-4">
-        <table id="techTable" class="min-w-full text-sm">
-            <thead class="text-left text-slate-500"><tr><th>Name</th><th>User</th><th>Email</th><th>Actions</th></tr></thead>
-            <tbody></tbody>
+
+    <div class="bg-white shadow rounded-lg p-4 overflow-x-auto">
+        <table id="techTable" class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50"><tr>
+                <th class="px-4 py-2 text-left text-slate-500 font-medium">Name</th>
+                <th class="px-4 py-2 text-left text-slate-500 font-medium">User</th>
+                <th class="px-4 py-2 text-left text-slate-500 font-medium">Email</th>
+                <th class="px-4 py-2 text-left text-slate-500 font-medium">Actions</th>
+            </tr></thead>
+            <tbody class="bg-white"></tbody>
         </table>
+    </div>
+
+    <!-- Add Technician Modal -->
+    <div id="modalNewTech" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-40">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h2 class="text-lg font-semibold mb-4">Add Technician</h2>
+            <label class="block text-sm">Name</label>
+            <input id="modalName" class="w-full border p-2 rounded mb-3" />
+            <label class="block text-sm">Email</label>
+            <input id="modalEmail" class="w-full border p-2 rounded mb-3" />
+            <div class="flex justify-end gap-2">
+                <button id="modalCancel" class="px-4 py-2 rounded bg-slate-200">Cancel</button>
+                <button id="modalSave" class="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
+            </div>
+        </div>
     </div>
 
     <div id="panel" class="mt-6 bg-white p-4 shadow rounded hidden">
@@ -42,6 +68,7 @@ include __DIR__ . '/../partials/header.php';
         </div>
     </div>
 </div>
+</main>
 
 <script>
 async function fetchTechs(){
@@ -50,7 +77,16 @@ async function fetchTechs(){
     const tbody = document.querySelector('#techTable tbody'); tbody.innerHTML='';
     const sel = document.getElementById('selectTech'); sel.innerHTML='';
     data.technicians.forEach(t=>{
-        const tr = document.createElement('tr'); tr.innerHTML = `<td class="py-2">${escapeHtml(t.name)}</td><td class="py-2">${escapeHtml(t.username||'')}</td><td class="py-2">${escapeHtml(t.email||'')}</td><td class="py-2"><button data-id="${t.id}" class="btnEdit bg-yellow-400 px-2 py-1 rounded">Edit</button> <button data-id="${t.id}" class="btnDel bg-red-500 px-2 py-1 rounded text-white">Delete</button></td>`;
+        const tr = document.createElement('tr');
+        tr.className = 'border-b';
+        tr.innerHTML = `
+            <td class="px-4 py-3">${escapeHtml(t.name)}</td>
+            <td class="px-4 py-3">${escapeHtml(t.username||'')}</td>
+            <td class="px-4 py-3">${escapeHtml(t.email||'')}</td>
+            <td class="px-4 py-3">
+                <button data-id="${t.id}" data-name="${escapeHtml(t.name)}" data-email="${escapeHtml(t.email||'')}" class="btnEdit bg-yellow-400 px-3 py-1 rounded">Edit</button>
+                <button data-id="${t.id}" class="btnDel bg-red-500 px-3 py-1 rounded text-white">Delete</button>
+            </td>`;
         tbody.appendChild(tr);
         const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.name; sel.appendChild(opt);
     });
@@ -60,11 +96,26 @@ function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&am
 
 fetchTechs();
 
-// Add technician
+// Modal handlers
+const modal = document.getElementById('modalNewTech');
+const modalName = document.getElementById('modalName');
+const modalEmail = document.getElementById('modalEmail');
+let editId = null;
 document.getElementById('btnNewTech').addEventListener('click', ()=>{
-    const name = prompt('Technician name'); if (!name) return;
-    fetch('api_technicians.php?action=create',{method:'POST', body:new URLSearchParams({name})}).then(r=>r.json()).then(d=>{ if (d.success) fetchTechs(); else alert(d.message||'Failed'); });
+    editId = null; modalName.value = ''; modalEmail.value = ''; modal.classList.remove('hidden');
 });
+document.getElementById('modalCancel').addEventListener('click', ()=>{ modal.classList.add('hidden'); });
+document.getElementById('modalSave').addEventListener('click', ()=>{
+    const name = modalName.value.trim(); const email = modalEmail.value.trim();
+    if (!name) return alert('Name required');
+    const params = new URLSearchParams({name, email});
+    if (editId) params.append('id', editId);
+    const action = editId ? 'update' : 'create';
+    fetch('api_technicians.php?action='+action, {method:'POST', body: params}).then(r=>r.json()).then(d=>{ if (d.success){ fetchTechs(); modal.classList.add('hidden'); } else alert(d.message||'Failed'); });
+});
+
+// Refresh
+document.getElementById('btnRefresh').addEventListener('click', fetchTechs);
 
 // Delegate delete/edit
 document.querySelector('#techTable').addEventListener('click', (e)=>{
@@ -73,8 +124,8 @@ document.querySelector('#techTable').addEventListener('click', (e)=>{
         fetch('api_technicians.php?action=delete',{method:'POST', body:new URLSearchParams({id})}).then(r=>r.json()).then(d=>{ if (d.success) fetchTechs(); else alert(d.message||'Failed'); });
     }
     if (e.target.classList.contains('btnEdit')){
-        const id = e.target.getAttribute('data-id'); const name = prompt('Name'); if (!name) return;
-        fetch('api_technicians.php?action=update',{method:'POST', body:new URLSearchParams({id,name})}).then(r=>r.json()).then(d=>{ if (d.success) fetchTechs(); else alert('Failed'); });
+        const id = e.target.getAttribute('data-id'); const name = e.target.getAttribute('data-name'); const email = e.target.getAttribute('data-email');
+        editId = id; modalName.value = name; modalEmail.value = email; modal.classList.remove('hidden');
     }
 });
 
@@ -97,6 +148,8 @@ async function loadRules(){
     const res = await fetch('api_technicians.php?action=list_rules&technician_id='+encodeURIComponent(tech)); const d = await res.json(); if (!d.success) return;
     const container = document.getElementById('rulesList'); container.innerHTML = '';
     d.rules.forEach(r=>{ const el = document.createElement('div'); el.className='p-2 border rounded mb-2'; el.innerHTML = `<div><strong>${r.rule_type}</strong> — ${r.value} ${r.description?(' — '+r.description):''}</div>`; container.appendChild(el); });
+    // show panel
+    document.getElementById('panel').classList.remove('hidden');
 }
 
 document.getElementById('btnAddRule').addEventListener('click', ()=>{
@@ -105,8 +158,7 @@ document.getElementById('btnAddRule').addEventListener('click', ()=>{
     fetch('api_technicians.php?action=add_rule',{method:'POST', body:new URLSearchParams({technician_id:tech, rule_type:type, value, description:desc})}).then(r=>r.json()).then(d=>{ if (d.success) loadRules(); else alert(d.message||'Failed'); });
 });
 
-// Show panel toggle
-document.getElementById('btnNewTech').addEventListener('click', ()=>{ document.getElementById('panel').classList.toggle('hidden'); });
+
 </script>
 
 <?php include __DIR__ . '/../partials/footer.php'; ?>
