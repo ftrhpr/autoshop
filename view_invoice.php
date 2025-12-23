@@ -81,7 +81,12 @@ $items = json_decode($invoice['items'], true);
                     <tbody>
                         <?php foreach ($items as $item): ?>
                         <tr class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-2 md:px-4 py-2 truncate max-w-[200px]"><?php echo htmlspecialchars($item['name']); ?></td>
+                            <td class="border border-gray-300 px-2 md:px-4 py-2 truncate max-w-[200px]">
+                                <?php echo htmlspecialchars($item['name']); ?>
+                                <?php if (!empty($item['db_id'])): ?>
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">DB: <?php echo strtoupper(htmlspecialchars($item['db_type'] ?? '')); ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td class="border border-gray-300 px-2 md:px-4 py-2 text-center"><?php echo $item['qty']; ?></td>
                             <td class="border border-gray-300 px-2 md:px-4 py-2 text-right"><?php echo $item['price_part']; ?></td>
                             <td class="border border-gray-300 px-2 md:px-4 py-2 text-right"><?php echo $item['price_svc']; ?></td>
@@ -222,5 +227,8 @@ $items = json_decode($invoice['items'], true);
             }).catch(e => console.warn('Error updating is_new:', e));
         })();
     </script>
+
+
+
 </body>
 </html>

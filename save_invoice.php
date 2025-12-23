@@ -149,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Ensure invoice items that reference DB entries exist in the parts/labors tables; if not, create them and attach vehicle make/model
     $vehicleMake = trim($data['car_mark'] ?? '');
+    $created_items = [];
     foreach ($items as $idx => &$it) {
         $name = trim($it['name'] ?? '');
         if ($name === '') continue;
@@ -186,6 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $ins->execute([$name, '', floatval($it['price_part']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
                     $it['db_id'] = $pdo->lastInsertId();
                     $it['db_type'] = 'part';
+                    $created_items[] = ['type' => 'part', 'name' => $name, 'id' => $it['db_id']];
                 }
             }
 
@@ -208,6 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $ins->execute([$name, '', floatval($it['price_svc']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
                     $it['db_id'] = $pdo->lastInsertId();
                     $it['db_type'] = 'labor';
+                    $created_items[] = ['type' => 'labor', 'name' => $name, 'id' => $it['db_id']];
                 }
             }
 
@@ -457,6 +460,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 error_log('Failed to save uploaded images for invoice ' . $invoice_id . ': ' . $e->getMessage());
             }
         }
+    }
+
+    // Store created items info into session for UI notification
+    if (!empty($created_items)) {
+        $_SESSION['created_items'] = $created_items;
     }
 
     // Redirect based on flag

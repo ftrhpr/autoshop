@@ -370,3 +370,18 @@ function svgIcon($name){
         main, .container, .max-w-7xl { margin-left: 16rem; }
     }
 </style>
+
+<?php if (!empty($_SESSION['created_items'])): $created_items = $_SESSION['created_items']; unset($_SESSION['created_items']); ?>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const created = <?php echo json_encode($created_items, JSON_UNESCAPED_UNICODE); ?>;
+    if (!Array.isArray(created)) return;
+    created.forEach((it, idx) => {
+        const text = (it.type === 'part' ? 'Saved new Part: ' : 'Saved new Labor: ') + it.name;
+        setTimeout(() => {
+            try { if (typeof showToast === 'function') showToast(text, 0); else console.log(text); } catch(e){ console.log(text); }
+        }, idx * 500);
+    });
+});
+</script>
+<?php endif; ?>
