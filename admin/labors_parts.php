@@ -270,13 +270,32 @@ function renderRows(type, rows){
     });
 }
 
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'":"'"})[c] ); }
+function escapeHtml(s){
+    // Properly escape HTML characters to avoid XSS and JS errors
+    return (s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 function escapeAttr(s){ return (s||'').replace(/"/g, '&quot;'); }
 
 async function loadList(type){
-    const res = await fetch(apiUrl + '?type=' + (type === 'part' ? 'part' : 'labor'));
-    const json = await res.json();
-    if(json.success){ renderRows(type, json.data); attachRowEvents(); }
+    try {
+        const res = await fetch(apiUrl + '?type=' + (type === 'part' ? 'part' : 'labor'));
+        const json = await res.json().catch(()=>null);
+        console.log('loadList', type, json);
+        if(json && json.success){
+            renderRows(type, json.data);
+            attachRowEvents();
+        } else {
+            console.warn('loadList unexpected response', type, json);
+        }
+    } catch (err) {
+        console.error('loadList error', err);
+        debugLog('loadList error: ' + (err && err.message ? err.message : err));
+    }
 }
 
 function attachRowEvents(){
