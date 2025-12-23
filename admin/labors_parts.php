@@ -83,9 +83,6 @@ try {
     <title>Labors & Parts - Auto Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .tab-content { display: block; }
-        .tab-content.hidden { display: none; }
-        .tab-active { border-bottom-color: #3b82f6; color: #3b82f6; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
         .modal.show { display: flex; }
     </style>
@@ -109,20 +106,10 @@ try {
                 </div>
             <?php endif; ?>
 
-            <!-- Tabs Navigation -->
-            <div class="mb-6">
-                <nav class="flex space-x-8 border-b border-gray-200">
-                    <button type="button" class="tab-button tab-active py-2 px-1 border-b-2 font-medium text-sm" data-tab="labors">
-                        Labors (<?php echo count($labors); ?>)
-                    </button>
-                    <button type="button" class="tab-button py-2 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="parts">
-                        Parts (<?php echo count($parts); ?>)
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Labors Tab -->
-            <div id="labors-tab" class="tab-content">
+            <!-- Labors Section -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-4">Labors</h2>
+                
                 <div class="bg-white shadow rounded-lg mb-6">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Labor</h3>
@@ -192,8 +179,10 @@ try {
                 </div>
             </div>
 
-            <!-- Parts Tab -->
-            <div id="parts-tab" class="tab-content hidden">
+            <!-- Parts Section -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-4">Parts</h2>
+                
                 <div class="bg-white shadow rounded-lg mb-6">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Part</h3>
@@ -300,35 +289,8 @@ try {
     </div>
 
     <script>
-        // Tab switching functionality
+        // Modal functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Remove active class from all buttons
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('tab-active');
-                        btn.classList.add('text-gray-500', 'hover:text-gray-700');
-                    });
-                    
-                    // Hide all tab contents
-                    tabContents.forEach(content => content.classList.add('hidden'));
-                    
-                    // Add active class to clicked button
-                    this.classList.add('tab-active');
-                    this.classList.remove('text-gray-500', 'hover:text-gray-700');
-                    
-                    // Show corresponding tab content
-                    const tabId = this.getAttribute('data-tab') + '-tab';
-                    const tabContent = document.getElementById(tabId);
-                    if (tabContent) {
-                        tabContent.classList.remove('hidden');
-                    }
-                });
-            });
-
             // Edit button functionality
             document.querySelectorAll('.edit-btn').forEach(button => {
                 button.addEventListener('click', function() {
