@@ -1615,7 +1615,7 @@ if (!empty($serverInvoice)) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
                     div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
-                    div.textContent = suggestion.name + (suggestion.suggested_price > 0 ? ` (${suggestion.suggested_price} ₾)` : '') + (suggestion.vehicle_make_model ? ' — ' + suggestion.vehicle_make_model : '') + ` [${suggestion.type}]`;
+                    div.textContent = suggestion.name + (suggestion.suggested_price > 0 ? ` (${suggestion.suggested_price} ₾)` : '') + (suggestion.vehicle_make_model ? ' — ' + suggestion.vehicle_make_model : '') + (suggestion.has_vehicle_price ? ' (vehicle price)' : '') + ` [${suggestion.type}]`;
                     div.addEventListener('click', () => {
                         input.value = suggestion.name;
                         const row = input.closest('tr');
@@ -1761,7 +1761,7 @@ if (!empty($serverInvoice)) {
                             <div class="text-sm text-gray-600">${item.description || ''}${item.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${item.vehicle_make_model}</span>` : ''}</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-sm font-medium text-blue-600">${item.default_price > 0 ? item.default_price + ' ₾' : ''}</div>
+                            <div class="text-sm font-medium text-blue-600">${item.suggested_price > 0 ? item.suggested_price + ' ₾' : ''} ${item.has_vehicle_price ? '<span class="text-xs bg-green-100 text-green-800 px-1 rounded ml-2">vehicle</span>' : ''}</div>
                             <div class="text-xs text-gray-500 uppercase">${item.type}</div>
                         </div>
                     </div>
@@ -1829,7 +1829,8 @@ if (!empty($serverInvoice)) {
                     </button>
                 </div>
                 <div class="mb-4">
-                    <input type="text" id="item-search-input" placeholder="Type to search labors and parts..." class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="item-search-input" placeholder="Type to search labors and parts (make or model allowed)" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="text-xs text-gray-500 mt-1">Tip: you can search by full 'Make Model' (e.g., "Toyota Corolla") or just the model (e.g., "Corolla").</div>
                 </div>
                 <div id="item-search-results" class="max-h-96 overflow-y-auto">
                     <!-- Results will be populated here -->

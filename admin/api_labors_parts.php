@@ -36,8 +36,10 @@ try {
             $like = "%{$q}%";
 
             if ($vehicle !== '') {
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
-                $stmt->execute([$vehicle, $like, $like, $vehicle]);
+                $vLower = strtolower($vehicle);
+                $vLike = "%{$vLower}%";
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE ((vehicle_make_model IS NOT NULL AND LOWER(vehicle_make_model) LIKE ?) OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 ELSE 2 END, name LIMIT 10");
+                $stmt->execute([$vLike, $like, $like, $vLower, $vLike]);
             } else {
                 $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
                 $stmt->execute([$like, $like]);
@@ -45,8 +47,10 @@ try {
             $labors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if ($vehicle !== '') {
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
-                $stmt->execute([$vehicle, $like, $like, $vehicle]);
+                $vLower = strtolower($vehicle);
+                $vLike = "%{$vLower}%";
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE ((vehicle_make_model IS NOT NULL AND LOWER(vehicle_make_model) LIKE ?) OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 ELSE 2 END, name LIMIT 10");
+                $stmt->execute([$vLike, $like, $like, $vLower, $vLike]);
             } else {
                 $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
                 $stmt->execute([$like, $like]);
@@ -55,21 +59,57 @@ try {
 
             // Attach suggested_price from item_prices when vehicle specified; fallback to default_price
             if ($vehicle !== '') {
-                $priceStmtL = $pdo->prepare("SELECT price FROM item_prices WHERE item_type = 'labor' AND item_id = ? AND vehicle_make_model = ? LIMIT 1");
+                // Helper closure to find best vehicle price using smart matching
+                $findVehiclePrice = function($itemType, $itemId, $vehicleStr) use ($pdo) {
+                    $vLower = strtolower(trim($vehicleStr));
+                    // Exact match
+                    $s = $pdo->prepare("SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1");
+                    $s->execute([$itemType, $itemId, $vLower]);
+                    $row = $s->fetch(PDO::FETCH_ASSOC);
+                    if ($row) return $row;
+                    // Containing full string
+                    $s = $pdo->prepare("SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1");
+                    $s->execute([$itemType, $itemId, "%{$vLower}%"]);
+                    $row = $s->fetch(PDO::FETCH_ASSOC);
+                    if ($row) return $row;
+                    // Token AND matching (all words present)
+                    $tokens = preg_split('/\s+/', $vLower);
+                    $ands = [];
+                    $params = [$itemType, $itemId];
+                    foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                    if (!empty($ands)) {
+                        $sql = 'SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
+                        $s = $pdo->prepare($sql);
+                        $s->execute($params);
+                        $row = $s->fetch(PDO::FETCH_ASSOC);
+                        if ($row) return $row;
+                    }
+                    return false;
+                };
+
                 foreach ($labors as &$l) {
-                    $priceStmtL->execute([$l['id'], $vehicle]);
-                    $pv = $priceStmtL->fetchColumn();
-                    $l['suggested_price'] = $pv !== false ? (float)$pv : (float)$l['default_price'];
-                    $l['has_vehicle_price'] = $pv !== false;
+                    $pv = $findVehiclePrice('labor', $l['id'], $vehicle);
+                    if ($pv) {
+                        $l['suggested_price'] = (float)$pv['price'];
+                        $l['has_vehicle_price'] = true;
+                        $l['vehicle_make_model'] = $pv['vehicle_make_model'];
+                    } else {
+                        $l['suggested_price'] = (float)$l['default_price'];
+                        $l['has_vehicle_price'] = false;
+                    }
                 }
                 unset($l);
 
-                $priceStmtP = $pdo->prepare("SELECT price FROM item_prices WHERE item_type = 'part' AND item_id = ? AND vehicle_make_model = ? LIMIT 1");
                 foreach ($parts as &$p) {
-                    $priceStmtP->execute([$p['id'], $vehicle]);
-                    $pv = $priceStmtP->fetchColumn();
-                    $p['suggested_price'] = $pv !== false ? (float)$pv : (float)$p['default_price'];
-                    $p['has_vehicle_price'] = $pv !== false;
+                    $pv = $findVehiclePrice('part', $p['id'], $vehicle);
+                    if ($pv) {
+                        $p['suggested_price'] = (float)$pv['price'];
+                        $p['has_vehicle_price'] = true;
+                        $p['vehicle_make_model'] = $pv['vehicle_make_model'];
+                    } else {
+                        $p['suggested_price'] = (float)$p['default_price'];
+                        $p['has_vehicle_price'] = false;
+                    }
                 }
                 unset($p);
             } else {

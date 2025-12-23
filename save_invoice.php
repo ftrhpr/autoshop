@@ -174,8 +174,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // If part price provided, prefer matching parts by name
             if (!empty($it['price_part']) && floatval($it['price_part']) > 0) {
                 if ($vehicleMake !== '') {
-                    $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
-                    $stmt->execute([$name, $vehicleMake, $vehicleMake]);
+                    $vLower = strtolower($vehicleMake);
+                    $vLike = "%{$vLower}%";
+                    $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? AND ((vehicle_make_model IS NOT NULL AND LOWER(vehicle_make_model) LIKE ?) OR vehicle_make_model IS NULL) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 ELSE 2 END LIMIT 1");
+                    $stmt->execute([$name, $vLike, $vLower, $vLike]);
                 } else {
                     $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? LIMIT 1");
                     $stmt->execute([$name]);
@@ -189,13 +191,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // If vehicle provided, check item_prices for existing vehicle price and use it; otherwise, if invoice contains price, create price entry
                     if ($vehicleMake !== '') {
-                        $pvStmt = $pdo->prepare('SELECT id, price FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
-                        $pvStmt->execute(['part', $it['db_id'], $vehicleMake]);
+                        // Smart lookup: try exact match first, then token-based matching (e.g., 'Corolla' matches 'Toyota Corolla')
+                        $pv = false;
+                        $vLower = strtolower(trim($vehicleMake));
+
+                        $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
+                        $pvStmt->execute(['part', $it['db_id'], $vLower]);
                         $pv = $pvStmt->fetch();
+
+                        if (!$pv) {
+                            // Try containing full string
+                            $pvStmt2 = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                            $pvStmt2->execute(['part', $it['db_id'], "%{$vLower}%"]);
+                            $pv = $pvStmt2->fetch();
+                        }
+
+                        if (!$pv) {
+                            // Try token AND-matching (all tokens must appear in vehicle_make_model)
+                            $tokens = preg_split('/\s+/', $vLower);
+                            $ands = [];
+                            $params = ['part', $it['db_id']];
+                            foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                            if (!empty($ands)) {
+                                $sql = 'SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
+                                $pvStmt3 = $pdo->prepare($sql);
+                                $pvStmt3->execute($params);
+                                $pv = $pvStmt3->fetch();
+                            }
+                        }
+
                         if ($pv) {
                             $it['price_part'] = $pv['price'];
-                            $it['db_vehicle'] = $vehicleMake;
+                            $it['db_vehicle'] = $pv['vehicle_make_model'];
                         } else {
+                            // No existing vehicle price found; create one only if invoice provided a price
                             if (!empty($it['price_part']) && floatval($it['price_part']) > 0) {
                                 $ins = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
                                 $ins->execute(['part', $it['db_id'], $vehicleMake, floatval($it['price_part']), $_SESSION['user_id']]);
@@ -209,8 +238,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // If still not identified and a service price exists, try labors
             if (empty($it['db_id']) && !empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
                 if ($vehicleMake !== '') {
-                    $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
-                    $stmt->execute([$name, $vehicleMake, $vehicleMake]);
+                    $vLower = strtolower($vehicleMake);
+                    $vLike = "%{$vLower}%";
+                    $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? AND ((vehicle_make_model IS NOT NULL AND LOWER(vehicle_make_model) LIKE ?) OR vehicle_make_model IS NULL) ORDER BY CASE WHEN LOWER(vehicle_make_model) = ? THEN 0 WHEN LOWER(vehicle_make_model) LIKE ? THEN 1 ELSE 2 END LIMIT 1");
+                    $stmt->execute([$name, $vLike, $vLower, $vLike]);
                 } else {
                     $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? LIMIT 1");
                     $stmt->execute([$name]);
@@ -224,13 +255,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // vehicle-specific price logic
                     if ($vehicleMake !== '') {
-                        $pvStmt = $pdo->prepare('SELECT id, price FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
-                        $pvStmt->execute(['labor', $it['db_id'], $vehicleMake]);
+                        // Smart lookup: try exact match first, then token-based matching (e.g., 'Corolla' matches 'Toyota Corolla')
+                        $pv = false;
+                        $vLower = strtolower(trim($vehicleMake));
+
+                        $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
+                        $pvStmt->execute(['labor', $it['db_id'], $vLower]);
                         $pv = $pvStmt->fetch();
+
+                        if (!$pv) {
+                            // Try containing full string
+                            $pvStmt2 = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                            $pvStmt2->execute(['labor', $it['db_id'], "%{$vLower}%"]);
+                            $pv = $pvStmt2->fetch();
+                        }
+
+                        if (!$pv) {
+                            // Try token AND-matching (all tokens must appear in vehicle_make_model)
+                            $tokens = preg_split('/\s+/', $vLower);
+                            $ands = [];
+                            $params = ['labor', $it['db_id']];
+                            foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                            if (!empty($ands)) {
+                                $sql = 'SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
+                                $pvStmt3 = $pdo->prepare($sql);
+                                $pvStmt3->execute($params);
+                                $pv = $pvStmt3->fetch();
+                            }
+                        }
+
                         if ($pv) {
                             $it['price_svc'] = $pv['price'];
-                            $it['db_vehicle'] = $vehicleMake;
+                            $it['db_vehicle'] = $pv['vehicle_make_model'];
                         } else {
+                            // No existing vehicle price found; create one only if invoice provided a price
                             if (!empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
                                 $ins = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
                                 $ins->execute(['labor', $it['db_id'], $vehicleMake, floatval($it['price_svc']), $_SESSION['user_id']]);
