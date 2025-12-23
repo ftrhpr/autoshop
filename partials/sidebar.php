@@ -45,16 +45,23 @@ function svgIcon($name){
 ?>
 
 <!-- Top Navigation Bar -->
-<nav class="fixed top-0 left-0 right-0 z-50 bg-slate-800 text-white shadow-lg">
+<nav class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 text-white shadow-2xl backdrop-blur-sm border-b border-white/10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
+        <div class="flex justify-between items-center h-20">
             <!-- Logo/Brand -->
             <div class="flex items-center flex-shrink-0">
-                <div class="font-bold text-lg">AutoShop</div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div class="font-bold text-xl bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">AutoShop</div>
+                </div>
             </div>
 
             <!-- Desktop Menu -->
-            <div class="hidden md:flex items-center space-x-1 xl:space-x-4 flex-1 justify-center">
+            <div class="hidden md:flex items-center space-x-2 xl:space-x-6 flex-1 justify-center">
                 <?php foreach ($menu as $item):
                     if ($item['permission'] && !function_exists('currentUserCan')) continue;
                     if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -74,37 +81,52 @@ function svgIcon($name){
 
                     $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
                 ?>
-                <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-1 xl:gap-2 px-2 xl:px-3 py-2 rounded-lg hover:bg-slate-700 transition-colors duration-200 text-xs md:text-sm xl:text-base <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                    <span class="w-4 h-4 xl:w-5 xl:h-5"><?php echo svgIcon($item['icon']); ?></span>
-                    <span><?php echo htmlspecialchars($item['label']); ?></span>
+                <a href="<?php echo htmlspecialchars($href); ?>" class="group relative flex items-center gap-2 xl:gap-3 px-4 xl:px-6 py-3 rounded-2xl hover:bg-white/10 transition-all duration-300 text-sm xl:text-base font-medium <?php echo $isActive ? 'bg-white/20 text-white shadow-lg scale-105' : 'text-blue-100 hover:text-white hover:scale-105'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                    <span class="w-5 h-5 xl:w-6 xl:h-6 transition-transform duration-300 group-hover:scale-110"><?php echo svgIcon($item['icon']); ?></span>
+                    <span class="relative">
+                        <?php echo htmlspecialchars($item['label']); ?>
+                        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-300 group-hover:w-full"></span>
+                    </span>
+                    <?php if ($isActive): ?>
+                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                    <?php endif; ?>
                 </a>
                 <?php endforeach; ?>
             </div>
 
             <!-- Right side: Notifications and Logout -->
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-3">
                 <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
-                <div id="notif-root" class="relative flex items-center space-x-1">
-                    <button id="notifButton" class="text-slate-300 hover:text-white p-1.5 rounded focus:outline-none" title="Notifications" aria-label="Notifications">
+                <div id="notif-root" class="relative flex items-center space-x-2">
+                    <button id="notifButton" class="relative p-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" title="Notifications" aria-label="Notifications">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full px-2 py-1 font-bold shadow-lg animate-bounce">0</span>
                     </button>
-                    <button id="notifTestButton" class="text-slate-300 hover:text-white p-1.5 rounded focus:outline-none hidden sm:block" title="Test sound" aria-label="Test sound">🔊</button>
-                    <button id="notifMuteButton" class="text-slate-300 hover:text-white p-1.5 rounded focus:outline-none hidden sm:block" title="Mute notifications" aria-label="Mute notifications">🔈</button>
+                    <button id="notifTestButton" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden sm:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Test sound" aria-label="Test sound">
+                        <span class="text-sm">🔊</span>
+                    </button>
+                    <button id="notifMuteButton" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 hidden sm:flex items-center justify-center shadow-lg backdrop-blur-sm" title="Mute notifications" aria-label="Mute notifications">
+                        <span class="text-sm">🔇</span>
+                    </button>
                     <audio id="notifAudio" preload="auto" aria-hidden="true" style="display:none">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.mp3" type="audio/mpeg">
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.ogg" type="audio/ogg">
                         <!-- Fallback to server-served WAV if mp3/ogg not present -->
                         <source src="<?php echo $appRoot; ?>assets/sounds/notify.php" type="audio/wav">
                     </audio>
-                    <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1 py-0.5">0</span>
                 </div>
                 <?php endif; ?>
 
                 <!-- Logout Button -->
-                <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden md:block px-3 py-2 rounded bg-red-600 hover:bg-red-500 text-white transition-colors duration-200 text-sm">Logout</a>
+                <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="hidden md:flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span>Logout</span>
+                </a>
 
                 <!-- Mobile Hamburger Menu Button -->
-                <button id="mobile-menu-button" class="md:hidden text-slate-300 hover:text-white p-2 rounded focus:outline-none" aria-label="Open menu">
+                <button id="mobile-menu-button" class="md:hidden p-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg backdrop-blur-sm" aria-label="Open menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
@@ -113,9 +135,9 @@ function svgIcon($name){
         </div>
 
         <!-- Mobile Menu Dropdown -->
-        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-slate-800 border-t border-slate-600 shadow-xl z-40 max-h-screen overflow-y-auto">
-            <div class="max-w-7xl mx-auto px-4 py-2">
-                <div class="grid grid-cols-1 gap-1">
+        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-t border-white/10 shadow-2xl z-40 max-h-screen overflow-y-auto">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="grid grid-cols-1 gap-2">
                     <?php foreach ($menu as $item):
                         if ($item['permission'] && !function_exists('currentUserCan')) continue;
                         if ($item['permission'] && !currentUserCan($item['permission'])) continue;
@@ -134,15 +156,22 @@ function svgIcon($name){
 
                         $isActive = strpos($_SERVER['SCRIPT_NAME'], $href) !== false || basename($_SERVER['SCRIPT_NAME']) === basename($href);
                     ?>
-                    <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200 <?php echo $isActive ? 'bg-yellow-500 text-slate-900 font-semibold' : 'text-slate-200'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
-                        <span class="w-5 h-5 flex-shrink-0"><?php echo svgIcon($item['icon']); ?></span>
-                        <span><?php echo htmlspecialchars($item['label']); ?></span>
+                    <a href="<?php echo htmlspecialchars($href); ?>" class="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-white/10 transition-all duration-300 <?php echo $isActive ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:text-white'; ?>" title="<?php echo htmlspecialchars($item['label']); ?>">
+                        <span class="w-6 h-6 flex-shrink-0 p-1 rounded-xl bg-white/10"><?php echo svgIcon($item['icon']); ?></span>
+                        <span class="font-medium"><?php echo htmlspecialchars($item['label']); ?></span>
+                        <?php if ($isActive): ?>
+                        <div class="ml-auto w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                        <?php endif; ?>
                     </a>
                     <?php endforeach; ?>
                 </div>
-                <div class="border-t border-slate-600 mt-2 pt-2">
-                    <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="block w-full px-3 py-3 rounded bg-red-600 hover:bg-red-500 text-white text-center font-medium">Logout</a>
-                </div>
+                <div class="border-t border-white/10 mt-4 pt-4">
+                    <a href="<?php echo htmlspecialchars($logoutHref); ?>" class="flex items-center justify-center gap-3 w-full px-4 py-4 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium transition-all duration-300 shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span>Logout</span>
+                    </a>
             </div>
         </div>
     </div>
@@ -151,25 +180,55 @@ function svgIcon($name){
 <style>
 /* Mobile menu animations */
 #mobile-menu {
-    transform: translateY(-100%);
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    transform: translateY(-20px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 #mobile-menu:not(.hidden) {
     transform: translateY(0);
     opacity: 1;
 }
 
+/* Custom scrollbar for mobile menu */
+#mobile-menu::-webkit-scrollbar {
+    width: 6px;
+}
+#mobile-menu::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+#mobile-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+#mobile-menu::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
 /* Ensure main content has proper top padding for fixed nav */
 main, .container, .max-w-7xl {
-    padding-top: 4rem;
+    padding-top: 5rem;
 }
 
 /* Responsive adjustments */
 @media (max-width: 1023px) {
     main, .container, .max-w-7xl {
-        padding-top: 4rem;
+        padding-top: 5rem;
     }
+}
+
+/* Enhanced focus states */
+nav a:focus,
+nav button:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+nav * {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>
 
@@ -224,7 +283,7 @@ main, .container, .max-w-7xl {
             @keyframes notif-slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity:1; } }
             @keyframes bell-pulse { 0%{ transform: scale(1); } 30%{ transform: scale(1.15) rotate(-8deg);} 60%{ transform: scale(1.03) rotate(6deg);} 100%{transform: scale(1);} }
             .notif-bell-anim { animation: bell-pulse 0.9s ease; }
-            #notifContainer { position: fixed; top: 4rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+            #notifContainer { position: fixed; top: 5rem; right: 1.5rem; z-index: 70; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
             .notif-item { width: 20rem; max-width: calc(100vw - 4rem); background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 6px 18px rgba(0,0,0,0.08); padding: 0.75rem; cursor: pointer; transform: translateX(24px); opacity:0; animation: notif-slide-in 320ms forwards ease; }
             .notif-item .notif-dismiss{ background: transparent; border: 0; font-size: 1.05rem; line-height: 1; cursor: pointer; color: #6b7280; }
         `;
