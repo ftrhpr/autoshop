@@ -156,7 +156,7 @@ window.testAddPartHandler = async function(btn){
 
             <!-- Parts card -->
             <section class="bg-white shadow rounded-lg p-4">
-                <h2 class="font-semibold mb-3">Parts</h2>
+                <h2 class="font-semibold mb-3">Parts <span id="parts-count" class="text-sm text-gray-500 ml-2"></span></h2>
 
                 <form id="add-part-form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <input type="text" name="name" placeholder="Name" required class="border p-2 rounded" />
@@ -302,6 +302,10 @@ function renderRows(type, rows){
 
     // debug: show rendered count in debug panel
     try { debugLog('renderRows ' + type + ' rendered ' + rows.length + ' rows'); } catch(e){}
+    try {
+        const el = document.getElementById(type === 'part' ? 'parts-count' : 'labors-count');
+        if (el) el.textContent = '(' + rows.length + ')';
+    } catch(e){}
 }
 
 function escapeHtml(s){
