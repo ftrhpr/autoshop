@@ -1616,11 +1616,12 @@ if (!empty($serverInvoice)) {
         function showSuggestions(input, suggestions) {
             const container = input.parentElement.querySelector('.suggestions');
             container.innerHTML = '';
+            const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
             if (Array.isArray(suggestions) && suggestions.length > 0) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
-                    div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
-                    div.textContent = suggestion.name + (suggestion.suggested_price > 0 ? ` (${suggestion.suggested_price} ₾)` : '') + (suggestion.vehicle_make_model ? ' — ' + suggestion.vehicle_make_model : '') + (suggestion.has_vehicle_price ? ' (vehicle price)' : '') + ` [${suggestion.type}]`;
+                    div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between items-center';
+                    div.innerHTML = `<div class="flex-1"><div class="font-medium">${suggestion.name}</div><div class="text-xs text-gray-600">${suggestion.description || ''}${suggestion.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${suggestion.vehicle_make_model}</span>` : ''}</div></div><div class="text-right ml-3"><div class="text-sm font-medium text-blue-600">${suggestion.suggested_price > 0 ? suggestion.suggested_price + ' ₾' : ''}</div>` + (vehicleVal ? (suggestion.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : '') + `</div>`;
                     div.addEventListener('click', () => {
                         input.value = suggestion.name;
                         const row = input.closest('tr');
@@ -1629,19 +1630,31 @@ if (!empty($serverInvoice)) {
                         if (suggestion.id) row.dataset.itemDbId = suggestion.id;
                         if (suggestion.type) row.dataset.itemDbType = suggestion.type;
                         if (suggestion.vehicle_make_model) row.dataset.itemDbVehicle = suggestion.vehicle_make_model;
+                        row.dataset.itemDbPriceSource = suggestion.has_vehicle_price ? 'vehicle' : 'default';
 
                         // Fill appropriate price field depending on type
+                        const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
                         if (suggestion.type === 'part') {
                             const partInput = row.querySelector('.item-price-part');
-                            const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
                             if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
                                 partInput.value = priceToUse;
                             }
                         } else if (suggestion.type === 'labor') {
                             const svcInput = row.querySelector('.item-price-svc');
-                            const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
                             if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
                                 svcInput.value = priceToUse;
+                            }
+                        }
+
+                        // Update small badge in the row
+                        const badgeEl = row.querySelector('.price-source');
+                        if (badgeEl) {
+                            if (vehicleVal) {
+                                badgeEl.textContent = suggestion.has_vehicle_price ? 'Vehicle price' : 'Default price';
+                                badgeEl.className = suggestion.has_vehicle_price ? 'price-source text-xs text-green-700 mt-1' : 'price-source text-xs text-yellow-700 mt-1';
+                            } else {
+                                badgeEl.textContent = '';
+                                badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
                             }
                         }
 
@@ -1754,19 +1767,20 @@ if (!empty($serverInvoice)) {
 
         function displaySearchResults(results) {
             const container = document.getElementById('item-search-results');
+            const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
             if (results.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 text-center py-4">No items found</p>';
                 return;
             }
             container.innerHTML = results.map(item => `
-                <div class="border-b border-gray-200 p-3 hover:bg-gray-50 cursor-pointer" data-id="${item.id}" data-name="${item.name.replace(/"/g, '&quot;')}" data-type="${item.type}" data-price="${item.default_price || 0}" onclick="selectSearchItem(this)">
+                <div class="border-b border-gray-200 p-3 hover:bg-gray-50 cursor-pointer" data-id="${item.id}" data-name="${item.name.replace(/"/g, '&quot;')}" data-type="${item.type}" data-price="${item.suggested_price || item.default_price || 0}" data-has-vehicle-price="${item.has_vehicle_price?1:0}" data-vehicle="${(item.vehicle_make_model||'').replace(/"/g,'&quot;')}" onclick="selectSearchItem(this)">
                     <div class="flex justify-between items-center">
                         <div>
                             <div class="font-medium">${item.name}</div>
                             <div class="text-sm text-gray-600">${item.description || ''}${item.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${item.vehicle_make_model}</span>` : ''}</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-sm font-medium text-blue-600">${item.suggested_price > 0 ? item.suggested_price + ' ₾' : ''} ${item.has_vehicle_price ? '<span class="text-xs bg-green-100 text-green-800 px-1 rounded ml-2">vehicle</span>' : ''}</div>
+                            <div class="text-sm font-medium text-blue-600">${item.suggested_price > 0 ? item.suggested_price + ' ₾' : ''} ${item.has_vehicle_price ? '<span class="text-xs bg-green-100 text-green-800 px-1 rounded ml-2">vehicle</span>' : (vehicleVal ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-1 rounded ml-2">default</span>' : '')}</div>
                             <div class="text-xs text-gray-500 uppercase">${item.type}</div>
                         </div>
                     </div>
@@ -1784,7 +1798,7 @@ if (!empty($serverInvoice)) {
             selectItem(id, name, type, price, vehicle, hasVehicle);
         }
 
-        function selectItem(id, name, type, price, vehicle) {
+        function selectItem(id, name, type, price, vehicle, hasVehicle) {
             if (currentSearchInput) {
                 currentSearchInput.value = name;
                 const row = currentSearchInput.closest('tr');
@@ -1793,6 +1807,7 @@ if (!empty($serverInvoice)) {
                 if (id) row.dataset.itemDbId = id;
                 if (type) row.dataset.itemDbType = type;
                 if (vehicle) row.dataset.itemDbVehicle = vehicle;
+                row.dataset.itemDbPriceSource = hasVehicle ? 'vehicle' : 'default';
 
                 // Fill appropriate price field depending on type
                 if (type === 'part') {
@@ -1804,6 +1819,19 @@ if (!empty($serverInvoice)) {
                     const svcInput = row.querySelector('.item-price-svc');
                     if (price > 0 && (!svcInput.value || svcInput.value == '0')) {
                         svcInput.value = price;
+                    }
+                }
+
+                // Update small badge in the row
+                const badgeEl = row.querySelector('.price-source');
+                const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
+                if (badgeEl) {
+                    if (vehicleVal) {
+                        badgeEl.textContent = hasVehicle ? 'Vehicle price' : 'Default price';
+                        badgeEl.className = hasVehicle ? 'price-source text-xs text-green-700 mt-1' : 'price-source text-xs text-yellow-700 mt-1';
+                    } else {
+                        badgeEl.textContent = '';
+                        badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
                     }
                 }
 
