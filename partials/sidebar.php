@@ -24,7 +24,8 @@ $menu_sections = [
         ['label' => 'Users & Access', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
             ['label' => 'Users', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
             ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']
-        ]]
+        ]],
+        ['label' => 'Technicians', 'href' => $appRoot . '/admin/technicians.php', 'icon' => 'user', 'permission' => 'manage_users']
     ]],
     ['label' => 'Settings', 'items' => [
         ['label' => 'System Settings', 'href' => $appRoot . '/admin/settings.php', 'icon' => 'shield', 'permission' => 'manage_settings'],
