@@ -1253,6 +1253,16 @@ if (!empty($serverInvoice)) {
                 <input type="hidden" name="item_db_price_source_${rowCount}" class="item-db-price-source">
             `;
             tbody.appendChild(tr);
+            // Attach per-row technician typeahead
+            const techInput = tr.querySelector('.item-tech');
+            if (techInput){
+                attachTypeahead(techInput, 'api_technicians_search.php?q=', t => t.name, (it) => {
+                    techInput.value = it.name || '';
+                    tr.dataset.itemTechId = it.id;
+                });
+                // Clear stored technician id when user types custom text
+                techInput.addEventListener('input', ()=>{ if (tr.dataset && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
+            }
             renumberRows();
         }
 
@@ -1329,6 +1339,7 @@ if (!empty($serverInvoice)) {
                 tr.querySelector('.item-price-part').value = it.price_part || 0;
                 tr.querySelector('.item-price-svc').value = it.price_svc || 0;
                 tr.querySelector('.item-tech').value = it.tech || '';
+                if (it.tech_id) tr.dataset.itemTechId = it.tech_id;
             });
             calculateTotals();
 
@@ -1591,6 +1602,10 @@ if (!empty($serverInvoice)) {
                     form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_part_${index}" value="${row.querySelector('.item-price-part').value}">`);
                     form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_svc_${index}" value="${row.querySelector('.item-price-svc').value}">`);
                     form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_${index}" value="${row.querySelector('.item-tech').value}">`);
+                    // include per-item technician id if selected from suggestions
+                    if (row.dataset && row.dataset.itemTechId) {
+                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_id_${index}" value="${row.dataset.itemTechId}">`);
+                    }
                     // include matched db id/type if suggestion was used
                     if (row.dataset && row.dataset.itemDbId) {
                         form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_id_${index}" value="${row.dataset.itemDbId}">`);

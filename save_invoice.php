@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'price_part' => $data["item_price_part_$i"],
                 'price_svc' => $data["item_price_svc_$i"],
                 'tech' => $data["item_tech_$i"],
+                'tech_id' => isset($data["item_tech_id_$i"]) ? (int)$data["item_tech_id_$i"] : null,
                 // optional matched DB info from autocomplete
                 'db_id' => isset($data["item_db_id_$i"]) ? (int)$data["item_db_id_$i"] : null,
                 'db_type' => isset($data["item_db_type_$i"]) ? $data["item_db_type_$i"] : null,
