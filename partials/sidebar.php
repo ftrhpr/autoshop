@@ -111,6 +111,8 @@ function svgIcon($name){
                 </div>
                 <?php endif; ?>
             </div>
+            <!-- Mobile close button (explicit close affordance) -->
+            <button id="closeSidebarMobile" class="md:hidden ml-2 text-slate-300 hover:text-white p-2 rounded" title="Close menu" aria-label="Close menu" aria-controls="site-sidebar">✕</button>
             <button id="collapseSidebar" class="ml-auto hidden md:inline-flex items-center justify-center text-slate-300 hover:text-white p-2 rounded" title="Collapse sidebar" aria-label="Collapse sidebar" aria-pressed="false" aria-controls="site-sidebar">◀</button> 
         </div>
 
@@ -236,6 +238,9 @@ function svgIcon($name){
 
     if (openBtn) openBtn.addEventListener('click', open);
     if (overlay) overlay.addEventListener('click', close);
+    // Mobile explicit close button
+    const closeMobileBtn = document.getElementById('closeSidebarMobile');
+    if (closeMobileBtn) closeMobileBtn.addEventListener('click', close);
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && sidebar && !sidebar.classList.contains('-translate-x-full')) close(); });
 
     if (collapseBtn) {
