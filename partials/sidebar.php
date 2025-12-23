@@ -164,14 +164,9 @@ function svgIcon($name){
 })();
 </script>
 
-<!-- Mobile overlay and toggle -->
-<button id="sidebarToggle" class="fixed bottom-6 right-6 z-50 md:hidden bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg">☰</button>
+
 
 <script>
-    const sidebar = document.getElementById('site-sidebar');
-    const toggle = document.getElementById('sidebarToggle');
-    // Ensure sidebar toggle only opens the sidebar (do not allow closing via toggle)
-    if (toggle) toggle.addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
 
 
     // Notification system: polls server for new invoices and shows badge/toasts/sound
