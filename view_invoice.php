@@ -85,6 +85,9 @@ $items = json_decode($invoice['items'], true);
                                 <?php echo htmlspecialchars($item['name']); ?>
                                 <?php if (!empty($item['db_id'])): ?>
                                     <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">DB: <?php echo strtoupper(htmlspecialchars($item['db_type'] ?? '')); ?></span>
+                                    <?php if (!empty($item['db_vehicle'])): ?>
+                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700"><?php echo htmlspecialchars($item['db_vehicle']); ?></span>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </td>
                             <td class="border border-gray-300 px-2 md:px-4 py-2 text-center"><?php echo $item['qty']; ?></td>

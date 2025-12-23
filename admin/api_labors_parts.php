@@ -36,16 +36,16 @@ try {
             $like = "%{$q}%";
 
             if ($vehicle !== '') {
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'labor' as type FROM labors WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
                 $stmt->execute([$vehicle, $like, $like, $vehicle]);
             } else {
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'labor' as type FROM labors WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'labor' as type FROM labors WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
                 $stmt->execute([$like, $like]);
             }
             $labors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if ($vehicle !== '') {
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'part' as type FROM parts WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
                 $stmt->execute([$vehicle, $like, $like, $vehicle]);
             } else {
                 $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'part' as type FROM parts WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");

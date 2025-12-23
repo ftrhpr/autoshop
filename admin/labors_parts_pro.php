@@ -30,9 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $name = trim($_POST['name'] ?? '');
                 $desc = trim($_POST['description'] ?? '');
                 $price = (float)($_POST['default_price'] ?? 0);
+                $vehicle = trim($_POST['vehicle_make_model'] ?? '');
                 if ($name === '') throw new Exception('Name is required');
-                $stmt = $pdo->prepare("INSERT INTO {$table} (name, description, default_price, created_by) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$name, $desc, $price, $_SESSION['user_id']]);
+                $stmt = $pdo->prepare("INSERT INTO {$table} (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $desc, $price, $_SESSION['user_id'], $vehicle ?: NULL]);
                 $success = ucfirst($type) . ' created';
             } elseif ($action === 'edit') {
                 $id = (int)($_POST['id'] ?? 0);
@@ -40,9 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $name = trim($_POST['name'] ?? '');
                 $desc = trim($_POST['description'] ?? '');
                 $price = (float)($_POST['default_price'] ?? 0);
+                $vehicle = trim($_POST['vehicle_make_model'] ?? '');
                 if ($name === '') throw new Exception('Name is required');
-                $stmt = $pdo->prepare("UPDATE {$table} SET name = ?, description = ?, default_price = ? WHERE id = ?");
-                $stmt->execute([$name, $desc, $price, $id]);
+                $stmt = $pdo->prepare("UPDATE {$table} SET name = ?, description = ?, default_price = ?, vehicle_make_model = ? WHERE id = ?");
+                $stmt->execute([$name, $desc, $price, $vehicle ?: NULL, $id]);
                 $success = ucfirst($type) . ' updated';
             } elseif ($action === 'delete') {
                 $id = (int)($_POST['id'] ?? 0);
@@ -79,7 +81,7 @@ $countStmt->execute($params);
 $total = (int)$countStmt->fetchColumn();
 
 // Fetch current page
-$sql = "SELECT id, name, description, default_price, created_at FROM {$table} {$where} ORDER BY name LIMIT :offset, :limit";
+$sql = "SELECT id, name, description, default_price, vehicle_make_model, created_at FROM {$table} {$where} ORDER BY name LIMIT :offset, :limit";
 $stmt = $pdo->prepare($sql);
 foreach ($params as $k=>$v) $stmt->bindValue($k, $v, PDO::PARAM_STR);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -132,12 +134,39 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
         </div>
     </div>
 
+    <!-- Quick Add -->
+    <form method="post" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+        <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
+        <input type="hidden" name="action" value="add">
+        <input type="hidden" name="type" value="<?php echo h($type); ?>">
+        <div>
+            <label class="block text-xs text-gray-600">Name</label>
+            <input type="text" name="name" class="border p-2 rounded w-full" required>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-600">Description</label>
+            <input type="text" name="description" class="border p-2 rounded w-full">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-600">Price</label>
+            <input type="number" step="0.01" name="default_price" class="border p-2 rounded w-full">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-600">Vehicle (optional)</label>
+            <input type="text" name="vehicle_make_model" placeholder="e.g. Toyota Corolla" class="border p-2 rounded w-full">
+            <div class="mt-2 text-right">
+                <button class="px-3 py-2 bg-blue-600 text-white rounded">Add</button>
+            </div>
+        </div>
+    </form>
+
     <div class="bg-white rounded shadow overflow-auto">
         <table class="min-w-full text-sm">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="p-2 text-left">Name</th>
                     <th class="p-2 text-left">Description</th>
+                    <th class="p-2 text-left">Vehicle</th>
                     <th class="p-2 text-left">Price</th>
                     <th class="p-2">Actions</th>
                 </tr>
@@ -149,6 +178,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
                 <tr>
                     <td class="p-2 font-medium"><?php echo h($r['name']); ?></td>
                     <td class="p-2"><?php echo h($r['description']); ?></td>
+                    <td class="p-2"><?php echo h($r['vehicle_make_model'] ?? ''); ?></td>
                     <td class="p-2"><?php echo number_format($r['default_price'], 2); ?></td>
                     <td class="p-2 text-right">
                         <form method="post" class="inline" onsubmit="return confirm('Delete?');">
@@ -158,7 +188,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
                             <input type="hidden" name="id" value="<?php echo (int)$r['id']; ?>">
                             <button class="text-red-600">Delete</button>
                         </form>
-                        <button class="ml-3 text-indigo-600" onclick="openEdit(<?php echo (int)$r['id']; ?>, '<?php echo h(addslashes($r['name'])); ?>', '<?php echo h(addslashes($r['description'])); ?>', '<?php echo h($r['default_price']); ?>')">Edit</button>
+                        <button class="ml-3 text-indigo-600" onclick="openEdit(<?php echo (int)$r['id']; ?>, '<?php echo h(addslashes($r['name'])); ?>', '<?php echo h(addslashes($r['description'])); ?>', '<?php echo h($r['default_price']); ?>', '<?php echo h(addslashes($r['vehicle_make_model'] ?? '')); ?>')">Edit</button>
                     </td>
                 </tr>
                 <?php endforeach; endif; ?>
@@ -196,6 +226,10 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
                     <label class="block text-sm">Price</label>
                     <input type="number" name="default_price" id="edit-price" step="0.01" class="border p-2 w-full rounded">
                 </div>
+                <div class="mb-2">
+                    <label class="block text-sm">Vehicle Make/Model (optional)</label>
+                    <input type="text" name="vehicle_make_model" id="edit-vehicle" class="border p-2 w-full rounded" placeholder="e.g. Toyota Corolla">
+                </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="document.getElementById('edit-modal').style.display='none'" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
                     <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded">Save</button>
@@ -207,11 +241,12 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
 </div>
 
 <script>
-function openEdit(id,name,desc,price){
+function openEdit(id,name,desc,price,vehicle){
     document.getElementById('edit-id').value = id;
     document.getElementById('edit-name').value = name;
     document.getElementById('edit-description').value = desc;
     document.getElementById('edit-price').value = price;
+    document.getElementById('edit-vehicle').value = vehicle || '';
     document.getElementById('edit-modal').style.display = 'flex';
 }
 </script>

@@ -1548,6 +1548,9 @@ if (!empty($serverInvoice)) {
                     if (row.dataset && row.dataset.itemDbType) {
                         form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_type_${index}" value="${row.dataset.itemDbType}">`);
                     }
+                    if (row.dataset && row.dataset.itemDbVehicle) {
+                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_vehicle_${index}" value="${row.dataset.itemDbVehicle}">`);
+                    }
                     index++;
                 }
             });
@@ -1612,7 +1615,7 @@ if (!empty($serverInvoice)) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
                     div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
-                    div.textContent = suggestion.name + (suggestion.default_price > 0 ? ` (${suggestion.default_price} ₾)` : '') + ` [${suggestion.type}]`;
+                    div.textContent = suggestion.name + (suggestion.default_price > 0 ? ` (${suggestion.default_price} ₾)` : '') + (suggestion.vehicle_make_model ? ' — ' + suggestion.vehicle_make_model : '') + ` [${suggestion.type}]`;
                     div.addEventListener('click', () => {
                         input.value = suggestion.name;
                         const row = input.closest('tr');
@@ -1620,6 +1623,7 @@ if (!empty($serverInvoice)) {
                         // Record matched DB item id/type on the row for server-side processing
                         if (suggestion.id) row.dataset.itemDbId = suggestion.id;
                         if (suggestion.type) row.dataset.itemDbType = suggestion.type;
+                        if (suggestion.vehicle_make_model) row.dataset.itemDbVehicle = suggestion.vehicle_make_model;
 
                         // Fill appropriate price field depending on type
                         if (suggestion.type === 'part') {
@@ -1747,7 +1751,7 @@ if (!empty($serverInvoice)) {
                     <div class="flex justify-between items-center">
                         <div>
                             <div class="font-medium">${item.name}</div>
-                            <div class="text-sm text-gray-600">${item.description || ''}</div>
+                            <div class="text-sm text-gray-600">${item.description || ''}${item.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${item.vehicle_make_model}</span>` : ''}</div>
                         </div>
                         <div class="text-right">
                             <div class="text-sm font-medium text-blue-600">${item.default_price > 0 ? item.default_price + ' ₾' : ''}</div>
@@ -1763,10 +1767,11 @@ if (!empty($serverInvoice)) {
             const name = element.dataset.name;
             const type = element.dataset.type;
             const price = parseFloat(element.dataset.price) || 0;
-            selectItem(id, name, type, price);
+            const vehicle = element.dataset.vehicle || '';
+            selectItem(id, name, type, price, vehicle);
         }
 
-        function selectItem(id, name, type, price) {
+        function selectItem(id, name, type, price, vehicle) {
             if (currentSearchInput) {
                 currentSearchInput.value = name;
                 const row = currentSearchInput.closest('tr');
@@ -1774,6 +1779,7 @@ if (!empty($serverInvoice)) {
                 // Record matched DB item id/type on the row for server-side processing
                 if (id) row.dataset.itemDbId = id;
                 if (type) row.dataset.itemDbType = type;
+                if (vehicle) row.dataset.itemDbVehicle = vehicle;
 
                 // Fill appropriate price field depending on type
                 if (type === 'part') {

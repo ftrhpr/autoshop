@@ -156,13 +156,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // If autocomplete already provided db info, ensure the referenced record exists
         if (!empty($it['db_id']) && !empty($it['db_type'])) {
-            // Verify existence
+            // Verify existence and fetch vehicle_make_model
             if ($it['db_type'] === 'part') {
-                $v = $pdo->prepare('SELECT id FROM parts WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
-                if (!$v->fetch()) { $it['db_id'] = null; $it['db_type'] = null; }
+                $v = $pdo->prepare('SELECT id, vehicle_make_model FROM parts WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
+                $vv = $v->fetch();
+                if (!$vv) { $it['db_id'] = null; $it['db_type'] = null; } else { $it['db_vehicle'] = $vv['vehicle_make_model'] ?? null; }
             } else {
-                $v = $pdo->prepare('SELECT id FROM labors WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
-                if (!$v->fetch()) { $it['db_id'] = null; $it['db_type'] = null; }
+                $v = $pdo->prepare('SELECT id, vehicle_make_model FROM labors WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
+                $vv = $v->fetch();
+                if (!$vv) { $it['db_id'] = null; $it['db_type'] = null; } else { $it['db_vehicle'] = $vv['vehicle_make_model'] ?? null; }
             }
         }
 
@@ -181,12 +183,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($found) {
                     $it['db_id'] = $found['id'];
                     $it['db_type'] = 'part';
+                    // Attach matched vehicle_make_model to item for later display
+                    $it['db_vehicle'] = $found['vehicle_make_model'] ?? null;
                     if (empty($it['price_part']) && !empty($found['default_price'])) $it['price_part'] = $found['default_price'];
                 } else {
                     $ins = $pdo->prepare('INSERT INTO parts (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)');
                     $ins->execute([$name, '', floatval($it['price_part']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
                     $it['db_id'] = $pdo->lastInsertId();
                     $it['db_type'] = 'part';
+                    $it['db_vehicle'] = $vehicleMake ?: null;
                     $created_items[] = ['type' => 'part', 'name' => $name, 'id' => $it['db_id']];
                 }
             }
@@ -204,12 +209,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($found) {
                     $it['db_id'] = $found['id'];
                     $it['db_type'] = 'labor';
+                    // Attach matched vehicle_make_model to item for later display
+                    $it['db_vehicle'] = $found['vehicle_make_model'] ?? null;
                     if (empty($it['price_svc']) && !empty($found['default_price'])) $it['price_svc'] = $found['default_price'];
                 } else {
                     $ins = $pdo->prepare('INSERT INTO labors (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)');
                     $ins->execute([$name, '', floatval($it['price_svc']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
                     $it['db_id'] = $pdo->lastInsertId();
                     $it['db_type'] = 'labor';
+                    $it['db_vehicle'] = $vehicleMake ?: null;
                     $created_items[] = ['type' => 'labor', 'name' => $name, 'id' => $it['db_id']];
                 }
             }
