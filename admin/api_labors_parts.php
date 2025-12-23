@@ -29,10 +29,17 @@ try {
         }
 
         // Price list for a specific item: ?action=prices&item_id=123&item_type=part|labor
-        if ($action === 'prices' && !empty($_GET['item_id']) && !empty($_GET['item_type'])) {
+        if ($action === 'prices' && !empty($_GET['item_id'])) {
             $itemId = (int)$_GET['item_id'];
-            $itemType = in_array($_GET['item_type'], ['part','labor']) ? $_GET['item_type'] : null;
-            if (!$itemType) { echo json_encode(['success' => false, 'message' => 'Invalid item type']); exit; }
+            $itemType = in_array($_GET['item_type'] ?? '', ['part','labor']) ? $_GET['item_type'] : null;
+            if (!$itemType) {
+                // Determine item_type from item_id
+                $stmt = $pdo->prepare("SELECT 'part' AS type FROM parts WHERE id = ? UNION SELECT 'labor' AS type FROM labors WHERE id = ? LIMIT 1");
+                $stmt->execute([$itemId, $itemId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row) $itemType = $row['type'];
+                else { echo json_encode(['success' => false, 'message' => 'Invalid item_id']); exit; }
+            }
             $ps = $pdo->prepare('SELECT id, vehicle_make_model, price, created_by, created_at FROM item_prices WHERE item_type = ? AND item_id = ? ORDER BY vehicle_make_model');
             $ps->execute([$itemType, $itemId]);
             $prices = $ps->fetchAll(PDO::FETCH_ASSOC);
