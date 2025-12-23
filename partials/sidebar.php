@@ -14,22 +14,17 @@ $badges = $badges ?? [];
 // New menu sections with nested children and optional badge keys
 $menu_sections = [
     ['label' => 'Analytics', 'items' => [
-        ['label' => 'Overview', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => null],
-        ['label' => 'Reports', 'href' => $appRoot . '/admin/reports.php', 'icon' => 'file-text', 'permission' => 'view_reports']
+        ['label' => 'Overview', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => null]
     ]],
     ['label' => 'Management', 'items' => [
+        ['label' => 'Create Invoice', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => null],
         ['label' => 'Invoices', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
         ['label' => 'Customers', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
-        ['label' => 'Labors & Parts', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => null, 'children' => [
-            ['label' => 'Parts', 'href' => $appRoot . '/admin/parts.php', 'permission' => null],
-            ['label' => 'Labors', 'href' => $appRoot . '/admin/labors.php', 'permission' => null],
-            ['label' => 'Prices', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'permission' => 'manage_prices']
-        ]],
+        ['label' => 'Labors & Parts', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
         ['label' => 'Users & Access', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
             ['label' => 'Users', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
             ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']
-        ]],
-        ['label' => 'Inbox', 'href' => $appRoot . '/admin/inbox.php', 'icon' => 'clock', 'permission' => null, 'badge_key' => 'inbox']
+        ]]
     ]],
     ['label' => 'Settings', 'items' => [
         ['label' => 'System Settings', 'href' => $appRoot . '/admin/settings.php', 'icon' => 'shield', 'permission' => 'manage_settings'],
