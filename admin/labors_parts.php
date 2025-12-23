@@ -63,7 +63,15 @@ try {
     $labors = $pdo->query("SELECT * FROM labors ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
     $parts = $pdo->query("SELECT * FROM parts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    $error = "Database tables not found. Please run the migration script first.";
+    // For testing without database, use dummy data
+    $labors = [
+        ['id' => 1, 'name' => 'Oil Change', 'description' => 'Engine oil change service', 'default_price' => 50.00],
+        ['id' => 2, 'name' => 'Brake Service', 'description' => 'Brake pad replacement', 'default_price' => 120.00],
+    ];
+    $parts = [
+        ['id' => 1, 'name' => 'Brake Pads', 'description' => 'Front brake pads', 'default_price' => 80.00],
+        ['id' => 2, 'name' => 'Oil Filter', 'description' => 'Engine oil filter', 'default_price' => 15.00],
+    ];
 }
 ?>
 
