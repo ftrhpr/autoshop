@@ -89,7 +89,7 @@ function svgIcon($name){
 ?>
 
 <!-- Sidebar (desktop) & Off-canvas (mobile) -->
-<div id="site-sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white shadow-lg" aria-hidden="false">
+<div id="site-sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white shadow-lg transform -translate-x-full md:translate-x-0 transition-all duration-300" role="navigation" aria-hidden="true">
     <div class="h-full flex flex-col">
         <div class="p-4 border-b border-slate-700 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -189,6 +189,12 @@ function svgIcon($name){
     </div>
 </div>
 
+<!-- Mobile overlay -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-40 z-30 hidden md:hidden" aria-hidden="true"></div>
+
+<!-- Mobile open button -->
+<button id="openSidebar" class="md:hidden fixed bottom-4 left-4 z-50 bg-yellow-400 text-slate-900 p-3 rounded-full shadow-lg" aria-label="Open menu" aria-expanded="false" aria-controls="site-sidebar">☰</button>
+
 <style>
 #site-sidebar.collapsed {
     width: 4rem;
@@ -206,18 +212,35 @@ function svgIcon($name){
 
 <script>
 (function(){
-    function open() { 
-        // Sidebar is persistently visible; no-op
-    }
-    // open button removed (sidebar permanently visible)
     var collapseBtn = document.getElementById('collapseSidebar');
+    var openBtn = document.getElementById('openSidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    var sidebar = document.getElementById('site-sidebar');
 
+    function open() {
+        if (!sidebar) return;
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.setAttribute('aria-hidden','false');
+        document.body.classList.add('overflow-hidden');
+        if (overlay) overlay.classList.remove('hidden');
+        if (openBtn) openBtn.setAttribute('aria-expanded','true');
+    }
+    function close() {
+        if (!sidebar) return;
+        sidebar.classList.add('-translate-x-full');
+        sidebar.setAttribute('aria-hidden','true');
+        document.body.classList.remove('overflow-hidden');
+        if (overlay) overlay.classList.add('hidden');
+        if (openBtn) openBtn.setAttribute('aria-expanded','false');
+    }
 
+    if (openBtn) openBtn.addEventListener('click', open);
+    if (overlay) overlay.addEventListener('click', close);
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && sidebar && !sidebar.classList.contains('-translate-x-full')) close(); });
 
     if (collapseBtn) {
         collapseBtn.setAttribute('aria-pressed', 'false');
         collapseBtn.addEventListener('click', function(){
-            const sidebar = document.getElementById('site-sidebar');
             const main = document.querySelector('main, .container, .max-w-7xl');
             sidebar.classList.toggle('collapsed');
             const isCollapsed = sidebar.classList.contains('collapsed');
@@ -239,7 +262,6 @@ function svgIcon($name){
         try {
             const saved = sessionStorage.getItem('sidebar_collapsed');
             if (saved === '1') {
-                const sidebar = document.getElementById('site-sidebar');
                 if (sidebar) {
                     sidebar.classList.add('collapsed');
                     collapseBtn.textContent = '▶';
