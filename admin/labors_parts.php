@@ -8,8 +8,10 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'mana
 
 // Handle add/edit/delete for labors and parts
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    error_log('POST request received: ' . print_r($_POST, true));
     $type = $_POST['type'] ?? '';
     $action = $_POST['action'] ?? '';
+    error_log("Type: $type, Action: $action");
 
     if ($type === 'labor') {
         $table = 'labors';
@@ -35,12 +37,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $success = ucfirst($type) . ' added successfully';
                     } elseif ($action === 'edit') {
                         $id = (int)$_POST['id'];
+                        error_log("Editing $type with ID: $id, Name: $name, Price: $default_price");
                         $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ? WHERE id = ?");
                         $stmt->execute([$name, $description, $default_price, $id]);
                         $success = ucfirst($type) . ' updated successfully';
+                        error_log("Update successful for $type ID: $id");
                     }
                 } catch (Exception $e) {
                     $error = 'Database error: ' . $e->getMessage();
+                    error_log('Database error: ' . $e->getMessage());
                 }
             }
         } elseif ($action === 'delete') {
@@ -291,14 +296,23 @@ try {
     <script>
         // Modal functionality
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded');
+            
             // Edit button functionality
-            document.querySelectorAll('.edit-btn').forEach(button => {
+            const editButtons = document.querySelectorAll('.edit-btn');
+            console.log('Found edit buttons:', editButtons.length);
+            
+            editButtons.forEach(button => {
                 button.addEventListener('click', function() {
+                    alert('Edit button clicked for: ' + this.getAttribute('data-name'));
+                    console.log('Edit button clicked');
                     const type = this.getAttribute('data-type');
                     const id = this.getAttribute('data-id');
                     const name = this.getAttribute('data-name');
                     const description = this.getAttribute('data-description');
                     const price = this.getAttribute('data-price');
+
+                    console.log('Data:', {type, id, name, description, price});
 
                     document.getElementById('modal-title').textContent = 'Edit ' + (type === 'labor' ? 'Labor' : 'Part');
                     document.getElementById('modal-type').value = type;
