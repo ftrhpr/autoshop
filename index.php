@@ -304,9 +304,7 @@ if ($loadId) {
                             </div>
                             <div>
                                 <label for="input_technician" class="block text-sm font-medium text-gray-700 mb-2">Technician</label>
-                                <select id="input_technician" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
-                                    <option value="">— Select Technician —</option>
-                                </select>
+                                <input type="text" id="input_technician" autocomplete="off" placeholder="Search technician by name..." class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition" aria-autocomplete="list" aria-controls="technician-suggestions">
                             </div>
                             <div>
                                 <label for="input_vin" class="block text-sm font-medium text-gray-700 mb-2">VIN</label>
@@ -708,6 +706,18 @@ if (!empty($serverInvoice)) {
                     const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = it.car_mark || '';
                     const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = it.mileage || '';
                 });
+
+                // Attach technician typeahead (search backend)
+                const techInput = document.getElementById('input_technician');
+                if (techInput) {
+                    attachTypeahead(techInput, 'api_technicians_search.php?q=', t => t.name, (it) => {
+                        techInput.value = it.name || '';
+                        const h = document.getElementById('hidden_technician'); if (h) h.value = it.name || '';
+                        const hid = document.getElementById('hidden_technician_id'); if (hid) hid.value = it.id || '';
+                    });
+                    // Clear stored technician id when user types custom text to avoid stale ids
+                    techInput.addEventListener('input', ()=>{ const hid = document.getElementById('hidden_technician_id'); if (hid) hid.value = ''; });
+                }
 
                 // Auto-fill on blur if exact plate match
                 pn.addEventListener('blur', () => {
@@ -1322,14 +1332,15 @@ if (!empty($serverInvoice)) {
             });
             calculateTotals();
 
-            // Set technician selection and hidden fields
-            const techSel = document.getElementById('input_technician');
-            if (techSel) {
-                if (inv.technician_id) techSel.value = inv.technician_id;
-                else if (inv.technician) { for (const opt of techSel.options) if (opt.text === inv.technician) { techSel.value = opt.value; break; } }
+            // Set technician input and hidden fields
+            const techInput = document.getElementById('input_technician');
+            const hTech = document.getElementById('hidden_technician');
+            const hTechId = document.getElementById('hidden_technician_id');
+            if (techInput) {
+                techInput.value = inv.technician || '';
             }
-            const hTech = document.getElementById('hidden_technician'); if (hTech) hTech.value = inv.technician || (techSel && techSel.options[techSel.selectedIndex] ? techSel.options[techSel.selectedIndex].text : '');
-            const hTechId = document.getElementById('hidden_technician_id'); if (hTechId) hTechId.value = inv.technician_id || (techSel ? techSel.value : '');
+            if (hTech) hTech.value = inv.technician || '';
+            if (hTechId) hTechId.value = inv.technician_id || '';
         }
 
         function removeRow(id) {
@@ -1552,10 +1563,12 @@ if (!empty($serverInvoice)) {
             document.getElementById('hidden_service_total').value = serviceTotal.toFixed(2);
             document.getElementById('hidden_grand_total').value = grandTotal.toFixed(2);
 
-            // Copy technician selection into hidden fields
-            const techSel = document.getElementById('input_technician');
-            document.getElementById('hidden_technician').value = (techSel && techSel.options[techSel.selectedIndex]) ? techSel.options[techSel.selectedIndex].text : '';
-            document.getElementById('hidden_technician_id').value = techSel ? techSel.value : '';
+            // Copy technician selection into hidden fields (support typeahead input)
+            const techInput = document.getElementById('input_technician');
+            document.getElementById('hidden_technician').value = techInput ? techInput.value : '';
+            // technician_id is set when user selects from suggestions; keep existing value if set
+            const hidTechId = document.getElementById('hidden_technician_id');
+            if (hidTechId && !hidTechId.value) hidTechId.value = '';
 
             // Ensure service manager is set (prevent empty)
             const smEl = document.getElementById('input_service_manager');
@@ -1917,24 +1930,7 @@ if (!empty($serverInvoice)) {
         </div>
     </div>
 
-<script>
-// Populate technician select for invoices and prefill when editing
-document.addEventListener('DOMContentLoaded', async function(){
-    try{
-        const res = await fetch('api_technicians_list.php'); const d = await res.json();
-        if (d.success && Array.isArray(d.technicians)){
-            const sel = document.getElementById('input_technician');
-            if (sel){
-                d.technicians.forEach(t=>{ const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.name; sel.appendChild(opt); });
-                if (window.serverInvoice){
-                    if (window.serverInvoice.technician_id) sel.value = window.serverInvoice.technician_id;
-                    else if (window.serverInvoice.technician){ for (const opt of sel.options) if (opt.text === window.serverInvoice.technician) { sel.value = opt.value; break; } }
-                }
-            }
-        }
-    }catch(e){ console.warn('Failed to load technicians', e); }
-});
-</script>
+
 
 </body>
 </html>
