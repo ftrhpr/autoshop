@@ -4,11 +4,26 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin','manager'
     header('Location: ../admin/index.php'); exit;
 }
 $title = 'Technicians';
-// Use the standard sidebar layout
-include __DIR__ . '/../partials/sidebar.php';
 ?>
-<main class="min-h-full overflow-auto ml-0 md:ml-64 pt-6 pl-6" role="main">
-    <div class="max-w-7xl mx-auto p-6">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technicians - AutoShop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen overflow-auto font-sans antialiased pb-20">
+    <?php include __DIR__ . '/../partials/sidebar.php'; ?>
+    <main class="min-h-full overflow-auto ml-0 md:ml-64 pt-6 pl-6" role="main">
+        <div class="max-w-7xl mx-auto p-6">
+            <nav aria-label="Breadcrumb" class="mb-4">
+                <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                    <li><a href="index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
+                    <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
+                    <li aria-current="page">Technicians</li>
+                </ol>
+            </nav>
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Technicians</h1>
         <div class="flex items-center gap-3">
@@ -161,4 +176,7 @@ document.getElementById('btnAddRule').addEventListener('click', ()=>{
 
 </script>
 
-<?php include __DIR__ . '/../partials/footer.php'; ?>
+    </main>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+</html>
