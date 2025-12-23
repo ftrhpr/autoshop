@@ -168,9 +168,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
-        // Helper to find or create record by name and vehicle
+        // Helper: find existing part/labor by name (do NOT create new items here). If found and vehicle-specific price exists or invoice provides a price, store/attach vehicle-specific price entry.
         if (empty($it['db_id'])) {
-            // If there is a part price specified, check/create part
+            $found = null;
+            // If part price provided, prefer matching parts by name
             if (!empty($it['price_part']) && floatval($it['price_part']) > 0) {
                 if ($vehicleMake !== '') {
                     $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
@@ -183,20 +184,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($found) {
                     $it['db_id'] = $found['id'];
                     $it['db_type'] = 'part';
-                    // Attach matched vehicle_make_model to item for later display
                     $it['db_vehicle'] = $found['vehicle_make_model'] ?? null;
                     if (empty($it['price_part']) && !empty($found['default_price'])) $it['price_part'] = $found['default_price'];
-                } else {
-                    $ins = $pdo->prepare('INSERT INTO parts (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)');
-                    $ins->execute([$name, '', floatval($it['price_part']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
-                    $it['db_id'] = $pdo->lastInsertId();
-                    $it['db_type'] = 'part';
-                    $it['db_vehicle'] = $vehicleMake ?: null;
-                    $created_items[] = ['type' => 'part', 'name' => $name, 'id' => $it['db_id']];
+
+                    // If vehicle provided, check item_prices for existing vehicle price and use it; otherwise, if invoice contains price, create price entry
+                    if ($vehicleMake !== '') {
+                        $pvStmt = $pdo->prepare('SELECT id, price FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
+                        $pvStmt->execute(['part', $it['db_id'], $vehicleMake]);
+                        $pv = $pvStmt->fetch();
+                        if ($pv) {
+                            $it['price_part'] = $pv['price'];
+                            $it['db_vehicle'] = $vehicleMake;
+                        } else {
+                            if (!empty($it['price_part']) && floatval($it['price_part']) > 0) {
+                                $ins = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
+                                $ins->execute(['part', $it['db_id'], $vehicleMake, floatval($it['price_part']), $_SESSION['user_id']]);
+                                $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleMake, 'price' => floatval($it['price_part']), 'item_id' => $it['db_id']];
+                            }
+                        }
+                    }
                 }
             }
 
-            // If there is a service price specified, check/create labor
+            // If still not identified and a service price exists, try labors
             if (empty($it['db_id']) && !empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
                 if ($vehicleMake !== '') {
                     $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
@@ -209,20 +219,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($found) {
                     $it['db_id'] = $found['id'];
                     $it['db_type'] = 'labor';
-                    // Attach matched vehicle_make_model to item for later display
                     $it['db_vehicle'] = $found['vehicle_make_model'] ?? null;
                     if (empty($it['price_svc']) && !empty($found['default_price'])) $it['price_svc'] = $found['default_price'];
-                } else {
-                    $ins = $pdo->prepare('INSERT INTO labors (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)');
-                    $ins->execute([$name, '', floatval($it['price_svc']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
-                    $it['db_id'] = $pdo->lastInsertId();
-                    $it['db_type'] = 'labor';
-                    $it['db_vehicle'] = $vehicleMake ?: null;
-                    $created_items[] = ['type' => 'labor', 'name' => $name, 'id' => $it['db_id']];
+
+                    // vehicle-specific price logic
+                    if ($vehicleMake !== '') {
+                        $pvStmt = $pdo->prepare('SELECT id, price FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
+                        $pvStmt->execute(['labor', $it['db_id'], $vehicleMake]);
+                        $pv = $pvStmt->fetch();
+                        if ($pv) {
+                            $it['price_svc'] = $pv['price'];
+                            $it['db_vehicle'] = $vehicleMake;
+                        } else {
+                            if (!empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
+                                $ins = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
+                                $ins->execute(['labor', $it['db_id'], $vehicleMake, floatval($it['price_svc']), $_SESSION['user_id']]);
+                                $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleMake, 'price' => floatval($it['price_svc']), 'item_id' => $it['db_id']];
+                            }
+                        }
+                    }
                 }
             }
 
-            // If still not identified, try to find any match in parts then labors (no price given)
+            // If still not identified, try to find any match in parts then labors (no price given) but do not create new items
             if (empty($it['db_id'])) {
                 if ($vehicleMake !== '') {
                     $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
@@ -236,6 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $it['db_id'] = $found['id'];
                     $it['db_type'] = 'part';
                     if (empty($it['price_part']) && !empty($found['default_price'])) $it['price_part'] = $found['default_price'];
+                    if ($vehicleMake !== '') {
+                        $pvStmt = $pdo->prepare('SELECT price FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
+                        $pvStmt->execute(['part', $it['db_id'], $vehicleMake]);
+                        $pv = $pvStmt->fetchColumn();
+                        if ($pv !== false) { $it['price_part'] = $pv; $it['db_vehicle'] = $vehicleMake; }
+                    }
                 } else {
                     if ($vehicleMake !== '') {
                         $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
@@ -249,6 +274,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $it['db_id'] = $found['id'];
                         $it['db_type'] = 'labor';
                         if (empty($it['price_svc']) && !empty($found['default_price'])) $it['price_svc'] = $found['default_price'];
+                        if ($vehicleMake !== '') {
+                            $pvStmt = $pdo->prepare('SELECT price FROM item_prices WHERE item_type = ? AND item_id = ? AND vehicle_make_model = ? LIMIT 1');
+                            $pvStmt->execute(['labor', $it['db_id'], $vehicleMake]);
+                            $pv = $pvStmt->fetchColumn();
+                            if ($pv !== false) { $it['price_svc'] = $pv; $it['db_vehicle'] = $vehicleMake; }
+                        }
                     }
                 }
             }

@@ -48,10 +48,34 @@ try {
                 $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
                 $stmt->execute([$vehicle, $like, $like, $vehicle]);
             } else {
-                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'part' as type FROM parts WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, vehicle_make_model, 'part' as type FROM parts WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
                 $stmt->execute([$like, $like]);
             }
             $parts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Attach suggested_price from item_prices when vehicle specified; fallback to default_price
+            if ($vehicle !== '') {
+                $priceStmtL = $pdo->prepare("SELECT price FROM item_prices WHERE item_type = 'labor' AND item_id = ? AND vehicle_make_model = ? LIMIT 1");
+                foreach ($labors as &$l) {
+                    $priceStmtL->execute([$l['id'], $vehicle]);
+                    $pv = $priceStmtL->fetchColumn();
+                    $l['suggested_price'] = $pv !== false ? (float)$pv : (float)$l['default_price'];
+                    $l['has_vehicle_price'] = $pv !== false;
+                }
+                unset($l);
+
+                $priceStmtP = $pdo->prepare("SELECT price FROM item_prices WHERE item_type = 'part' AND item_id = ? AND vehicle_make_model = ? LIMIT 1");
+                foreach ($parts as &$p) {
+                    $priceStmtP->execute([$p['id'], $vehicle]);
+                    $pv = $priceStmtP->fetchColumn();
+                    $p['suggested_price'] = $pv !== false ? (float)$pv : (float)$p['default_price'];
+                    $p['has_vehicle_price'] = $pv !== false;
+                }
+                unset($p);
+            } else {
+                foreach ($labors as &$l) { $l['suggested_price'] = (float)$l['default_price']; $l['has_vehicle_price'] = false; } unset($l);
+                foreach ($parts as &$p) { $p['suggested_price'] = (float)$p['default_price']; $p['has_vehicle_price'] = false; } unset($p);
+            }
 
             $results = array_merge($labors, $parts);
             echo json_encode(['success' => true, 'data' => $results]);

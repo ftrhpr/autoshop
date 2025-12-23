@@ -1615,7 +1615,7 @@ if (!empty($serverInvoice)) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
                     div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
-                    div.textContent = suggestion.name + (suggestion.default_price > 0 ? ` (${suggestion.default_price} ₾)` : '') + (suggestion.vehicle_make_model ? ' — ' + suggestion.vehicle_make_model : '') + ` [${suggestion.type}]`;
+                    div.textContent = suggestion.name + (suggestion.suggested_price > 0 ? ` (${suggestion.suggested_price} ₾)` : '') + (suggestion.vehicle_make_model ? ' — ' + suggestion.vehicle_make_model : '') + ` [${suggestion.type}]`;
                     div.addEventListener('click', () => {
                         input.value = suggestion.name;
                         const row = input.closest('tr');
@@ -1628,13 +1628,15 @@ if (!empty($serverInvoice)) {
                         // Fill appropriate price field depending on type
                         if (suggestion.type === 'part') {
                             const partInput = row.querySelector('.item-price-part');
-                            if (suggestion.default_price > 0 && (!partInput.value || partInput.value == '0')) {
-                                partInput.value = suggestion.default_price;
+                            const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
+                            if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
+                                partInput.value = priceToUse;
                             }
                         } else if (suggestion.type === 'labor') {
                             const svcInput = row.querySelector('.item-price-svc');
-                            if (suggestion.default_price > 0 && (!svcInput.value || svcInput.value == '0')) {
-                                svcInput.value = suggestion.default_price;
+                            const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
+                            if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
+                                svcInput.value = priceToUse;
                             }
                         }
 
@@ -1668,6 +1670,11 @@ if (!empty($serverInvoice)) {
                 .then(resp => {
                     const data = resp && resp.data ? resp.data : resp;
                     currentSuggestions = Array.isArray(data) ? data : [];
+                    // If we have suggestions, annotate text to show whether vehicle-specific price exists
+                    currentSuggestions = currentSuggestions.map(s => {
+                        s.suggested_price = (typeof s.suggested_price !== 'undefined') ? s.suggested_price : s.default_price;
+                        return s;
+                    });
                     if (currentInput) {
                         showSuggestions(currentInput, currentSuggestions);
                     }

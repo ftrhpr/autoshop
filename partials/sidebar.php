@@ -377,7 +377,12 @@ document.addEventListener('DOMContentLoaded', function(){
     const created = <?php echo json_encode($created_items, JSON_UNESCAPED_UNICODE); ?>;
     if (!Array.isArray(created)) return;
     created.forEach((it, idx) => {
-        const text = (it.type === 'part' ? 'Saved new Part: ' : 'Saved new Labor: ') + it.name;
+        let text = '';
+        if (it.type === 'part') text = 'Saved new Part: ' + it.name;
+        else if (it.type === 'labor') text = 'Saved new Labor: ' + it.name;
+        else if (it.type === 'part_price') text = `Saved price for part '${it.name}' (${it.vehicle}): ${it.price} ₾`;
+        else if (it.type === 'labor_price') text = `Saved price for labor '${it.name}' (${it.vehicle}): ${it.price} ₾`;
+        else text = (it.name || it.item_id) ? `${it.name || it.item_id}` : 'Created item';
         setTimeout(() => {
             try { if (typeof showToast === 'function') showToast(text, 0); else console.log(text); } catch(e){ console.log(text); }
         }, idx * 500);
