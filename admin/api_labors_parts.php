@@ -1,0 +1,155 @@
+<?php
+require '../config.php';
+header('Content-Type: application/json; charset=utf-8');
+
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    exit;
+}
+
+$method = $_SERVER['REQUEST_METHOD'];
+try {
+    if ($method === 'GET') {
+        // CSV export: /admin/api_labors_parts.php?action=export&type=labors
+        $action = $_GET['action'] ?? null;
+        $typeParam = $_GET['type'] ?? null;
+        $typeParam = in_array($typeParam, ['labors','parts']) ? $typeParam : null;
+
+        if ($action === 'export' && $typeParam) {
+            $table = $typeParam;
+            $rows = $pdo->query("SELECT id, name, description, default_price, vehicle_make_model, created_by, created_at FROM {$table} ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+            header('Content-Type: text/csv');
+            header('Content-Disposition: attachment; filename="' . $table . '.csv"');
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['id','name','description','default_price','vehicle_make_model','created_by','created_at']);
+            foreach ($rows as $r) fputcsv($out, $r);
+            fclose($out);
+            exit;
+        }
+
+        // Autocomplete suggestions: ?q=term&vehicle=Make%20Model
+        $q = trim($_GET['q'] ?? '');
+        $vehicle = trim($_GET['vehicle'] ?? '');
+        if ($q !== '') {
+            $results = [];
+            $like = "%{$q}%";
+
+            if ($vehicle !== '') {
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'labor' as type FROM labors WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
+                $stmt->execute([$vehicle, $like, $like, $vehicle]);
+            } else {
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'labor' as type FROM labors WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
+                $stmt->execute([$like, $like]);
+            }
+            $labors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($vehicle !== '') {
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'part' as type FROM parts WHERE (vehicle_make_model = ? OR vehicle_make_model IS NULL) AND (name LIKE ? OR description LIKE ?) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END, name LIMIT 10");
+                $stmt->execute([$vehicle, $like, $like, $vehicle]);
+            } else {
+                $stmt = $pdo->prepare("SELECT id, name, description, default_price, 'part' as type FROM parts WHERE name LIKE ? OR description LIKE ? ORDER BY name LIMIT 10");
+                $stmt->execute([$like, $like]);
+            }
+            $parts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $results = array_merge($labors, $parts);
+            echo json_encode(['success' => true, 'data' => $results]);
+            exit;
+        }
+
+        // List for a specific type ?type=labor|part
+        $listType = $_GET['type'] ?? null;
+        if (in_array($listType, ['labor','part'])) {
+            $table = $listType === 'part' ? 'parts' : 'labors';
+            $rows = $pdo->query("SELECT * FROM $table ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+            // add explicit type
+            $rows = array_map(function($r) use ($listType){ $r['type'] = $listType === 'part' ? 'part' : 'labor'; return $r; }, $rows);
+            echo json_encode(['success' => true, 'data' => $rows]);
+            exit;
+        }
+
+        echo json_encode(['success' => true, 'data' => []]);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        if (!is_array($data)) $data = $_POST;
+
+        $op = $data['action'] ?? '';
+        $type = $data['type'] ?? '';
+        $debug = !empty($data['debug']);
+
+        if ($op === 'add') {
+            $name = trim($data['name'] ?? '');
+            $description = trim($data['description'] ?? '');
+            $default_price = (float)($data['default_price'] ?? 0);
+            $vehicle = trim($data['vehicle_make_model'] ?? $data['vehicle'] ?? '');
+            if ($name === '') throw new Exception('Name required');
+
+            // Decide target table(s) based on type param or price values
+            $typesToCreate = [];
+            if (in_array($type, ['part','labor'])) $typesToCreate = [$type];
+            else {
+                // If not specified, create part if default_price provided, create labor if svc_price provided (caller should specify)
+                $typesToCreate = ['part']; // default
+            }
+
+            $responses = [];
+            foreach ($typesToCreate as $t) {
+                $table = $t === 'part' ? 'parts' : 'labors';
+                $stmt = $pdo->prepare("INSERT INTO $table (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $description, $default_price, $_SESSION['user_id'], $vehicle ?: NULL]);
+                $id = $pdo->lastInsertId();
+                $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
+                $rowData = $row->fetch(PDO::FETCH_ASSOC);
+                if ($rowData) $rowData['type'] = $t;
+                $responses[] = $rowData;
+            }
+
+            $response = ['success' => true, 'data' => $responses];
+            if ($debug) $response['debug'] = ['raw_input' => $rawInput, 'session_user' => $_SESSION['user_id'] ?? null];
+            echo json_encode($response);
+            exit;
+        }
+
+        if ($op === 'edit') {
+            $id = (int)($data['id'] ?? 0);
+            if ($id <= 0) throw new Exception('Invalid id');
+            $name = trim($data['name'] ?? '');
+            $description = trim($data['description'] ?? '');
+            $default_price = (float)($data['default_price'] ?? 0);
+            $vehicle = trim($data['vehicle_make_model'] ?? $data['vehicle'] ?? '');
+            $table = in_array($data['type'] ?? '', ['part','labor']) && $data['type']==='part' ? 'parts' : 'labors';
+            $stmt = $pdo->prepare("UPDATE $table SET name = ?, description = ?, default_price = ?, vehicle_make_model = ? WHERE id = ?");
+            $stmt->execute([$name, $description, $default_price, $vehicle ?: NULL, $id]);
+            $row = $pdo->prepare("SELECT * FROM $table WHERE id = ?"); $row->execute([$id]);
+            $rowData = $row->fetch(PDO::FETCH_ASSOC);
+            if ($rowData) $rowData['type'] = $data['type'] ?? ($table === 'parts' ? 'part' : 'labor');
+            echo json_encode(['success' => true, 'data' => $rowData]);
+            exit;
+        }
+
+        if ($op === 'delete') {
+            $id = (int)($data['id'] ?? 0);
+            if ($id <= 0) throw new Exception('Invalid id');
+            $table = $data['type'] === 'part' ? 'parts' : 'labors';
+            $stmt = $pdo->prepare("DELETE FROM $table WHERE id = ?");
+            $stmt->execute([$id]);
+            echo json_encode(['success' => true]);
+            exit;
+        }
+
+        throw new Exception('Unknown action');
+    }
+
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    exit;
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    exit;
+}

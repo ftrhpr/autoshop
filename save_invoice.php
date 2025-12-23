@@ -10,16 +10,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = $_POST;
     $existing_id = isset($data['existing_invoice_id']) ? (int)$data['existing_invoice_id'] : null;
 
-    // Process itemss
+    // Process items
     $items = [];
     for ($i = 0; isset($data["item_name_$i"]); $i++) {
-        if (!empty($data["item_name_$i"])) {
+        $name = trim($data["item_name_$i"] ?? '');
+        if ($name !== '') {
             $items[] = [
-                'name' => $data["item_name_$i"],
+                'name' => $name,
                 'qty' => $data["item_qty_$i"],
                 'price_part' => $data["item_price_part_$i"],
                 'price_svc' => $data["item_price_svc_$i"],
-                'tech' => $data["item_tech_$i"]
+                'tech' => $data["item_tech_$i"],
+                // optional matched DB info from autocomplete
+                'db_id' => isset($data["item_db_id_$i"]) ? (int)$data["item_db_id_$i"] : null,
+                'db_type' => isset($data["item_db_type_$i"]) ? $data["item_db_type_$i"] : null,
             ];
         }
     }
@@ -142,6 +146,104 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $data['customer_id'] = $rec['customer_id'];
         }
     }
+
+    // Ensure invoice items that reference DB entries exist in the parts/labors tables; if not, create them and attach vehicle make/model
+    $vehicleMake = trim($data['car_mark'] ?? '');
+    foreach ($items as $idx => &$it) {
+        $name = trim($it['name'] ?? '');
+        if ($name === '') continue;
+
+        // If autocomplete already provided db info, ensure the referenced record exists
+        if (!empty($it['db_id']) && !empty($it['db_type'])) {
+            // Verify existence
+            if ($it['db_type'] === 'part') {
+                $v = $pdo->prepare('SELECT id FROM parts WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
+                if (!$v->fetch()) { $it['db_id'] = null; $it['db_type'] = null; }
+            } else {
+                $v = $pdo->prepare('SELECT id FROM labors WHERE id = ? LIMIT 1'); $v->execute([$it['db_id']]);
+                if (!$v->fetch()) { $it['db_id'] = null; $it['db_type'] = null; }
+            }
+        }
+
+        // Helper to find or create record by name and vehicle
+        if (empty($it['db_id'])) {
+            // If there is a part price specified, check/create part
+            if (!empty($it['price_part']) && floatval($it['price_part']) > 0) {
+                if ($vehicleMake !== '') {
+                    $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
+                    $stmt->execute([$name, $vehicleMake, $vehicleMake]);
+                } else {
+                    $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? LIMIT 1");
+                    $stmt->execute([$name]);
+                }
+                $found = $stmt->fetch();
+                if ($found) {
+                    $it['db_id'] = $found['id'];
+                    $it['db_type'] = 'part';
+                    if (empty($it['price_part']) && !empty($found['default_price'])) $it['price_part'] = $found['default_price'];
+                } else {
+                    $ins = $pdo->prepare('INSERT INTO parts (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)');
+                    $ins->execute([$name, '', floatval($it['price_part']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
+                    $it['db_id'] = $pdo->lastInsertId();
+                    $it['db_type'] = 'part';
+                }
+            }
+
+            // If there is a service price specified, check/create labor
+            if (empty($it['db_id']) && !empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
+                if ($vehicleMake !== '') {
+                    $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
+                    $stmt->execute([$name, $vehicleMake, $vehicleMake]);
+                } else {
+                    $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? LIMIT 1");
+                    $stmt->execute([$name]);
+                }
+                $found = $stmt->fetch();
+                if ($found) {
+                    $it['db_id'] = $found['id'];
+                    $it['db_type'] = 'labor';
+                    if (empty($it['price_svc']) && !empty($found['default_price'])) $it['price_svc'] = $found['default_price'];
+                } else {
+                    $ins = $pdo->prepare('INSERT INTO labors (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)');
+                    $ins->execute([$name, '', floatval($it['price_svc']), $_SESSION['user_id'], $vehicleMake ?: NULL]);
+                    $it['db_id'] = $pdo->lastInsertId();
+                    $it['db_type'] = 'labor';
+                }
+            }
+
+            // If still not identified, try to find any match in parts then labors (no price given)
+            if (empty($it['db_id'])) {
+                if ($vehicleMake !== '') {
+                    $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
+                    $stmt->execute([$name, $vehicleMake, $vehicleMake]);
+                } else {
+                    $stmt = $pdo->prepare("SELECT * FROM parts WHERE name = ? LIMIT 1");
+                    $stmt->execute([$name]);
+                }
+                $found = $stmt->fetch();
+                if ($found) {
+                    $it['db_id'] = $found['id'];
+                    $it['db_type'] = 'part';
+                    if (empty($it['price_part']) && !empty($found['default_price'])) $it['price_part'] = $found['default_price'];
+                } else {
+                    if ($vehicleMake !== '') {
+                        $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? AND (vehicle_make_model = ? OR vehicle_make_model IS NULL) ORDER BY CASE WHEN vehicle_make_model = ? THEN 0 ELSE 1 END LIMIT 1");
+                        $stmt->execute([$name, $vehicleMake, $vehicleMake]);
+                    } else {
+                        $stmt = $pdo->prepare("SELECT * FROM labors WHERE name = ? LIMIT 1");
+                        $stmt->execute([$name]);
+                    }
+                    $found = $stmt->fetch();
+                    if ($found) {
+                        $it['db_id'] = $found['id'];
+                        $it['db_type'] = 'labor';
+                        if (empty($it['price_svc']) && !empty($found['default_price'])) $it['price_svc'] = $found['default_price'];
+                    }
+                }
+            }
+        }
+    }
+    unset($it);
 
     // Resolve service manager display name when a user id is provided
     $serviceManagerName = $data['service_manager'] ?? '';

@@ -1541,6 +1541,13 @@ if (!empty($serverInvoice)) {
                     form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_part_${index}" value="${row.querySelector('.item-price-part').value}">`);
                     form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_svc_${index}" value="${row.querySelector('.item-price-svc').value}">`);
                     form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_${index}" value="${row.querySelector('.item-tech').value}">`);
+                    // include matched db id/type if suggestion was used
+                    if (row.dataset && row.dataset.itemDbId) {
+                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_id_${index}" value="${row.dataset.itemDbId}">`);
+                    }
+                    if (row.dataset && row.dataset.itemDbType) {
+                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_type_${index}" value="${row.dataset.itemDbType}">`);
+                    }
                     index++;
                 }
             });
@@ -1601,20 +1608,33 @@ if (!empty($serverInvoice)) {
         function showSuggestions(input, suggestions) {
             const container = input.nextElementSibling;
             container.innerHTML = '';
-            if (suggestions.length > 0) {
+            if (Array.isArray(suggestions) && suggestions.length > 0) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
                     div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
                     div.textContent = suggestion.name + (suggestion.default_price > 0 ? ` (${suggestion.default_price} ₾)` : '') + ` [${suggestion.type}]`;
                     div.addEventListener('click', () => {
                         input.value = suggestion.name;
-                        // Optionally set price
                         const row = input.closest('tr');
-                        const svcInput = row.querySelector('.item-price-svc');
-                        if (suggestion.default_price > 0 && (!svcInput.value || svcInput.value == '0')) {
-                            svcInput.value = suggestion.default_price;
-                            calculateTotals();
+
+                        // Record matched DB item id/type on the row for server-side processing
+                        if (suggestion.id) row.dataset.itemDbId = suggestion.id;
+                        if (suggestion.type) row.dataset.itemDbType = suggestion.type;
+
+                        // Fill appropriate price field depending on type
+                        if (suggestion.type === 'part') {
+                            const partInput = row.querySelector('.item-price-part');
+                            if (suggestion.default_price > 0 && (!partInput.value || partInput.value == '0')) {
+                                partInput.value = suggestion.default_price;
+                            }
+                        } else if (suggestion.type === 'labor') {
+                            const svcInput = row.querySelector('.item-price-svc');
+                            if (suggestion.default_price > 0 && (!svcInput.value || svcInput.value == '0')) {
+                                svcInput.value = suggestion.default_price;
+                            }
                         }
+
+                        calculateTotals();
                         hideSuggestions();
                         input.focus();
                     });
@@ -1635,12 +1655,17 @@ if (!empty($serverInvoice)) {
                 hideSuggestions();
                 return;
             }
-            fetch(`admin/api_labors_parts.php?q=${encodeURIComponent(query)}`)
+            const vehicle = (document.getElementById('input_car_mark')?.value || '').trim();
+            const params = new URLSearchParams({ q: query });
+            if (vehicle) params.set('vehicle', vehicle);
+
+            fetch(`admin/api_labors_parts.php?` + params.toString())
                 .then(response => response.json())
-                .then(data => {
-                    currentSuggestions = data;
+                .then(resp => {
+                    const data = resp && resp.data ? resp.data : resp;
+                    currentSuggestions = Array.isArray(data) ? data : [];
                     if (currentInput) {
-                        showSuggestions(currentInput, data);
+                        showSuggestions(currentInput, currentSuggestions);
                     }
                 })
                 .catch(error => console.error('Error fetching suggestions:', error));
