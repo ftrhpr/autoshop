@@ -64,6 +64,35 @@ try {
     .modal.show { display:flex; }
     .toast { position:fixed; right:1rem; top:1rem; z-index:70 }
 </style>
+<script>
+window.testAddPartHandler = async function(btn){
+    try{
+        alert('Handler fired');
+        const debug = document.getElementById('debug-output');
+        if(debug) debug.textContent = 'Handler fired\n' + (debug.textContent || '');
+
+        // check session
+        const st = await fetch('api_status.php');
+        const stJson = await st.json().catch(()=>null);
+        if (!st.ok || !stJson || !stJson.success){
+            alert('API status failed: ' + (stJson && stJson.message ? stJson.message : st.status));
+            if(debug) debug.textContent += 'API status: ' + JSON.stringify(stJson) + '\n';
+            return;
+        }
+
+        // send add request
+        const payload = { action: 'add', type: 'part', name: 'Inline Test', description: 'inline', default_price: 1.00, debug: true };
+        if(debug) debug.textContent += 'Sending: ' + JSON.stringify(payload) + '\n';
+        const r = await fetch('api_labors_parts.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+        const j = await r.json().catch(()=>null);
+        alert('Response: ' + JSON.stringify(j));
+        if(debug) debug.textContent += 'Response: ' + JSON.stringify(j) + '\n';
+    }catch(e){
+        alert('Handler error: ' + e.message);
+        const debug = document.getElementById('debug-output'); if(debug) debug.textContent += 'Handler error: ' + e.message + '\n';
+    }
+};
+</script>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans antialiased">
 <?php include '../partials/sidebar.php'; ?>
@@ -77,7 +106,7 @@ try {
                 <button id="export-labors" class="px-3 py-2 bg-gray-200 rounded-md">Export Labors</button>
                 <button id="export-parts" class="px-3 py-2 bg-gray-200 rounded-md">Export Parts</button>
                 <button id="test-api" class="px-3 py-2 bg-yellow-200 rounded-md">Test API</button>
-                <button id="test-add-part" class="px-3 py-2 bg-green-200 rounded-md">Test Add Part</button>
+                <button id="test-add-part" onclick="testAddPartHandler(this)" class="px-3 py-2 bg-green-200 rounded-md">Test Add Part</button>
             </div>
             <pre id="debug-output" class="mt-2 p-2 bg-gray-100 rounded text-sm" style="max-height:6rem; overflow:auto"></pre>
         </div>
