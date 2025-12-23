@@ -304,7 +304,7 @@ function openManagePrices(id, name, itemType){
 function fetchPrices(itemId, itemType){
     const content = document.getElementById('prices-content');
     content.innerHTML = '<div class="text-center text-gray-500 py-6">Loading...</div>';
-    fetch('admin/api_labors_parts.php?action=prices&item_id=' + encodeURIComponent(itemId) + '&item_type=' + encodeURIComponent(itemType))
+    fetch('api_labors_parts.php?action=prices&item_id=' + encodeURIComponent(itemId) + '&item_type=' + encodeURIComponent(itemType))
         .then(r => r.json())
         .then(resp => {
             if (!resp || !resp.success) throw new Error(resp && resp.message ? resp.message : 'Failed');
@@ -341,7 +341,7 @@ function addPrice(itemId, itemType){
     const vehicle = document.getElementById('price-vehicle').value.trim();
     const price = parseFloat(document.getElementById('price-value').value || 0);
     if (!vehicle || !price) return alert('Please enter vehicle and price');
-    fetch('admin/api_labors_parts.php', {
+    fetch('api_labors_parts.php', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({action:'price_add', item_id:itemId, item_type:itemType, vehicle_make_model:vehicle, price:price})
     }).then(r=>r.json()).then(d=>{
@@ -362,7 +362,7 @@ function startEditPrice(id, vehicle, price, itemType){
         const nv = document.getElementById('price-vehicle').value.trim();
         const np = parseFloat(document.getElementById('price-value').value || 0);
         if (!nv || !np) return alert('Please enter vehicle and price');
-        fetch('admin/api_labors_parts.php', {
+        fetch('api_labors_parts.php', {
             method: 'POST', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({action:'price_edit', id:id, vehicle_make_model:nv, price:np})
         }).then(r=>r.json()).then(d=>{ if (!d || !d.success) return alert('Failed'); const modal = document.getElementById('manage-prices-modal'); const itemId = modal.dataset.currentItemId; const itemType = modal.dataset.currentItemType; fetchPrices(itemId, itemType); setTimeout(()=>location.reload(),600); }).catch(e=>alert('Error: '+e.message));
@@ -371,7 +371,7 @@ function startEditPrice(id, vehicle, price, itemType){
 
 function deletePrice(id, itemId, itemType){
     if (!confirm('Delete price?')) return;
-    fetch('admin/api_labors_parts.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'price_delete', id:id})}).then(r=>r.json()).then(d=>{ if (!d || !d.success) return alert('Failed'); fetchPrices(itemId, itemType); setTimeout(()=>location.reload(),600); }).catch(e=>alert('Error: '+e.message));
+    fetch('api_labors_parts.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'price_delete', id:id})}).then(r=>r.json()).then(d=>{ if (!d || !d.success) return alert('Failed'); fetchPrices(itemId, itemType); setTimeout(()=>location.reload(),600); }).catch(e=>alert('Error: '+e.message));
 }
 </script>
 </body>
