@@ -67,7 +67,7 @@ function svgIcon($name){
                 </div>
                 <?php endif; ?>
             </div>
-            <button id="closeSidebar" class="md:hidden text-slate-300">✕</button>
+            <button id="closeSidebar" class="text-slate-300">✕</button>
         </div>
 
         <nav class="flex-1 overflow-y-auto p-4 space-y-1" aria-label="Primary">
@@ -110,12 +110,36 @@ function svgIcon($name){
 
 <script>
 (function(){
-    function open() { document.getElementById('site-sidebar').classList.remove('-translate-x-full'); document.body.classList.add('overflow-hidden'); }
-    function close() { document.getElementById('site-sidebar').classList.add('-translate-x-full'); document.body.classList.remove('overflow-hidden'); }
+    function open() { 
+        document.getElementById('site-sidebar').classList.remove('-translate-x-full'); 
+        document.body.classList.add('overflow-hidden');
+        const main = document.querySelector('main');
+        if (main && window.innerWidth >= 768) {
+            main.classList.add('md:ml-64');
+            main.classList.remove('md:ml-0');
+        }
+    }
+    function close() { 
+        document.getElementById('site-sidebar').classList.add('-translate-x-full'); 
+        document.body.classList.remove('overflow-hidden');
+        const main = document.querySelector('main');
+        if (main && window.innerWidth >= 768) {
+            main.classList.remove('md:ml-64');
+            main.classList.add('md:ml-0');
+        }
+    }
     var openBtn = document.getElementById('openSidebar');
     var closeBtn = document.getElementById('closeSidebar');
     if (openBtn) openBtn.addEventListener('click', open);
-    if (closeBtn) closeBtn.addEventListener('click', close);
+    if (closeBtn) closeBtn.addEventListener('click', function(){
+        const sidebar = document.getElementById('site-sidebar');
+        const isOpen = !sidebar.classList.contains('-translate-x-full');
+        if (isOpen) {
+            close();
+        } else {
+            open();
+        }
+    });
     // Close on escape
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
     // Close when tapping outside on mobile
