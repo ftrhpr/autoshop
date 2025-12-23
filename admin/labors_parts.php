@@ -79,6 +79,7 @@ try {
                 <button id="test-api" class="px-3 py-2 bg-yellow-200 rounded-md">Test API</button>
                 <button id="test-add-part" class="px-3 py-2 bg-green-200 rounded-md">Test Add Part</button>
             </div>
+            <pre id="debug-output" class="mt-2 p-2 bg-gray-100 rounded text-sm" style="max-height:6rem; overflow:auto"></pre>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -343,13 +344,35 @@ document.getElementById('test-api').addEventListener('click', async function(){
 
 // Test Add Part button (sends debug payload to API and prints response)
 document.getElementById('test-add-part').addEventListener('click', async function(){
-    const payload = { action: 'add', type: 'part', name: 'Debug Part (JS Test)', description: 'Debug from test button', default_price: 1.00, debug: true };
+    alert('Test Add clicked');
+    const btn = this;
+    btn.disabled = true;
+    debugLog('Starting test add...');
+    toast('Starting test add...');
     try {
+        // Verify session/status first
+        const st = await fetch('api_status.php');
+        const stJson = await st.json().catch(()=>null);
+        debugLog('api_status: ' + (stJson ? JSON.stringify(stJson) : 'no-json'));
+        if (!st.ok || !stJson || !stJson.success) {
+            toast('API status check failed: ' + (stJson && stJson.message ? stJson.message : 'unauthenticated'), 'error');
+            console.error('API status:', st.status, stJson);
+            btn.disabled = false;
+            return;
+        }
+
+        const payload = { action: 'add', type: 'part', name: 'Debug Part (JS Test)', description: 'Debug from test button', default_price: 1.00, debug: true };
+        debugLog('Sending payload: ' + JSON.stringify(payload));
         console.log('Test Add Part payload:', payload);
         const res = await apiPost(payload);
+        debugLog('Response: ' + JSON.stringify(res));
         console.log('Test Add Part response:', res);
         if (res && res.success) {
             toast('Test Add Part succeeded');
+            if (res.debug) {
+                console.log('Server debug:', res.debug);
+                debugLog('Server debug: ' + JSON.stringify(res.debug));
+            }
             await loadList('part');
         } else {
             toast('Test Add Part failed: ' + (res && res.message ? res.message : 'unknown'), 'error');
@@ -357,9 +380,19 @@ document.getElementById('test-add-part').addEventListener('click', async functio
         }
     } catch (err) {
         console.error('Test Add Part error:', err);
+        debugLog('Error: ' + (err && err.message ? err.message : err));
         toast('Test Add request failed: ' + (err.message || 'network'), 'error');
+    } finally {
+        btn.disabled = false;
     }
 });
+
+function debugLog(msg){
+    const el = document.getElementById('debug-output');
+    if (!el) return;
+    const now = new Date().toISOString().substr(11,8);
+    el.textContent = now + ' — ' + msg + '\n' + el.textContent;
+}
 
 // Search filtering across both lists (simple client-side)
 document.getElementById('global-search').addEventListener('input', function(){
@@ -379,22 +412,6 @@ document.getElementById('global-search').addEventListener('input', function(){
 </body>
 </html>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Labors & Parts - Auto Shop</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
-        .modal.show { display: flex; }
-    </style>
-</head>
-<body class="bg-gray-100 min-h-screen font-sans antialiased">
-    <?php include '../partials/sidebar.php'; ?>
-
-    <div class="ml-0 md:ml-64 p-4 md:p-6 pt-4">
         <div class="max-w-7xl mx-auto">
             <h1 class="text-3xl font-bold mb-6">Labors & Parts Management</h1>
 
