@@ -1018,9 +1018,6 @@ foreach ($oilPrices as $price) {
         }
 
         function populateReview() {
-            // Ensure totals are up to date before displaying review
-            calculateTotals();
-            
             const reviewContainer = document.getElementById('review-container');
             const items = [];
             document.querySelectorAll('.item-card').forEach(card => {
