@@ -344,6 +344,105 @@ if (!isset($_SESSION['user_id'])) {
             opacity: 1;
         }
 
+        /* Multi-step form styles */
+        .form-step {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .form-step.active-step {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .progress-container {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 1.5rem;
+            max-width: 100%;
+        }
+        .progress-bar-steps {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            height: 4px;
+            background: #667eea;
+            width: 0%;
+            z-index: 1;
+            transition: width 0.4s ease;
+        }
+        .progress-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            height: 4px;
+            background: #e5e7eb;
+            width: 100%;
+            z-index: 0;
+        }
+        .step-indicator {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #e5e7eb;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 2;
+            transition: all 0.4s ease;
+        }
+        .step-indicator.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        .step-indicator.completed {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+        .step-navigation button {
+            width: auto;
+            min-width: 120px;
+        }
+        .review-section {
+            background: #f9fafb;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .review-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            font-size: 0.9rem;
+        }
+        .review-item span:first-child {
+            color: #4b5563;
+        }
+        .review-item span:last-child {
+            font-weight: 500;
+            color: #111827;
+        }
+
+
         @media (max-width: 480px) {
             .mobile-container {
                 margin: 0;
@@ -575,6 +674,8 @@ if (!isset($_SESSION['user_id'])) {
         // Global variables
         let itemCount = 0;
         let selectedFiles = [];
+        let currentStep = 1;
+        const totalSteps = 5;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -583,7 +684,7 @@ if (!isset($_SESSION['user_id'])) {
                 addItem();
             }
             calculateTotals();
-            updateProgress();
+            updateStep();
 
             // Set default service manager
             const smInput = document.getElementById('input_service_manager');
@@ -594,7 +695,116 @@ if (!isset($_SESSION['user_id'])) {
             if (smIdInput && (!smIdInput.value || smIdInput.value == 0)) {
                 smIdInput.value = '<?php echo (int)($_SESSION['user_id'] ?? 0); ?>';
             }
+
+            // Multi-step form logic
+            const nextBtns = document.querySelectorAll('.next-btn');
+            const prevBtns = document.querySelectorAll('.prev-btn');
+
+            nextBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (validateStep(currentStep)) {
+                        if (currentStep < totalSteps) {
+                            currentStep++;
+                            updateStep();
+                        }
+                    }
+                });
+            });
+
+            prevBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (currentStep > 1) {
+                        currentStep--;
+                        updateStep();
+                    }
+                });
+            });
         });
+
+        function updateStep() {
+            // Update step indicators
+            document.querySelectorAll('.step-indicator').forEach(indicator => {
+                const step = parseInt(indicator.dataset.step);
+                indicator.classList.remove('active', 'completed');
+                if (step < currentStep) {
+                    indicator.classList.add('completed');
+                    indicator.innerHTML = '✓';
+                } else if (step === currentStep) {
+                    indicator.classList.add('active');
+                } else {
+                     indicator.innerHTML = step === 5 ? '✓' : step;
+                }
+            });
+
+            // Update progress bar
+            const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            document.getElementById('progress-bar-steps').style.width = `${progress}%`;
+
+            // Show current step form
+            document.querySelectorAll('.form-step').forEach(step => {
+                step.classList.remove('active-step');
+            });
+            document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active-step');
+
+            // Populate review step if active
+            if (currentStep === 5) {
+                populateReview();
+            }
+        }
+
+        function validateStep(step) {
+            if (step === 1) {
+                if (!document.getElementById('input_plate_number').value.trim()) {
+                    showToast('Plate number is required.', true);
+                    return false;
+                }
+            }
+            if (step === 2) {
+                if (!document.getElementById('input_customer_name').value.trim()) {
+                    showToast('Customer name is required.', true);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function populateReview() {
+            const reviewContainer = document.getElementById('review-container');
+            const items = [];
+            document.querySelectorAll('.item-card').forEach(card => {
+                const name = card.querySelector('.item-name-input').value.trim();
+                const qty = card.querySelector('.item-qty').value;
+                const partPrice = card.querySelector('.item-price-part').value;
+                const svcPrice = card.querySelector('.item-price-svc').value;
+                if (name) {
+                    items.push(`${name} (Qty: ${qty}) - Part: ${partPrice}₾, Svc: ${svcPrice}₾`);
+                }
+            });
+
+            reviewContainer.innerHTML = `
+                <div class="review-section">
+                    <div class="review-title">Vehicle & Customer</div>
+                    <div class="review-item"><span>Plate Number:</span> <span>${document.getElementById('input_plate_number').value}</span></div>
+                    <div class="review-item"><span>Make/Model:</span> <span>${document.getElementById('input_car_mark').value || 'N/A'}</span></div>
+                    <div class="review-item"><span>Customer:</span> <span>${document.getElementById('input_customer_name').value}</span></div>
+                    <div class="review-item"><span>Phone:</span> <span>${document.getElementById('input_phone_number').value || 'N/A'}</span></div>
+                </div>
+                <div class="review-section">
+                    <div class="review-title">Items</div>
+                    ${items.map(item => `<div class="review-item"><span>-</span> <span>${item}</span></div>`).join('') || '<div class="review-item"><span>No items added.</span></div>'}
+                </div>
+                 <div class="review-section">
+                    <div class="review-title">Totals</div>
+                    <div class="review-item"><span>Parts Total:</span> <span>${document.getElementById('display_parts_total').textContent}</span></div>
+                    <div class="review-item"><span>Service Total:</span> <span>${document.getElementById('display_service_total').textContent}</span></div>
+                    <div class="review-item grand-total"><span>Grand Total:</span> <span>${document.getElementById('display_grand_total').textContent}</span></div>
+                </div>
+                 <div class="review-section">
+                    <div class="review-title">Photos</div>
+                    <div class="review-item"><span>${selectedFiles.length} photo(s) attached.</span></div>
+                </div>
+            `;
+        }
 
         // Add item function
         function addItem() {
@@ -1214,9 +1424,10 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         // Show toast
-        function showToast(message) {
+        function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-message').textContent = message;
+            toast.style.background = isError ? '#ef4444' : '#10b981';
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -1225,107 +1436,6 @@ if (!isset($_SESSION['user_id'])) {
 
         // Update progress on input changes
         document.addEventListener('input', updateProgress);
-
-        // Multi-capture functionality
-        let mediaRecorder;
-        let isRecording = false;
-        let capturedChunks = [];
-
-        document.getElementById('btn_multi_capture').addEventListener('click', async () => {
-            const modal = document.getElementById('multi-capture-modal');
-            modal.classList.remove('hidden');
-
-            // Start video stream
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const video = document.getElementById('video-stream');
-            video.srcObject = stream;
-
-            // Start media recorder
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = (e) => {
-                if (isRecording) {
-                    capturedChunks.push(e.data);
-                }
-            };
-            mediaRecorder.onstop = () => {
-                isRecording = false;
-                // Create a blob from the captured chunks
-                const blob = new Blob(capturedChunks, { type: 'image/jpeg' });
-                const url = URL.createObjectURL(blob);
-
-                // Add the captured photo to the preview
-                addPhotoToPreview(url);
-
-                // Reset chunks for next capture
-                capturedChunks = [];
-            };
-
-            // Start recording
-            mediaRecorder.start();
-            isRecording = true;
-        });
-
-        document.getElementById('capture-photo').addEventListener('click', () => {
-            if (isRecording) {
-                mediaRecorder.stop();
-            } else {
-                mediaRecorder.start();
-            }
-        });
-
-        document.getElementById('finish-multi-capture').addEventListener('click', () => {
-            const modal = document.getElementById('multi-capture-modal');
-            modal.classList.add('hidden');
-
-            // Stop video stream
-            const stream = document.getElementById('video-stream').srcObject;
-            if (stream) {
-                const tracks = stream.getTracks();
-                tracks.forEach(track => track.stop());
-            }
-
-            // Stop media recorder
-            if (mediaRecorder && isRecording) {
-                mediaRecorder.stop();
-            }
-        });
-
-        document.getElementById('close-multi-capture').addEventListener('click', () => {
-            const modal = document.getElementById('multi-capture-modal');
-            modal.classList.add('hidden');
-
-            // Stop video stream
-            const stream = document.getElementById('video-stream').srcObject;
-            if (stream) {
-                const tracks = stream.getTracks();
-                tracks.forEach(track => track.stop());
-            }
-
-            // Stop media recorder
-            if (mediaRecorder && isRecording) {
-                mediaRecorder.stop();
-            }
-        });
-
-        function addPhotoToPreview(url) {
-            const preview = document.getElementById('photo-preview');
-            const div = document.createElement('div');
-            div.className = 'photo-item';
-            div.innerHTML = `
-                <img src="${url}" alt="Captured Photo">
-                <button type="button" class="photo-remove" onclick="removePhotoFromPreview(this)">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            preview.appendChild(div);
-        }
-
-        function removePhotoFromPreview(button) {
-            const item = button.closest('.photo-item');
-            if (item) {
-                item.remove();
-            }
-        }
     </script>
 </body>
 </html>
