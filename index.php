@@ -557,7 +557,11 @@ foreach ($oilPrices as $price) {
                         <div id="review-content" class="space-y-4">
                             <!-- Review content will be populated by JS -->
                         </div>
-                        <div class="mt-6 flex gap-4">
+                        <div class="mt-6 flex items-center gap-4">
+                            <div class="flex items-center gap-2 mr-auto">
+                                <input type="checkbox" id="checkbox_debug_echo" class="form-checkbox h-4 w-4 text-indigo-600" />
+                                <label for="checkbox_debug_echo" class="text-sm text-gray-600">Debug (return parsed payload)</label>
+                            </div>
                             <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"><?php echo $isEdit ? 'Update Invoice' : 'Save Invoice'; ?></button>
                             <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><?php echo $isEdit ? 'Update & Print' : 'Save & Print'; ?></button>
                         </div>
@@ -567,6 +571,8 @@ foreach ($oilPrices as $price) {
                 <!-- Hidden inputs for service manager -->
                 <input type="hidden" id="input_service_manager_id" name="service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
                 <input type="hidden" id="input_vehicle_id" name="vehicle_id">
+                <!-- Debug flag: set when user checks Debug checkbox -->
+                <input type="hidden" id="input_debug_echo" name="debug_echo" value="">
             </form>
         </div>
 
@@ -2068,6 +2074,13 @@ if (!empty($serverInvoice)) {
                 console.log('prepareData: oils_json length', jsonInput.value.length, 'preview', jsonInput.value.substring(0,200));
             } else {
                 console.log('prepareData: no oils present');
+            }
+
+            // Set debug hidden input based on checkbox
+            const debugCheckbox = document.getElementById('checkbox_debug_echo');
+            const debugInput = document.getElementById('input_debug_echo');
+            if (debugInput) {
+                debugInput.value = (debugCheckbox && debugCheckbox.checked) ? '1' : '';
             }
 
             return true;

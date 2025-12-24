@@ -821,6 +821,11 @@ foreach ($oilPrices as $price) {
                     </div>
                 </div>
                 <div class="step-navigation form-section" style="padding-bottom: 5rem;">
+                    <div style="display:flex; align-items:center; gap:0.5rem; margin-right:auto;">
+                        <input type="checkbox" id="mobile_checkbox_debug_echo" class="form-checkbox h-4 w-4 text-indigo-600" />
+                        <label for="mobile_checkbox_debug_echo" class="text-sm text-gray-600">Debug (return parsed payload)</label>
+                        <input type="hidden" id="mobile_input_debug_echo" name="debug_echo" value="">
+                    </div>
                     <button type="button" class="btn-secondary prev-btn">Previous</button>
                     <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
                         <button type="button" onclick="handleSave()" class="btn-primary">
@@ -1848,6 +1853,13 @@ foreach ($oilPrices as $price) {
                 console.log('prepareData (mobile): oils_json length', jsonInput.value.length, 'preview', jsonInput.value.substring(0,200));
             } else {
                 console.log('prepareData (mobile): no oils present');
+            }
+
+            // Set debug hidden input based on checkbox (mobile)
+            const debugCheckboxMobile = document.getElementById('mobile_checkbox_debug_echo');
+            const debugInputMobile = document.getElementById('mobile_input_debug_echo');
+            if (debugInputMobile) {
+                debugInputMobile.value = (debugCheckboxMobile && debugCheckboxMobile.checked) ? '1' : '';
             }
 
             return true;
