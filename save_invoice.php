@@ -338,34 +338,59 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
 
-            // If still not identified but part price was provided and nothing found, create a new part
+            // If still not identified but part price was provided and nothing found, prefer attaching to existing part by name (avoid duplicates), otherwise create new part
             if (empty($it['db_id']) && !empty($it['price_part']) && floatval($it['price_part']) > 0) {
-                try {
-                    $ins = $pdo->prepare('INSERT INTO parts (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
-                    $ins->execute([$name, $it['description'] ?? null, floatval($it['price_part']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
-                    $newPartId = $pdo->lastInsertId();
-                    error_log("save_invoice: attempted to create part '$name' price={$it['price_part']}, newPartId={$newPartId}");
-                } catch (PDOException $e) {
-                    error_log("save_invoice: FAILED to create part '$name' price={$it['price_part']}: " . $e->getMessage());
-                    $newPartId = null;
-                }
+                // Try to find an existing part with exact name regardless of vehicle
+                $stmtExisting = $pdo->prepare("SELECT * FROM parts WHERE name = ? LIMIT 1");
+                $stmtExisting->execute([$name]);
+                $existingPart = $stmtExisting->fetch();
 
-                if ($newPartId) {
-                    $it['db_id'] = $newPartId;
+                if ($existingPart) {
+                    // Attach to existing part and upsert vehicle-specific price if provided
+                    $it['db_id'] = $existingPart['id'];
                     $it['db_type'] = 'part';
-                    $it['db_vehicle'] = $vehicleMake !== '' ? trim($vehicleMake) : null;
-                    $created_items[] = ['type' => 'part', 'name' => $name, 'price' => floatval($it['price_part']), 'item_id' => $newPartId];
-                    // if vehicle price is provided, insert into item_prices
-                    if ($vehicleMake !== '' && !empty($it['price_part'])) {
-                        try {
-                            $vehicleCanonical = trim($vehicleMake);
-                            $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
-                            $insP->execute(['part', $newPartId, $vehicleCanonical, floatval($it['price_part']), $_SESSION['user_id']]);
-                            error_log("save_invoice: upserted item_price for part id={$newPartId} vehicle={$vehicleCanonical} price={$it['price_part']}");
-                            $it['db_vehicle'] = $vehicleCanonical;
-                            $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_part']), 'item_id' => $newPartId];
-                        } catch (PDOException $e) {
-                            error_log("save_invoice: FAILED to create item_price for part id={$newPartId} vehicle={$vehicleCanonical} price={$it['price_part']}: " . $e->getMessage());
+                    $it['db_vehicle'] = $existingPart['vehicle_make_model'] ?? null;
+                    $defaultPrice = floatval($existingPart['default_price'] ?? 0);
+                    if (empty($it['price_part'])) $it['price_part'] = $defaultPrice;
+
+                    if ($vehicleMake !== '' && !empty($it['price_part']) && floatval($it['price_part']) != $defaultPrice) {
+                        $vehicleCanonical = trim($vehicleMake);
+                        $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
+                        $insP->execute(['part', $it['db_id'], $vehicleCanonical, floatval($it['price_part']), $_SESSION['user_id']]);
+                        $it['db_vehicle'] = $vehicleCanonical;
+                        $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_part']), 'item_id' => $it['db_id']];
+                        error_log("save_invoice: attached price to existing part id={$it['db_id']} vehicle={$vehicleCanonical} price={$it['price_part']}");
+                    } else {
+                        error_log("save_invoice: attached to existing part id={$it['db_id']} name={$name} without creating new");
+                    }
+                } else {
+                    try {
+                        $ins = $pdo->prepare('INSERT INTO parts (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $it['description'] ?? null, floatval($it['price_part']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
+                        $newPartId = $pdo->lastInsertId();
+                        error_log("save_invoice: attempted to create part '$name' price={$it['price_part']}, newPartId={$newPartId}");
+                    } catch (PDOException $e) {
+                        error_log("save_invoice: FAILED to create part '$name' price={$it['price_part']}: " . $e->getMessage());
+                        $newPartId = null;
+                    }
+
+                    if ($newPartId) {
+                        $it['db_id'] = $newPartId;
+                        $it['db_type'] = 'part';
+                        $it['db_vehicle'] = $vehicleMake !== '' ? trim($vehicleMake) : null;
+                        $created_items[] = ['type' => 'part', 'name' => $name, 'price' => floatval($it['price_part']), 'item_id' => $newPartId];
+                        // if vehicle price is provided, insert into item_prices
+                        if ($vehicleMake !== '' && !empty($it['price_part'])) {
+                            try {
+                                $vehicleCanonical = trim($vehicleMake);
+                                $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
+                                $insP->execute(['part', $newPartId, $vehicleCanonical, floatval($it['price_part']), $_SESSION['user_id']]);
+                                error_log("save_invoice: upserted item_price for part id={$newPartId} vehicle={$vehicleCanonical} price={$it['price_part']}");
+                                $it['db_vehicle'] = $vehicleCanonical;
+                                $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_part']), 'item_id' => $newPartId];
+                            } catch (PDOException $e) {
+                                error_log("save_invoice: FAILED to create item_price for part id={$newPartId} vehicle={$vehicleCanonical} price={$it['price_part']}: " . $e->getMessage());
+                            }
                         }
                     }
                 }
@@ -456,31 +481,67 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
 
-            // If still not identified after search and we have a labor price, create a new labor entry
+            // If still not identified after search and we have a labor price, first try attaching to an existing labor by name, otherwise create a new labor entry
             if (empty($it['db_id']) && !empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
-                try {
-                    $ins = $pdo->prepare('INSERT INTO labors (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
-                    $ins->execute([$name, $it['description'] ?? null, floatval($it['price_svc']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
-                    $newLaborId = $pdo->lastInsertId();
-                    error_log("save_invoice: attempted to create labor '$name' price={$it['price_svc']}, newLaborId={$newLaborId}");
-                } catch (PDOException $e) {
-                    error_log("save_invoice: FAILED to create labor '$name' price={$it['price_svc']}: " . $e->getMessage());
-                    $newLaborId = null;
-                }
+                // Try to find existing labor by exact name
+                $stmtExistingL = $pdo->prepare("SELECT * FROM labors WHERE name = ? LIMIT 1");
+                $stmtExistingL->execute([$name]);
+                $existingLabor = $stmtExistingL->fetch();
 
-                if ($newLaborId) {
-                    $it['db_id'] = $newLaborId;
+                if ($existingLabor) {
+                    // Attach to existing labor and upsert vehicle-specific price if provided
+                    $it['db_id'] = $existingLabor['id'];
                     $it['db_type'] = 'labor';
-                    $it['db_vehicle'] = $vehicleMake !== '' ? trim($vehicleMake) : null;
-                    $created_items[] = ['type' => 'labor', 'name' => $name, 'price' => floatval($it['price_svc']), 'item_id' => $newLaborId];
-                    // create vehicle-specific price record if applicable
-                    if ($vehicleMake !== '' && !empty($it['price_svc'])) {
+                    $it['db_vehicle'] = $existingLabor['vehicle_make_model'] ?? null;
+                    $defaultPrice = floatval($existingLabor['default_price'] ?? 0);
+                    if (empty($it['price_svc'])) $it['price_svc'] = $defaultPrice;
+
+                    if ($vehicleMake !== '' && !empty($it['price_svc']) && floatval($it['price_svc']) != $defaultPrice) {
                         try {
                             $vehicleCanonical = trim($vehicleMake);
-                        $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
-                        $insP->execute(['labor', $newLaborId, $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
-                        error_log("save_invoice: upserted item_price for new labor id={$newLaborId} vehicle={$vehicleCanonical} price={$it['price_svc']}");
+                            $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
+                            $insP->execute(['labor', $it['db_id'], $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
                             $it['db_vehicle'] = $vehicleCanonical;
+                            $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $it['db_id']];
+                            error_log("save_invoice: attached price to existing labor id={$it['db_id']} vehicle={$vehicleCanonical} price={$it['price_svc']}");
+                        } catch (PDOException $e) {
+                            error_log("save_invoice: FAILED to upsert item_price for existing labor id={$it['db_id']} vehicle={$vehicleCanonical} price={$it['price_svc']}: " . $e->getMessage());
+                        }
+                    } else {
+                        error_log("save_invoice: attached to existing labor id={$it['db_id']} name={$name} without creating new");
+                    }
+                } else {
+                    try {
+                        $ins = $pdo->prepare('INSERT INTO labors (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $it['description'] ?? null, floatval($it['price_svc']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
+                        $newLaborId = $pdo->lastInsertId();
+                        error_log("save_invoice: attempted to create labor '$name' price={$it['price_svc']}, newLaborId={$newLaborId}");
+                    } catch (PDOException $e) {
+                        error_log("save_invoice: FAILED to create labor '$name' price={$it['price_svc']}: " . $e->getMessage());
+                        $newLaborId = null;
+                    }
+
+                    if ($newLaborId) {
+                        $it['db_id'] = $newLaborId;
+                        $it['db_type'] = 'labor';
+                        $it['db_vehicle'] = $vehicleMake !== '' ? trim($vehicleMake) : null;
+                        $created_items[] = ['type' => 'labor', 'name' => $name, 'price' => floatval($it['price_svc']), 'item_id' => $newLaborId];
+                        // create vehicle-specific price record if applicable
+                        if ($vehicleMake !== '' && !empty($it['price_svc'])) {
+                            try {
+                                $vehicleCanonical = trim($vehicleMake);
+                                $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
+                                $insP->execute(['labor', $newLaborId, $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
+                                error_log("save_invoice: upserted item_price for new labor id={$newLaborId} vehicle={$vehicleCanonical} price={$it['price_svc']}");
+                                $it['db_vehicle'] = $vehicleCanonical;
+                                $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $newLaborId];
+                            } catch (PDOException $e) {
+                                error_log("save_invoice: FAILED to create item_price for labor id={$newLaborId} vehicle={$vehicleCanonical} price={$it['price_svc']}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            }
                             $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $newLaborId];
                         } catch (PDOException $e) {
                             error_log("save_invoice: FAILED to create item_price for labor id={$newLaborId} vehicle={$vehicleCanonical} price={$it['price_svc']}: " . $e->getMessage());
