@@ -71,6 +71,18 @@ if (isset($_GET['edit_id'])) {
         error_log("Database error loading invoice $loadId for mobile edit: " . $e->getMessage());
     }
 }
+
+// Load oil data for the mobile invoice form
+$oilBrands = $pdo->query("SELECT * FROM oil_brands ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$oilViscosities = $pdo->query("SELECT * FROM oil_viscosities ORDER BY viscosity")->fetchAll(PDO::FETCH_ASSOC);
+$oilPrices = $pdo->query("SELECT * FROM oil_prices ORDER BY brand_id, viscosity_id, package_type")->fetchAll(PDO::FETCH_ASSOC);
+
+$oilPriceLookup = [];
+foreach ($oilPrices as $price) {
+    $key = $price['brand_id'] . '_' . $price['viscosity_id'] . '_' . $price['package_type'];
+    $oilPriceLookup[$key] = $price['price'];
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="ka">
@@ -705,6 +717,20 @@ if (isset($_GET['edit_id'])) {
                         Add Item
                     </button>
 
+                    <!-- Oils Section -->
+                    <div class="section-header" style="margin-top:0.75rem;">
+                        <i class="fas fa-oil-can"></i>
+                        Oils
+                    </div>
+                    <div id="oils-container">
+                        <!-- Oil cards will be added here -->
+                    </div>
+
+                    <button type="button" onclick="addOil()" class="btn-secondary" style="margin-bottom: 1rem;">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add Oil
+                    </button>
+
                     <!-- Totals -->
                     <div class="totals-section">
                         <div class="total-row">
@@ -714,6 +740,10 @@ if (isset($_GET['edit_id'])) {
                         <div class="total-row">
                             <span class="total-label">Service Total:</span>
                             <span class="total-value" id="display_service_total">0 ₾</span>
+                        </div>
+                        <div class="total-row">
+                            <span class="total-label">Oils Total:</span>
+                            <span class="total-value" id="display_oils_total">0 ₾</span>
                         </div>
                         <div class="total-row grand-total">
                             <span class="total-label">Grand Total:</span>
@@ -835,6 +865,12 @@ if (isset($_GET['edit_id'])) {
         let selectedFiles = [];
         let currentStep = 1;
         const totalSteps = 5;
+
+        // Oil data
+        let oilBrands = <?php echo json_encode($oilBrands ?? []); ?>;
+        let oilViscosities = <?php echo json_encode($oilViscosities ?? []); ?>;
+        let oilPriceLookup = <?php echo json_encode($oilPriceLookup ?? []); ?>;
+        let oilCount = 0;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -1107,6 +1143,119 @@ if (isset($_GET['edit_id'])) {
                 itemCard.querySelector('.item-price-svc').value = existingItem.price_svc;
                 itemCard.querySelector('.item-discount-svc').value = existingItem.discount_svc;
                 itemCard.querySelector('.item-tech').value = existingItem.technician;
+            }
+
+            // ---------------------------------
+            // Oil functions (mobile)
+            // ---------------------------------
+            function addOil(existingOil = null) {
+                oilCount++;
+                const container = document.getElementById('oils-container');
+                const card = document.createElement('div');
+                card.className = 'item-card oil-card';
+                card.id = `oil-${oilCount}`;
+
+                const brandOptions = oilBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+                const viscosityOptions = oilViscosities.map(v => `<option value="${v.id}">${v.viscosity}</option>`).join('');
+
+                card.innerHTML = `
+                    <div class="item-header">
+                        <span class="item-name">Oil ${oilCount}</span>
+                        <button type="button" class="remove-item" onclick="removeOil(${oilCount})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <label class="price-label">Brand</label>
+                        <select class="input-field oil-brand" onchange="updateOilCardPrice(this.closest('.oil-card'))">
+                            <option value="">Select Brand</option>
+                            ${brandOptions}
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="price-label">Viscosity</label>
+                        <select class="input-field oil-viscosity" onchange="updateOilCardPrice(this.closest('.oil-card'))">
+                            <option value="">Select Viscosity</option>
+                            ${viscosityOptions}
+                        </select>
+                    </div>
+                    <div class="price-grid">
+                        <div class="price-input">
+                            <label class="price-label">Package</label>
+                            <select class="input-field oil-package" onchange="updateOilCardPrice(this.closest('.oil-card'))">
+                                <option value="">Select Package</option>
+                                <option value="canned">Canned</option>
+                                <option value="1lt">1 Liter</option>
+                                <option value="4lt">4 Liter</option>
+                                <option value="5lt">5 Liter</option>
+                            </select>
+                        </div>
+                        <div class="price-input">
+                            <label class="price-label">Qty</label>
+                            <input type="number" min="1" value="1" class="input-field oil-qty" oninput="updateOilCardPrice(this.closest('.oil-card'))">
+                        </div>
+                        <div class="price-input">
+                            <label class="price-label">Unit</label>
+                            <input type="number" class="input-field oil-unit-price" readonly value="0">
+                        </div>
+                        <div class="price-input">
+                            <label class="price-label">Disc %</label>
+                            <input type="number" min="0" max="100" value="0" class="input-field oil-discount" oninput="updateOilCardPrice(this.closest('.oil-card'))">
+                        </div>
+                        <div class="price-input" style="flex:1;">
+                            <label class="price-label">Total</label>
+                            <div class="input-field" style="padding:0.5rem;"> <span class="oil-total">0.00 ₾</span> </div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+
+                // If editing, populate
+                if (existingOil) {
+                    card.querySelector('.oil-brand').value = existingOil.brand_id || '';
+                    card.querySelector('.oil-viscosity').value = existingOil.viscosity_id || '';
+                    card.querySelector('.oil-package').value = existingOil.package_type || '';
+                    card.querySelector('.oil-qty').value = existingOil.qty || 1;
+                    card.querySelector('.oil-discount').value = existingOil.discount || 0;
+                    updateOilCardPrice(card);
+                }
+            }
+
+            function updateOilCardPrice(card) {
+                if (!card) return;
+                const brandId = card.querySelector('.oil-brand')?.value || '';
+                const viscosityId = card.querySelector('.oil-viscosity')?.value || '';
+                const packageType = card.querySelector('.oil-package')?.value || '';
+                const qty = parseFloat(card.querySelector('.oil-qty')?.value) || 0;
+                const discount = parseFloat(card.querySelector('.oil-discount')?.value) || 0;
+                if (brandId && viscosityId && packageType) {
+                    const key = brandId + '_' + viscosityId + '_' + packageType;
+                    const unit = parseFloat(oilPriceLookup[key]) || 0;
+                    const discounted = unit * (1 - discount / 100);
+                    const total = qty * discounted;
+                    card.querySelector('.oil-unit-price').value = unit.toFixed(2);
+                    card.querySelector('.oil-total').textContent = total.toFixed(2) + ' ₾';
+                } else {
+                    card.querySelector('.oil-unit-price').value = '0.00';
+                    card.querySelector('.oil-total').textContent = '0.00 ₾';
+                }
+                updateOilsTotal();
+            }
+
+            function updateOilsTotal() {
+                let total = 0;
+                document.querySelectorAll('.oil-card').forEach(card => {
+                    const t = parseFloat(card.querySelector('.oil-total').textContent.replace(' ₾','')) || 0;
+                    total += t;
+                });
+                document.getElementById('display_oils_total').textContent = total.toFixed(2) + ' ₾';
+            }
+
+            function removeOil(id) {
+                const card = document.getElementById(`oil-${id}`);
+                if (card) { card.remove(); updateOilsTotal(); }
+            }
 
                 // Set DB metadata
                 itemCard.querySelector('.item-db-id').value = existingItem.db_id || '';
@@ -1167,10 +1316,17 @@ if (isset($_GET['edit_id'])) {
             partsTotal *= (1 - globalPartsDiscount / 100);
             serviceTotal *= (1 - globalServiceDiscount / 100);
 
-            const grandTotal = partsTotal + serviceTotal;
+            let oilsTotal = 0;
+            document.querySelectorAll('.oil-card').forEach(card => {
+                const t = parseFloat(card.querySelector('.oil-total')?.textContent.replace(' ₾','')) || 0;
+                oilsTotal += t;
+            });
+
+            const grandTotal = partsTotal + serviceTotal + oilsTotal;
 
             document.getElementById('display_parts_total').textContent = partsTotal.toFixed(2) + ' ₾';
             document.getElementById('display_service_total').textContent = serviceTotal.toFixed(2) + ' ₾';
+            document.getElementById('display_oils_total').textContent = oilsTotal.toFixed(2) + ' ₾';
             document.getElementById('display_grand_total').textContent = grandTotal.toFixed(2) + ' ₾';
 
             // Update hidden fields
@@ -1179,6 +1335,16 @@ if (isset($_GET['edit_id'])) {
             document.getElementById('hidden_grand_total').value = grandTotal.toFixed(2);
             document.getElementById('hidden_parts_discount').value = globalPartsDiscount;
             document.getElementById('hidden_service_discount').value = globalServiceDiscount;
+            // Also set hidden oils if present
+            const hiddenOilsField = document.querySelector('input[name="hidden_oils_json"]');
+            if (hiddenOilsField) hiddenOilsField.value = JSON.stringify(Array.from(document.querySelectorAll('.oil-card')).map(card => ({
+                brand_id: parseInt(card.querySelector('.oil-brand')?.value || 0) || null,
+                viscosity_id: parseInt(card.querySelector('.oil-viscosity')?.value || 0) || null,
+                package_type: card.querySelector('.oil-package')?.value || '',
+                qty: parseInt(card.querySelector('.oil-qty')?.value || 1) || 1,
+                discount: parseFloat(card.querySelector('.oil-discount')?.value || 0) || 0
+            })));
+
         }
 
         // Update progress bar
