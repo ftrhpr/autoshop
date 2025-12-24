@@ -91,19 +91,28 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users - AutoShop</title>
+    <title>მომხმარებლების მართვა - ავტო სერვისი</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet>
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
+    <style>
+        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <?php include '../partials/sidebar.php'; ?>
 
     <div class="min-h-full overflow-auto ml-0 md:ml-64 pt-4 pl-4">
         <div class="p-6">
-            <h1 class="text-3xl font-bold mb-6">Manage Users</h1>
+            <h1 class="text-3xl font-bold mb-6">მომხმარებლების მართვა</h1>
 
             <?php if (isset($error)): ?>
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -119,29 +128,29 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <!-- Create User Form -->
             <div class="bg-white p-6 rounded shadow mb-6">
-                <h2 class="text-xl font-semibold mb-4">Create New User</h2>
+                <h2 class="text-xl font-semibold mb-4">ახალი მომხმარებლის შექმნა</h2>
                 <form method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <input type="text" name="username" placeholder="Username" required class="border p-2 rounded">
-                    <input type="password" name="password" placeholder="Password" required class="border p-2 rounded">
+                    <input type="text" name="username" placeholder="მომხმარებლის სახელი" required class="border p-2 rounded">
+                    <input type="password" name="password" placeholder="პაროლი" required class="border p-2 rounded">
                     <select name="role" class="border p-2 rounded">
-                        <option value="manager">Manager</option>
-                        <option value="admin">Admin</option>
+                        <option value="manager">მენეჯერი</option>
+                        <option value="admin">ადმინისტრატორი</option>
                     </select>
-                    <button type="submit" name="create_user" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create User</button>
+                    <button type="submit" name="create_user" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">მომხმარებლის შექმნა</button>
                 </form>
             </div>
 
             <!-- Users List -->
             <div class="bg-white p-6 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4">Existing Users</h2>
+                <h2 class="text-xl font-semibold mb-4">არსებული მომხმარებლები</h2>
                 <div class="overflow-x-auto">
                     <table class="w-full table-auto">
                         <thead>
                             <tr class="bg-gray-50">
-                                <th class="px-4 py-2 text-left">Username</th>
-                                <th class="px-4 py-2 text-left">Role</th>
-                                <th class="px-4 py-2 text-left">Created</th>
-                                <th class="px-4 py-2 text-left">Actions</th>
+                                <th class="px-4 py-2 text-left">მომხმარებლის სახელი</th>
+                                <th class="px-4 py-2 text-left">როლი</th>
+                                <th class="px-4 py-2 text-left">შექმნილია</th>
+                                <th class="px-4 py-2 text-left">მოქმედებები</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -152,20 +161,20 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <td class="px-4 py-2"><?php echo htmlspecialchars($user['created_at']); ?></td>
                                     <td class="px-4 py-2">
                                         <?php if ($user['id'] !== $_SESSION['user_id']): ?>
-                                            <form method="post" class="inline" onsubmit="return confirm('Are you sure?');">
+                                            <form method="post" class="inline" onsubmit="return confirm('დარწმუნებული ხართ?');">
                                                 <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                                 <select name="role" onchange="this.form.submit()" class="border p-1 rounded">
-                                                    <option value="manager" <?php echo $user['role'] === 'manager' ? 'selected' : ''; ?>>Manager</option>
-                                                    <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
+                                                    <option value="manager" <?php echo $user['role'] === 'manager' ? 'selected' : ''; ?>>მენეჯერი</option>
+                                                    <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>ადმინისტრატორი</option>
                                                 </select>
                                                 <input type="hidden" name="update_user" value="1">
                                             </form>
-                                            <form method="post" class="inline ml-2" onsubmit="return confirm('Delete this user?');">
+                                            <form method="post" class="inline ml-2" onsubmit="return confirm('წავშალოთ ეს მომხმარებელი?');">
                                                 <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                                <button type="submit" name="delete_user" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
+                                                <button type="submit" name="delete_user" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">წაშლა</button>
                                             </form>
                                         <?php else: ?>
-                                            <em>Current User</em>
+                                            <em>მიმდინარე მომხმარებელი</em>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

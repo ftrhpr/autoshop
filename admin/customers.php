@@ -170,13 +170,17 @@ function sortLink($column, $label) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicles - Admin</title>
+    <title>კლიენტები - ადმინი</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet>
     <style>
+        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -188,28 +192,28 @@ function sortLink($column, $label) {
         <header class="flex-shrink-0 p-4 md:p-6">
             <nav aria-label="Breadcrumb" class="mb-4">
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
-                    <li><a href="index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
+                    <li><a href="index.php" class="hover:text-blue-600 transition">მთავარი</a></li>
                     <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
-                    <li aria-current="page">Customers</li>
+                    <li aria-current="page">კლიენტები</li>
                 </ol>
             </nav>
             <h1 class="text-4xl font-bold text-gray-900 flex items-center">
                 <svg class="w-10 h-10 mr-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
-                Customer & Vehicle Management
+                კლიენტებისა და ავტომობილების მართვა
             </h1>
-            <p class="mt-2 text-gray-600">Manage customers, their vehicles, and import data efficiently.</p>
+            <p class="mt-2 text-gray-600">მართეთ კლიენტები, მათი ავტომობილები და იმპორტირეთ მონაცემები ეფექტურად.</p>
         </header>
         <div class="h-full overflow-hidden">
-            <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; Back</a>
+            <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; უკან</a>
 
             <div class="bg-white p-4 md:p-6 rounded-xl shadow-xl mx-4 md:mx-6 mb-4">
             <h2 class="text-3xl font-bold mb-6 text-gray-800 flex items-center">
                 <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
-                Vehicles
+                ავტომობილები
             </h2>
             <?php if (isset($success)): ?>
                 <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-400 text-green-700 rounded-r-lg" role="alert" aria-live="polite">
@@ -237,11 +241,11 @@ function sortLink($column, $label) {
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                             </svg>
                             <div>
-                                <div class="font-semibold text-blue-800">Import Summary</div>
-                                <div class="text-blue-700 mt-1">Inserted: <?php echo (int)($s['inserted'] ?? 0); ?>, Updated: <?php echo (int)($s['updated'] ?? 0); ?>, Failed: <?php echo (int)($s['failed'] ?? 0); ?></div>
+                                <div class="font-semibold text-blue-800">იმპორტის შეჯამება</div>
+                                <div class="text-blue-700 mt-1">დამატებული: <?php echo (int)($s['inserted'] ?? 0); ?>, განახლებული: <?php echo (int)($s['updated'] ?? 0); ?>, წარუმატებელი: <?php echo (int)($s['failed'] ?? 0); ?></div>
                                 <?php if (!empty($s['failures'])): ?>
                                     <details class="mt-2">
-                                        <summary class="cursor-pointer text-blue-600 hover:text-blue-800">View failures (<?php echo count($s['failures']); ?>)</summary>
+                                        <summary class="cursor-pointer text-blue-600 hover:text-blue-800">იხილეთ წარუმატებლები (<?php echo count($s['failures']); ?>)</summary>
                                         <ul class="list-disc pl-4 mt-2 text-red-700">
                                             <?php foreach ($s['failures'] as $f): ?>
                                                 <li><?php echo htmlspecialchars($f); ?></li>
@@ -257,21 +261,21 @@ function sortLink($column, $label) {
 
             <form method="get" class="mb-6 flex flex-col sm:flex-row gap-4" role="search" aria-label="Search customers">
                 <div class="flex-1">
-                    <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">Search Customers</label>
+                    <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">კლიენტების ძიება</label>
                     <div class="relative">
-                        <input id="search-input" type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name, phone or plate" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" aria-describedby="search-help">
+                        <input id="search-input" type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="ძიება სახელით, ტელეფონით ან ნომრით" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" aria-describedby="search-help">
                         <svg class="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </div>
-                    <p id="search-help" class="mt-1 text-sm text-gray-500">Enter plate number or customer name to filter results.</p>
+                    <p id="search-help" class="mt-1 text-sm text-gray-500">შეიყვანეთ სახელმწიფო ნომერი ან კლიენტის სახელი შედეგების გასაფილტრად.</p>
                 </div>
                 <div class="flex items-end">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition shadow-sm flex items-center">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
-                        Search
+                        ძიება
                     </button>
                 </div>
             </form>
@@ -283,40 +287,40 @@ function sortLink($column, $label) {
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
-                            Add Vehicle to Customer
+                            ავტომობილის დამატება კლიენტს
                         </h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="sm:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Select Customer</label>
-                                <input type="text" id="customer_search" placeholder="Search customer by name or phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">აირჩიეთ კლიენტი</label>
+                                <input type="text" id="customer_search" placeholder="მოძებნეთ კლიენტი სახელით ან ტელეფონით" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                 <input type="hidden" name="customer_id" id="selected_customer_id">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
-                                <input type="text" name="plate_number" placeholder="Enter plate number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">სახელმწიფო ნომერი</label>
+                                <input type="text" name="plate_number" placeholder="შეიყვანეთ სახელმწიფო ნომერი" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Car Mark</label>
-                                <input type="text" name="car_mark" placeholder="Enter car mark" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ავტომობილის მარკა</label>
+                                <input type="text" name="car_mark" placeholder="შეიყვანეთ ავტომობილის მარკა" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">VIN</label>
-                                <input type="text" name="vin" placeholder="Enter VIN" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <input type="text" name="vin" placeholder="შეიყვანეთ VIN" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Mileage</label>
-                                <input type="text" name="mileage" placeholder="Enter mileage" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">გარბენი</label>
+                                <input type="text" name="mileage" placeholder="შეიყვანეთ გარბენი" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                                <textarea name="notes" placeholder="Enter notes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" rows="3"></textarea>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">შენიშვნები</label>
+                                <textarea name="notes" placeholder="შეიყვანეთ შენიშვნები" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" rows="3"></textarea>
                             </div>
                         </div>
                         <button type="submit" name="add_vehicle" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            Add Vehicle
+                            ავტომობილის დამატება
                         </button>
                     </form>
 
@@ -325,24 +329,24 @@ function sortLink($column, $label) {
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
                             </svg>
-                            Import Vehicles (CSV)
+                            ავტომობილების იმპორტი (CSV)
                         </h4>
-                        <p class="text-sm text-gray-600 mb-4">Download the template and fill it. Required: full_name, phone. Optional: plate_number, email, car_mark, vin, mileage, notes, last_service_at. Import will insert new vehicles or update existing ones by plate number, phone, or name. If a vehicle exists by any of these fields, all provided details will be updated. <strong>Ensure the CSV file is saved in UTF-8 encoding to support Georgian characters.</strong></p>
+                        <p class="text-sm text-gray-600 mb-4">გადმოწერეთ შაბლონი და შეავსეთ. აუცილებელი: full_name, phone. არასავალდებულო: plate_number, email, car_mark, vin, mileage, notes, last_service_at. იმპორტი დაამატებს ახალ ავტომობილებს ან განაახლებს არსებულებს სახელმწიფო ნომრით, ტელეფონით ან სახელით. თუ ავტომობილი არსებობს რომელიმე ამ ველით, ყველა მოწოდებული დეტალი განახლდება. <strong>დარწმუნდით, რომ CSV ფაილი შენახულია UTF-8 კოდირებით ქართული სიმბოლოების მხარდასაჭერად.</strong></p>
                         <a href="customers_import_template.csv" class="inline-flex items-center px-4 py-2 bg-green-100 hover:bg-green-200 text-green-800 rounded-md text-sm font-medium transition mb-4">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                             </svg>
-                            Download CSV template
+                            CSV შაბლონის გადმოწერა
                         </a>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">აირჩიეთ CSV ფაილი</label>
                             <input type="file" name="csv_file" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
                         </div>
                         <button type="submit" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
                             </svg>
-                            Upload & Import
+                            ატვირთვა და იმპორტი
                         </button>
                     </form>
 
@@ -351,16 +355,16 @@ function sortLink($column, $label) {
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
-                            Import Customers (Raw Text)
+                            კლიენტების იმპორტი (ნედლი ტექსტი)
                         </h4>
-                        <p class="text-sm text-gray-600 mb-4">Paste names and phones separately (one per line). Import will pair them by line and insert new customers or update existing ones by phone or name. If a customer exists by phone, it updates their name. If a customer exists by name but has a different phone, it updates their phone and name.</p>
+                        <p class="text-sm text-gray-600 mb-4">ჩასვით სახელები და ტელეფონები ცალ-ცალკე (თითო ხაზზე). იმპორტი დაუწყებს მათ წყვილად და დაამატებს ახალ კლიენტებს ან განაახლებს არსებულებს ტელეფონით ან სახელით. თუ კლიენტი არსებობს ტელეფონით, განაახლებს მის სახელს. თუ კლიენტი არსებობს სახელით მაგრამ სხვა ტელეფონით, განაახლებს მის ტელეფონს და სახელს.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Names (one per line)</label>
-                                <textarea name="names" rows="6" placeholder="John Doe&#10;Jane Smith" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"></textarea>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">სახელები (თითო ხაზზე)</label>
+                                <textarea name="names" rows="6" placeholder="გიორგი გიორგაძე&#10;მარიამ მაისურაძე" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"></textarea>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Phones (one per line)</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ტელეფონები (თითო ხაზზე)</label>
                                 <textarea name="phones" rows="6" placeholder="+995555000000&#10;+995555111111" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"></textarea>
                             </div>
                         </div>
@@ -368,7 +372,7 @@ function sortLink($column, $label) {
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
                             </svg>
-                            Import Raw Data
+                            ნედლი მონაცემების იმპორტი
                         </button>
                     </form>
                 </div>
@@ -379,11 +383,11 @@ function sortLink($column, $label) {
                             <caption class="sr-only">List of vehicles with their details and actions</caption>
                             <thead class="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0">
                                 <tr>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col"><?php echo sortLink('full_name', 'Name'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('phone', 'Phone'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('email', 'Email'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('vehicle_count', 'Vehicles'); ?></th>
-                                    <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700 w-1/5" scope="col">Actions</th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/4" scope="col"><?php echo sortLink('full_name', 'სახელი'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('phone', 'ტელეფონი'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('email', 'ელ-ფოსტა'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 text-left font-semibold text-gray-700 w-1/5" scope="col"><?php echo sortLink('vehicle_count', 'ავტომობილები'); ?></th>
+                                    <th class="px-1 py-3 sm:px-2 sm:py-4 font-semibold text-gray-700 w-1/5" scope="col">მოქმედებები</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -398,16 +402,16 @@ function sortLink($column, $label) {
                                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                             </svg>
-                                            Edit
+                                            რედაქტირება
                                         </button>
-                                        <a href="?search=<?php echo urlencode($c['full_name']); ?>" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none">Manage vehicles</a>
-                                        <form method="post" style="display:inline-block" onsubmit="return confirm('Delete customer?');" class="flex-1 sm:flex-none">
+                                        <a href="?search=<?php echo urlencode($c['full_name']); ?>" class="inline-flex items-center justify-center px-2 py-1 sm:px-3 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-xs font-medium transition flex-1 sm:flex-none">ავტომობილების მართვა</a>
+                                        <form method="post" style="display:inline-block" onsubmit="return confirm('წავშალოთ კლიენტი?');" class="flex-1 sm:flex-none">
                                             <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
                                             <button type="submit" name="delete_customer" class="inline-flex items-center justify-center w-full px-2 py-1 sm:px-3 sm:py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-md text-xs font-medium transition" aria-label="Delete customer <?php echo htmlspecialchars($c['full_name']); ?>">
                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                 </svg>
-                                                Delete
+                                                წაშლა
                                             </button>
                                         </form>
                                     </td>
@@ -430,7 +434,7 @@ function sortLink($column, $label) {
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                             </svg>
-                            Prev
+                            წინა
                         </a>
                         <?php endif; ?>
 
@@ -454,7 +458,7 @@ function sortLink($column, $label) {
 
                         <?php if ($page < $totalPages): ?>
                         <a href="?page=<?php echo $nextPage; ?><?php echo $searchParam; ?>" class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition" aria-label="Go to next page">
-                            Next
+                            შემდეგი
                             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
@@ -474,42 +478,42 @@ function sortLink($column, $label) {
                             // Replace create form with update customer form
                             const form = document.querySelector('form[method="post"]');
                             form.innerHTML = `
-                                <h3 class="font-semibold mb-2">Update Customer</h3>
+                                <h3 class="font-semibold mb-2">კლიენტის განახლება</h3>
                                 <input type="hidden" name="id" value="${data.id}">
-                                <input type="text" name="full_name" value="${data.full_name || ''}" placeholder="Full Name" class="w-full px-2 py-2 border rounded mb-2" required>
-                                <input type="text" name="phone" value="${data.phone || ''}" placeholder="Phone" class="w-full px-2 py-2 border rounded mb-2">
-                                <input type="email" name="email" value="${data.email || ''}" placeholder="Email" class="w-full px-2 py-2 border rounded mb-2">
-                                <textarea name="notes" placeholder="Notes" class="w-full px-2 py-2 border rounded mb-2">${data.notes || ''}</textarea>
+                                <input type="text" name="full_name" value="${data.full_name || ''}" placeholder="სრული სახელი" class="w-full px-2 py-2 border rounded mb-2" required>
+                                <input type="text" name="phone" value="${data.phone || ''}" placeholder="ტელეფონი" class="w-full px-2 py-2 border rounded mb-2">
+                                <input type="email" name="email" value="${data.email || ''}" placeholder="ელ-ფოსტა" class="w-full px-2 py-2 border rounded mb-2">
+                                <textarea name="notes" placeholder="შენიშვნები" class="w-full px-2 py-2 border rounded mb-2">${data.notes || ''}</textarea>
                                 <div id="customer-vehicles" class="mt-4"></div>
-                                <button type="submit" name="update_customer" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                                <button type="submit" name="update_customer" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded">შენახვა</button>
                             `;
 
                             // Render customer's vehicles and small add vehicle form
                             const vDiv = document.getElementById('customer-vehicles');
-                            let html = '<h4 class="font-semibold mb-2">Vehicles</h4>';
+                            let html = '<h4 class="font-semibold mb-2">ავტომობილები</h4>';
                             if (Array.isArray(data.vehicles) && data.vehicles.length) {
                                 html += '<ul class="list-disc pl-5 mb-3">';
                                 data.vehicles.forEach(v => {
                                     html += `<li class="flex items-center justify-between"><span>${v.plate_number} — ${v.car_mark || ''}${v.vin ? ' — ' + v.vin : ''}</span>`;
-                                    html += `<form method="post" onsubmit="return confirm('Delete vehicle?');" style="display:inline"><input type="hidden" name="id" value="${v.id}"><button name="delete_vehicle" class="ml-3 text-xs text-red-600">Delete</button></form>`;
+                                    html += `<form method="post" onsubmit="return confirm('წავშალოთ ავტომობილი?');" style="display:inline"><input type="hidden" name="id" value="${v.id}"><button name="delete_vehicle" class="ml-3 text-xs text-red-600">წაშლა</button></form>`;
                                     html += `</li>`;
                                 });
                                 html += '</ul>';
                             } else {
-                                html += '<div class="text-sm text-gray-500 mb-3">No vehicles</div>';
+                                html += '<div class="text-sm text-gray-500 mb-3">ავტომობილები არ არის</div>';
                             }
 
                             // Add vehicle small form
-                            html += `<hr class="my-3"><h5 class="font-semibold mb-2">Add Vehicle</h5>
+                            html += `<hr class="my-3"><h5 class="font-semibold mb-2">ავტომობილის დამატება</h5>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <input type="hidden" name="customer_id" value="${data.id}">
-                                    <div><input name="plate_number" placeholder="Plate number" class="w-full px-2 py-2 border rounded"></div>
-                                    <div><input name="car_mark" placeholder="Car mark" class="w-full px-2 py-2 border rounded"></div>
+                                    <div><input name="plate_number" placeholder="სახელმწიფო ნომერი" class="w-full px-2 py-2 border rounded"></div>
+                                    <div><input name="car_mark" placeholder="ავტომობილის მარკა" class="w-full px-2 py-2 border rounded"></div>
                                     <div><input name="vin" placeholder="VIN" class="w-full px-2 py-2 border rounded"></div>
-                                    <div><input name="mileage" placeholder="Mileage" class="w-full px-2 py-2 border rounded"></div>
-                                    <div class="sm:col-span-2"><textarea name="notes" placeholder="Notes (optional)" class="w-full px-2 py-2 border rounded"></textarea></div>
+                                    <div><input name="mileage" placeholder="გარბენი" class="w-full px-2 py-2 border rounded"></div>
+                                    <div class="sm:col-span-2"><textarea name="notes" placeholder="შენიშვნები (არასავალდებულო)" class="w-full px-2 py-2 border rounded"></textarea></div>
                                 </div>
-                                <button type="submit" name="add_vehicle" class="mt-3 bg-green-600 text-white px-4 py-2 rounded">Add Vehicle</button>`;
+                                <button type="submit" name="add_vehicle" class="mt-3 bg-green-600 text-white px-4 py-2 rounded">ავტომობილის დამატება</button>`;
 
                             vDiv.innerHTML = html;
                         });

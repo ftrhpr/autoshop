@@ -25,20 +25,29 @@ foreach ($roles as $r) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roles & Permissions - Admin</title>
+    <title>როლები და უფლებები - ადმინისტრატორი</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet>
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
+    <style>
+        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
 </head>
 <body class="bg-gray-100 p-4 md:p-6 min-h-screen overflow-x-hidden font-sans antialiased">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="container mx-auto ml-0 md:ml-64">
-        <a href="index.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; Back</a>
+        <a href="index.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; უკან</a>
 
         <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-bold mb-4">Roles & Permissions</h2>
+            <h2 class="text-2xl font-bold mb-4">როლები და უფლებები</h2>
             <form method="post" action="save_permissions.php">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <?php foreach ($roles as $r): ?>
@@ -53,7 +62,7 @@ foreach ($roles as $r) {
                     </div>
                     <?php endforeach; ?>
                 </div>
-                <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Save Permissions</button>
+                <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">უფლებების შენახვა</button>
             </form>
         </div>
     </div>

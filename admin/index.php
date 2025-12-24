@@ -155,12 +155,21 @@ $invoices = $stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Auto Shop</title>
+    <title>ადმინისტრატორის პანელი - ავტო სერვისი</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet>
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
+    <style>
+        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen overflow-auto font-sans antialiased pb-20">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
@@ -172,21 +181,21 @@ $invoices = $stmt->fetchAll();
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-500">Users</p>
+                    <p class="text-sm text-gray-500">მომხმარებლები</p>
                     <p class="text-2xl font-bold"><?php echo number_format($totalUsers); ?></p>
                 </div>
                 <div class="text-green-500 font-bold text-xl">●</div>
             </div>
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-500">Invoices</p>
+                    <p class="text-sm text-gray-500">ინვოისები</p>
                     <p class="text-2xl font-bold"><?php echo number_format($totalInvoices); ?></p>
                 </div>
                 <div class="text-blue-500 font-bold text-xl">●</div>
             </div>
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-500">Revenue</p>
+                    <p class="text-sm text-gray-500">შემოსავალი</p>
                     <p class="text-2xl font-bold"><?php echo number_format($totalRevenue, 2); ?> ₾</p>
                 </div>
                 <div class="text-yellow-500 font-bold text-xl">●</div>
@@ -197,21 +206,21 @@ $invoices = $stmt->fetchAll();
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-500">Total Customers</p>
+                    <p class="text-sm text-gray-500">სულ კლიენტები</p>
                     <p class="text-2xl font-bold"><?php echo number_format($totalCustomers); ?></p>
                 </div>
                 <div class="text-purple-500 font-bold text-xl">●</div>
             </div>
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-500">New Customers (This Month)</p>
+                    <p class="text-sm text-gray-500">ახალი კლიენტები (ამ თვეში)</p>
                     <p class="text-2xl font-bold"><?php echo number_format($newCustomersThisMonth); ?></p>
                 </div>
                 <div class="text-indigo-500 font-bold text-xl">●</div>
             </div>
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-500">Avg Revenue per Customer</p>
+                    <p class="text-sm text-gray-500">საშუალო შემოსავალი კლიენტზე</p>
                     <p class="text-2xl font-bold"><?php echo number_format($avgRevenuePerCustomer, 2); ?> ₾</p>
                 </div>
                 <div class="text-pink-500 font-bold text-xl">●</div>
@@ -221,9 +230,9 @@ $invoices = $stmt->fetchAll();
         <!-- Chart -->
         <div class="bg-white p-4 rounded shadow mb-6">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="text-lg font-bold">Business Overview (last 6 months)</h3>
+                <h3 class="text-lg font-bold">ბიზნესის მიმოხილვა (ბოლო 6 თვე)</h3>
                 <div>
-                    <a href="permissions.php" class="px-3 py-2 bg-gray-200 rounded">Roles & Permissions</a>
+                    <a href="permissions.php" class="px-3 py-2 bg-gray-200 rounded">როლები და უფლებები</a>
                 </div>
             </div>
             <canvas id="revenueChart" height="100"></canvas>
@@ -262,7 +271,7 @@ $invoices = $stmt->fetchAll();
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <!-- Top Customers by Revenue -->
             <div class="bg-white p-4 rounded shadow">
-                <h3 class="text-lg font-bold mb-4">Top Customers by Revenue</h3>
+                <h3 class="text-lg font-bold mb-4">ტოპ კლიენტები შემოსავლით</h3>
                 <div class="space-y-3">
                     <?php foreach ($topCustomers as $index => $customer): ?>
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
@@ -285,16 +294,16 @@ $invoices = $stmt->fetchAll();
 
             <!-- Popular Car Brands -->
             <div class="bg-white p-4 rounded shadow">
-                <h3 class="text-lg font-bold mb-4">Popular Car Brands</h3>
+                <h3 class="text-lg font-bold mb-4">პოპულარული ავტომობილების მარკები</h3>
                 <div class="space-y-3">
                     <?php foreach ($popularCarBrands as $brand): ?>
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
                             <span class="font-semibold"><?php echo htmlspecialchars($brand['car_mark']); ?></span>
-                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"><?php echo $brand['count']; ?> customers</span>
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"><?php echo $brand['count']; ?> კლიენტი</span>
                         </div>
                     <?php endforeach; ?>
                     <?php if (empty($popularCarBrands)): ?>
-                        <p class="text-gray-500 text-center py-4">No car brand data available</p>
+                        <p class="text-gray-500 text-center py-4">ავტომობილების მარკების მონაცემები არ არის ხელმისაწვდომი</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -302,22 +311,22 @@ $invoices = $stmt->fetchAll();
 
         <!-- Customer Retention Stats -->
         <div class="bg-white p-4 rounded shadow mb-6">
-            <h3 class="text-lg font-bold mb-4">Customer Retention</h3>
+            <h3 class="text-lg font-bold mb-4">კლიენტების დაბრუნება</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="text-center">
                     <p class="text-3xl font-bold text-green-600"><?php echo number_format($repeatCustomers); ?></p>
-                    <p class="text-sm text-gray-600">Repeat Customers</p>
-                    <p class="text-xs text-gray-500">Customers with 2+ visits</p>
+                    <p class="text-sm text-gray-600">მეორედ მომსახურე კლიენტები</p>
+                    <p class="text-xs text-gray-500">კლიენტები 2+ ვიზიტით</p>
                 </div>
                 <div class="text-center">
                     <p class="text-3xl font-bold text-blue-600"><?php echo $totalCustomers > 0 ? round(($repeatCustomers / $totalCustomers) * 100, 1) : 0; ?>%</p>
-                    <p class="text-sm text-gray-600">Retention Rate</p>
-                    <p class="text-xs text-gray-500">Repeat customers / total customers</p>
+                    <p class="text-sm text-gray-600">დაბრუნების მაჩვენებელი</p>
+                    <p class="text-xs text-gray-500">მეორედ მომსახურე კლიენტები / სულ კლიენტები</p>
                 </div>
                 <div class="text-center">
                     <p class="text-3xl font-bold text-purple-600"><?php echo $totalCustomers > 0 ? round($totalInvoices / $totalCustomers, 1) : 0; ?></p>
-                    <p class="text-sm text-gray-600">Avg Visits per Customer</p>
-                    <p class="text-xs text-gray-500">Total invoices / total customers</p>
+                    <p class="text-sm text-gray-600">საშუალო ვიზიტები კლიენტზე</p>
+                    <p class="text-xs text-gray-500">სულ ინვოისები / სულ კლიენტები</p>
                 </div>
             </div>
         </div>
@@ -326,27 +335,27 @@ $invoices = $stmt->fetchAll();
             <div class="md:w-1/2">
                 <div class="bg-white p-4 rounded-lg shadow-md mb-4">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold">Users</h3>
+                        <h3 class="text-lg font-bold">მომხმარებლები</h3>
                         <form method="get" class="flex items-center gap-2">
-                            <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search username" class="px-3 py-2 border rounded">
-                            <button type="submit" class="px-3 py-2 bg-gray-200 rounded">Search</button>
+                            <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="მოძებნეთ მომხმარებლის სახელი" class="px-3 py-2 border rounded">
+                            <button type="submit" class="px-3 py-2 bg-gray-200 rounded">ძიება</button>
                         </form>
                     </div>
 
                     <?php if (isset($success)) echo "<p class='text-green-500 mb-4'>$success</p>"; ?>
 
                     <form method="post" class="bg-gray-50 p-4 rounded mb-4">
-                        <h4 class="font-semibold mb-2">Create New User</h4>
+                        <h4 class="font-semibold mb-2">ახალი მომხმარებლის შექმნა</h4>
                         <div class="grid grid-cols-3 gap-2">
-                            <input type="text" name="username" placeholder="Username" class="px-2 py-2 border rounded" required>
-                            <input type="password" name="password" placeholder="Password" class="px-2 py-2 border rounded" required>
+                            <input type="text" name="username" placeholder="მომხმარებლის სახელი" class="px-2 py-2 border rounded" required>
+                            <input type="password" name="password" placeholder="პაროლი" class="px-2 py-2 border rounded" required>
                             <select name="role" class="px-2 py-2 border rounded" required>
-                                <option value="user">User</option>
-                                <option value="manager">Manager</option>
-                                <option value="admin">Admin</option>
+                                <option value="user">მომხმარებელი</option>
+                                <option value="manager">მენეჯერი</option>
+                                <option value="admin">ადმინისტრატორი</option>
                             </select>
                         </div>
-                        <button type="submit" name="create_user" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Create</button>
+                        <button type="submit" name="create_user" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">შექმნა</button>
                     </form>
 
                     <div class="overflow-x-auto">
@@ -354,9 +363,9 @@ $invoices = $stmt->fetchAll();
                             <thead class="bg-gray-100">
                                 <tr>
                                     <th class="text-left px-2 md:px-4 py-2">ID</th>
-                                    <th class="text-left px-2 md:px-4 py-2">Username</th>
-                                    <th class="text-left px-2 md:px-4 py-2">Role</th>
-                                    <th class="text-left px-2 md:px-4 py-2">Created</th>
+                                    <th class="text-left px-2 md:px-4 py-2">მომხმარებლის სახელი</th>
+                                    <th class="text-left px-2 md:px-4 py-2">როლი</th>
+                                    <th class="text-left px-2 md:px-4 py-2">შექმნილია</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -384,10 +393,10 @@ $invoices = $stmt->fetchAll();
             <div class="md:w-1/2">
                 <div class="bg-white p-4 rounded-lg shadow-md mb-4">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold">Recent Invoices</h3>
+                        <h3 class="text-lg font-bold">ბოლო ინვოისები</h3>
                         <div class="flex items-center gap-2">
-                            <a href="export_invoices.php" class="px-3 py-2 bg-gray-200 rounded">Export CSV</a>
-                            <a href="logs.php" class="px-3 py-2 bg-gray-200 rounded">View Logs</a>
+                            <a href="export_invoices.php" class="px-3 py-2 bg-gray-200 rounded">CSV ექსპორტი</a>
+                            <a href="logs.php" class="px-3 py-2 bg-gray-200 rounded">ლოგების ნახვა</a>
                         </div>
                     </div>
 
