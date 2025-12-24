@@ -620,21 +620,12 @@ if (!empty($serverInvoice)) {
                 box.className = 'absolute bg-white border rounded mt-1 shadow z-50 w-full';
                 box.style.maxHeight = '220px';
                 box.style.overflow = 'auto';
-                box.style.position = 'fixed';
-                box.style.zIndex = '9999';
-                document.body.appendChild(box);
-
-                const updatePosition = () => {
-                    const rect = input.getBoundingClientRect();
-                    box.style.top = (rect.bottom + window.scrollY) + 'px';
-                    box.style.left = (rect.left + window.scrollX) + 'px';
-                    box.style.width = rect.width + 'px';
-                };
+                input.parentElement.style.position = 'relative';
+                input.parentElement.appendChild(box);
 
                 input.addEventListener('input', debounce(async () => {
                     const q = input.value.trim();
                     if (!q) { box.innerHTML = ''; return; }
-                    updatePosition();
                     try {
                         console.log('Searching for:', q);
                         const res = await fetch(endpoint + encodeURIComponent(q));
@@ -659,7 +650,6 @@ if (!empty($serverInvoice)) {
                 }));
 
                 input.addEventListener('focus', async () => {
-                    updatePosition();
                     try {
                         const res = await fetch(endpoint);
                         if (!res.ok) return;
@@ -678,8 +668,6 @@ if (!empty($serverInvoice)) {
                 });
 
                 document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) box.innerHTML = ''; });
-                window.addEventListener('scroll', updatePosition);
-                window.addEventListener('resize', updatePosition);
             
             // make available globally in case other inline scripts run before this definition (defensive)
             try{ window.attachTypeahead = attachTypeahead; }catch(e){}
@@ -710,6 +698,23 @@ if (!empty($serverInvoice)) {
                         fetch('./admin/api_customers.php?customer_id=' + encodeURIComponent(it.id))
                             .then(r => r.json())
                             .then(cust => {
+                                // no change here
+                            });
+                    }
+                });
+            }
+
+            // Attach technician typeahead to all existing item rows (fix: ensure initial rows have suggestions)
+            document.querySelectorAll('.item-tech').forEach(input => {
+                if (input.dataset && input.dataset.typeaheadAttached) return; // already attached
+                const tr = input.closest('.item-row');
+                attachTypeahead(input, 'api_technicians_search.php?q=', t => t.name, (it) => {
+                    input.value = it.name || '';
+                    if (tr) tr.dataset.itemTechId = it.id;
+                });
+                input.addEventListener('input', ()=>{ if (tr && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
+                input.dataset.typeaheadAttached = '1';
+            });
                                 if (!cust || !Array.isArray(cust.vehicles) || cust.vehicles.length === 0) return;
                                 const first = cust.vehicles[0];
                                 plateField.value = first.plate_number || '';
@@ -1279,6 +1284,7 @@ if (!empty($serverInvoice)) {
                         techInput.value = it.name || '';
                         tr.dataset.itemTechId = it.id;
                     });
+                    techInput.dataset.typeaheadAttached = '1';
                 }
                 // Clear stored technician id when user types custom text
                 techInput.addEventListener('input', ()=>{ if (tr.dataset && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
