@@ -101,13 +101,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
                     <div class="border-b border-black px-2 h-6 flex items-center" id="out_service_manager"></div>
                 <?php endif; ?>
 
-                <div class="font-bold whitespace-nowrap">შემსრულებელი:</div>
-                <?php if ($server): ?>
-                    <div class="border-b border-black px-2 h-6 flex items-center"><?php echo esc($tech_name); ?></div>
-                <?php else: ?>
-                    <div class="border-b border-black px-2 h-6 flex items-center" id="out_technician"></div>
-                <?php endif; ?>
-            </div>
+
         </div>
 
         <!-- Customer Notes -->
