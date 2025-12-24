@@ -1269,6 +1269,8 @@ foreach ($oilPrices as $price) {
                     total += t;
                 });
                 const oilsDisplayEl = document.getElementById('display_oils_total'); if (oilsDisplayEl) oilsDisplayEl.textContent = total.toFixed(2) + ' ₾';
+                // Recompute grand total to include oils
+                if (typeof calculateTotals === 'function') calculateTotals();
             }
 
             function removeOil(id) {
