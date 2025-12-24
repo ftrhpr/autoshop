@@ -1,264 +1,250 @@
 <?php
 require 'config.php';
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); exit;
+    header('Location: login.php');
+    exit;
 }
-$now = date('Y-m-d\TH:i');
+$username = $_SESSION['username'] ?? '';
+$todayLocal = date('Y-m-d\TH:i');
 ?>
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Mobile Invoice - AutoShop</title>
-    <link rel="stylesheet" href="main.css">
-    <style>
-        /* small extra tweaks for this mobile page */
-        body { -webkit-tap-highlight-color: transparent; }
-        .suggestions { position: absolute; z-index: 2147483647; background: #fff; border: 1px solid #e5e7eb; border-radius: .375rem; box-shadow: 0 8px 24px rgba(0,0,0,.08); max-height: 240px; overflow:auto; }
-        .item-card { border: 1px solid #e5e7eb; border-radius: .5rem; padding: .75rem; background: #fff; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mobile Invoice — Test UI</title>
+<link rel="stylesheet" href="main.css">
+<style>
+    /* Mobile-first custom styles */
+    body { background:#f7fafc; font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+    .container { max-width:720px; margin:0 auto; padding:16px; }
+    .card { background:#fff; border-radius:12px; padding:14px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); margin-bottom:12px; }
+    .field-label { font-weight:600; font-size:0.9rem; color:#334155; margin-bottom:6px; }
+    .input { width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:10px; font-size:1rem; }
+    .row { display:flex; gap:8px; margin-top:8px; }
+    .row .col { flex:1; }
+    .btn { display:inline-block; background:#047857; color:#fff; padding:12px 16px; border-radius:10px; font-weight:600; text-align:center; }
+    .btn.secondary { background:#0ea5e9; }
+    .item-card { background:#fbfdff; border-radius:10px; padding:10px; margin-bottom:8px; border:1px solid #e6eef6; }
+    .small { font-size:0.9rem; color:#475569; }
+    .sticky-footer { position:sticky; bottom:12px; display:flex; gap:8px; }
+    .typeahead-box { position:absolute; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 8px 20px rgba(2,6,23,0.08); max-height:240px; overflow:auto; z-index:99999; }
+    .typeahead-item { padding:10px; border-bottom:1px solid #f1f5f9; }
+    .typeahead-item:hover { background:#f8fafc; cursor:pointer; }
+    @media(min-width:768px){ .container { padding:24px; } }
+</style>
 </head>
-<body class="bg-gray-50 min-h-screen text-gray-800">
-    <header class="bg-white shadow p-4 sticky top-0 z-40">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
-            <h1 class="text-lg font-semibold">Create Invoice (Mobile)</h1>
-            <div class="space-x-2">
-                <a href="index.php" class="text-sm text-blue-600">Desktop</a>
-                <a href="manager.php" class="text-sm text-gray-600">Back</a>
-            </div>
-        </div>
+<body>
+<div class="container">
+    <header class="flex items-center justify-between mb-4">
+        <h1 style="font-size:1.2rem; font-weight:700;">Create Invoice — Mobile Test</h1>
+        <a href="manager.php" class="small text-slate-600">Back</a>
     </header>
 
-    <main class="max-w-2xl mx-auto p-4">
-        <form id="invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data" onsubmit="return handleSave()" class="space-y-4">
-            <input type="hidden" name="print_after_save" id="print_after_save" value="">
-            <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="">
+    <form id="mobile-invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="created_by" value="<?php echo htmlspecialchars($_SESSION['user_id'] ?? ''); ?>">
+        <input type="hidden" name="creation_date" id="hidden_creation_date" value="<?php echo $todayLocal; ?>">
 
-            <section class="bg-white p-4 rounded-lg shadow-sm">
-                <h2 class="font-semibold mb-3">Vehicle</h2>
-                <div class="space-y-3">
-                    <div class="relative">
-                        <label class="text-sm text-gray-700">Plate Number</label>
-                        <input type="text" id="input_plate_mobile" name="plate_number" placeholder="Plate" class="w-full mt-1 p-3 rounded border" autocomplete="off">
-                        <div id="plate-suggestions" class="suggestions hidden mt-1"></div>
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-700">Car Make/Model</label>
-                        <input type="text" id="input_car_mark_mobile" name="car_mark" class="w-full mt-1 p-3 rounded border">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-sm text-gray-700">VIN</label>
-                            <input type="text" id="input_vin_mobile" name="vin" class="w-full mt-1 p-3 rounded border">
-                        </div>
-                        <div>
-                            <label class="text-sm text-gray-700">Mileage</label>
-                            <input type="text" id="input_mileage_mobile" name="mileage" class="w-full mt-1 p-3 rounded border">
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="bg-white p-4 rounded-lg shadow-sm">
-                <h2 class="font-semibold mb-3">Customer</h2>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-sm text-gray-700">Customer Name</label>
-                        <input type="text" id="input_customer_name_mobile" name="customer_name" class="w-full mt-1 p-3 rounded border">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-700">Phone</label>
-                        <input type="text" id="input_phone_mobile" name="phone_number" class="w-full mt-1 p-3 rounded border">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-700">Creation Date</label>
-                        <input type="datetime-local" id="input_creation_date_mobile" name="creation_date" value="<?php echo $now; ?>" class="w-full mt-1 p-3 rounded border">
-                    </div>
-                </div>
-            </section>
-
-            <section id="items-section" class="space-y-3">
-                <div class="flex items-center justify-between">
-                    <h2 class="font-semibold">Items</h2>
-                    <button type="button" onclick="addItem()" class="bg-green-600 text-white px-3 py-2 rounded">Add</button>
-                </div>
-                <div id="items-list" class="space-y-3">
-                    <!-- item cards inserted here -->
-                </div>
-            </section>
-
-            <section class="bg-white p-4 rounded-lg shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm text-gray-600">Parts</div>
-                        <div id="display_parts_total" class="text-lg font-bold">0.00 ₾</div>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-600">Service</div>
-                        <div id="display_service_total" class="text-lg font-bold">0.00 ₾</div>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-600">Grand</div>
-                        <div id="display_grand_total" class="text-lg font-bold">0.00 ₾</div>
-                    </div>
-                </div>
-            </section>
-
-            <div class="flex gap-3">
-                <button type="button" onclick="submitAndPrint()" class="flex-1 bg-blue-600 text-white p-3 rounded">Save & Print</button>
-                <button type="button" onclick="handleSave()" class="flex-1 bg-gray-800 text-white p-3 rounded">Save</button>
+        <div class="card">
+            <div class="field-label">Plate Number</div>
+            <div style="position:relative">
+                <input id="mi_plate" name="plate_number" class="input" placeholder="e.g., ZZ-000-ZZ" autocomplete="off">
+                <div id="mi_plate_suggestions" class="typeahead-box" style="display:none;"></div>
             </div>
-        </form>
-    </main>
+            <div class="row mt-3">
+                <div class="col">
+                    <div class="field-label">Customer</div>
+                    <input id="mi_customer" name="customer_name" class="input" placeholder="Customer name">
+                </div>
+                <div class="col">
+                    <div class="field-label">Phone</div>
+                    <input id="mi_phone" name="phone_number" class="input" placeholder="Phone number">
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col">
+                    <div class="field-label">Make / Model</div>
+                    <input id="mi_car" name="car_mark" class="input" placeholder="Make Model">
+                </div>
+                <div class="col">
+                    <div class="field-label">VIN</div>
+                    <input id="mi_vin" name="vin" class="input" placeholder="VIN">
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col">
+                    <div class="field-label">Mileage</div>
+                    <input id="mi_mileage" name="mileage" class="input" placeholder="e.g., 150000">
+                </div>
+                <div class="col">
+                    <div class="field-label">Service Manager</div>
+                    <input id="mi_sm" name="service_manager" class="input" placeholder="Service manager" value="<?php echo htmlspecialchars($username); ?>">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center justify-between mb-2">
+                <div style="font-weight:700">Items</div>
+                <button type="button" id="mi_add_item" class="btn secondary">+ Add Item</button>
+            </div>
+            <div id="mi_items_list"></div>
+            <div class="row mt-2">
+                <div class="col small">Parts Total: <span id="mi_parts_total">0.00 ₾</span></div>
+                <div class="col small">Service Total: <span id="mi_service_total">0.00 ₾</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="field-label">Notes (optional)</div>
+            <textarea name="notes" class="input" rows="3" placeholder="Extra notes..."></textarea>
+        </div>
+
+        <div class="sticky-footer">
+            <button type="button" id="mi_save" class="btn">Save</button>
+            <button type="button" id="mi_save_print" class="btn">Save & Print</button>
+        </div>
+    </form>
+
+    <div style="height:60px"></div>
+</div>
 
 <script>
-// Simple mobile invoice JS
-let itemIndex = 0;
-function addItem(data={}){
-    const list = document.getElementById('items-list');
-    const id = 'item-'+(itemIndex++);
-    const div = document.createElement('div');
-    div.className = 'item-card';
-    div.dataset.idx = id;
-    div.innerHTML = `
-        <div class="flex justify-between items-start">
-            <strong>Item</strong>
-            <button type="button" class="text-red-600" onclick="this.closest('.item-card').remove(); calculateTotals();">Remove</button>
+// Minimal typeahead implementation for the page (works with existing endpoints)
+function attachSimpleTypeahead(input, suggestionsEl, endpoint, formatItem, onSelect){
+    let current = -1;
+    let items = [];
+    input.addEventListener('input', async function(){
+        const q = input.value.trim();
+        if (!q) { suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; return; }
+        try {
+            const res = await fetch(endpoint + encodeURIComponent(q));
+            if (!res.ok) { suggestionsEl.style.display='none'; return; }
+            const data = await res.json();
+            // accept multiple shapes
+            if (Array.isArray(data)) items = data;
+            else if (data && Array.isArray(data.rows)) items = data.rows;
+            else if (data && Array.isArray(data.customers)) items = data.customers;
+            else if (data && Array.isArray(data.technicians)) items = data.technicians;
+            else items = [];
+            if (!items.length) { suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; return; }
+            suggestionsEl.innerHTML = items.map((it, idx) => `<div class="typeahead-item" data-idx="${idx}">${formatItem(it)}</div>`).join('');
+            suggestionsEl.style.display = 'block';
+        } catch(e){ console.log(e); suggestionsEl.style.display='none'; }
+    });
+    suggestionsEl.addEventListener('click', (ev) => {
+        const tgt = ev.target.closest('.typeahead-item'); if (!tgt) return;
+        const idx = parseInt(tgt.getAttribute('data-idx'));
+        const it = items[idx]; if (!it) return;
+        onSelect(it);
+        suggestionsEl.style.display='none'; suggestionsEl.innerHTML='';
+    });
+    document.addEventListener('click', (e)=>{ if (!input.contains(e.target) && !suggestionsEl.contains(e.target)) { suggestionsEl.style.display='none'; } });
+}
+
+// Item management
+let itemIdx = 0;
+function addItemRow(data = {}){
+    const id = itemIdx++;
+    const wrap = document.createElement('div'); wrap.className = 'item-card'; wrap.dataset.idx = id;
+    wrap.innerHTML = `
+        <div class="row">
+            <div class="col"><input class="input mi_item_name" placeholder="Description" value="${(data.name||'').replace(/"/g,'&quot;')}"></div>
+            <div style="width:86px"><input class="input mi_item_qty" type="number" min="1" value="${data.qty||1}"></div>
         </div>
-        <div class="mt-2 space-y-2">
-            <input type="text" placeholder="Description" class="w-full p-2 border rounded item-name" value="${(data.name||'')}">
-            <div class="grid grid-cols-3 gap-2">
-                <input type="number" min="1" class="p-2 border rounded item-qty" value="${(data.qty || 1)}">
-                <input type="number" min="0" class="p-2 border rounded item-price-part" placeholder="Part" value="${(data.price_part||0)}">
-                <input type="number" min="0" class="p-2 border rounded item-price-svc" placeholder="Service" value="${(data.price_svc||0)}">
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <input type="number" min="0" max="100" class="p-2 border rounded item-discount-part" placeholder="Part %" value="${(data.discount_part||0)}">
-                <input type="number" min="0" max="100" class="p-2 border rounded item-discount-svc" placeholder="Service %" value="${(data.discount_svc||0)}">
-            </div>
-            <input type="text" placeholder="Technician" class="w-full p-2 border rounded item-tech" value="${(data.tech||'')}">
+        <div class="row mt-2">
+            <div class="col"><input class="input mi_item_price_part" placeholder="Part price" type="number" min="0" value="${data.price_part||0}"></div>
+            <div style="width:110px"><input class="input mi_item_price_svc" placeholder="Svc price" type="number" min="0" value="${data.price_svc||0}"></div>
+        </div>
+        <div class="row mt-2">
+            <div class="col small">Technician</div>
+            <div style="width:120px;text-align:right"><button type="button" class="btn" data-action="remove">Remove</button></div>
+        </div>
+        <div class="row mt-2">
+            <div class="col"><input class="input mi_item_tech" placeholder="Technician"></div>
         </div>
     `;
-    list.appendChild(div);
-    // attach simple input listeners
-    div.querySelectorAll('input').forEach(el => el.addEventListener('input', calculateTotals));
-    calculateTotals();
+    document.getElementById('mi_items_list').appendChild(wrap);
+
+    // attach simple typeahead for technician on this row
+    const techInput = wrap.querySelector('.mi_item_tech');
+    attachSimpleTypeahead(techInput, createTypeaheadContainer(techInput), 'api_technicians_search.php?q=', it => it.name, (it) => { techInput.value = it.name || ''; wrap.dataset.techId = it.id; });
+
+    wrap.querySelector('[data-action="remove"]').addEventListener('click', ()=>{ wrap.remove(); calcTotals(); });
+
+    wrap.querySelectorAll('.mi_item_qty, .mi_item_price_part, .mi_item_price_svc').forEach(el => el.addEventListener('input', calcTotals));
+    calcTotals();
 }
 
-function calculateTotals(){
-    let pTotal = 0, sTotal = 0;
+function createTypeaheadContainer(input){
+    const container = document.createElement('div'); container.className='typeahead-box'; container.style.display='none'; container.style.position='absolute'; container.style.left='0'; container.style.right='0'; container.style.top=(input.offsetHeight+6)+'px'; input.parentElement.style.position='relative'; input.parentElement.appendChild(container); return container;
+}
+
+function calcTotals(){
+    let parts = 0, svc = 0;
     document.querySelectorAll('.item-card').forEach(card => {
-        const qty = parseFloat(card.querySelector('.item-qty').value) || 0;
-        const pp = parseFloat(card.querySelector('.item-price-part').value) || 0;
-        const ps = parseFloat(card.querySelector('.item-price-svc').value) || 0;
-        const dp = parseFloat(card.querySelector('.item-discount-part').value) || 0;
-        const ds = parseFloat(card.querySelector('.item-discount-svc').value) || 0;
-        pTotal += qty * pp * Math.max(0, (1 - dp/100));
-        sTotal += qty * ps * Math.max(0, (1 - ds/100));
+        const qty = parseFloat(card.querySelector('.mi_item_qty').value) || 0;
+        const pp = parseFloat(card.querySelector('.mi_item_price_part').value) || 0;
+        const ps = parseFloat(card.querySelector('.mi_item_price_svc').value) || 0;
+        parts += qty * pp; svc += qty * ps;
     });
-    const finalP = Math.max(0, pTotal); const finalS = Math.max(0, sTotal);
-    document.getElementById('display_parts_total').innerText = finalP.toFixed(2) + ' ₾';
-    document.getElementById('display_service_total').innerText = finalS.toFixed(2) + ' ₾';
-    document.getElementById('display_grand_total').innerText = (finalP+finalS).toFixed(2) + ' ₾';
+    document.getElementById('mi_parts_total').innerText = parts.toFixed(2) + ' ₾';
+    document.getElementById('mi_service_total').innerText = svc.toFixed(2) + ' ₾';
 }
 
-function prepareData(){
-    const form = document.getElementById('invoice-form');
-    // remove previous dynamic inputs
-    form.querySelectorAll('input[name^="item_"]').forEach(n => n.remove());
-    let idx = 0;
+function prepareAndSubmit(printAfter){
+    // Build the form minimally and submit
+    const form = document.getElementById('mobile-invoice-form');
+    // Remove previous dynamic hidden fields
+    document.querySelectorAll('.mi-dyn').forEach(el=>el.remove());
+    // Add items
+    let i=0;
     document.querySelectorAll('.item-card').forEach(card => {
-        const name = card.querySelector('.item-name').value.trim();
+        const name = card.querySelector('.mi_item_name').value.trim();
         if (!name) return;
-        const qty = card.querySelector('.item-qty').value || 1;
-        const pp = card.querySelector('.item-price-part').value || 0;
-        const ps = card.querySelector('.item-price-svc').value || 0;
-        const dp = card.querySelector('.item-discount-part').value || 0;
-        const ds = card.querySelector('.item-discount-svc').value || 0;
-        const tech = card.querySelector('.item-tech').value || '';
-        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_name_${idx}" value="${name}">`);
-        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_qty_${idx}" value="${qty}">`);
-        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_part_${idx}" value="${pp}">`);
-        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_svc_${idx}" value="${ps}">`);
-        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_part_${idx}" value="${dp}">`);
-        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_svc_${idx}" value="${ds}">`);
-        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_${idx}" value="${tech}">`);
-        idx++;
+        const qty = card.querySelector('.mi_item_qty').value || 1;
+        const pp = card.querySelector('.mi_item_price_part').value || 0;
+        const ps = card.querySelector('.mi_item_price_svc').value || 0;
+        const tech = card.querySelector('.mi_item_tech').value || '';
+        const techId = card.dataset.techId || '';
+        const inputs = [`item_name_${i}`, `item_qty_${i}`, `item_price_part_${i}`, `item_price_svc_${i}`, `item_tech_${i}`, `item_tech_id_${i}`];
+        const vals = [name, qty, pp, ps, tech, techId];
+        inputs.forEach((n, idx)=>{
+            const h = document.createElement('input'); h.type='hidden'; h.name=n; h.value=vals[idx]; h.className='mi-dyn'; form.appendChild(h);
+        });
+        i++;
     });
-    // set totals hidden (so server accepts)
-    const totals = {
-        parts_total: (document.getElementById('display_parts_total').innerText || '0').replace(' ₾','') || 0,
-        service_total: (document.getElementById('display_service_total').innerText || '0').replace(' ₾','') || 0,
-        grand_total: (document.getElementById('display_grand_total').innerText || '0').replace(' ₾','') || 0
-    };
-    ['parts_total','service_total','grand_total'].forEach(k => {
-        const v = totals[k];
-        const el = document.createElement('input'); el.type = 'hidden'; el.name = k; el.value = v; form.appendChild(el);
-    });
-    // copy vehicle/customer fields into hidden names expected by save_invoice.php
-    const fields = {
-        customer_name: document.getElementById('input_customer_name_mobile').value || '',
-        phone_number: document.getElementById('input_phone_mobile').value || '',
-        car_mark: document.getElementById('input_car_mark_mobile').value || '',
-        plate_number: document.getElementById('input_plate_mobile').value || '',
-        vin: document.getElementById('input_vin_mobile').value || '',
-        mileage: document.getElementById('input_mileage_mobile').value || '',
-        creation_date: document.getElementById('input_creation_date_mobile').value || ''
-    };
-    for (const [k,v] of Object.entries(fields)){
-        const el = document.createElement('input'); el.type='hidden'; el.name=k; el.value=v; form.appendChild(el);
+
+    // Add global totals (optional)
+    const partsTotalEl = document.createElement('input'); partsTotalEl.type='hidden'; partsTotalEl.name='parts_total'; partsTotalEl.value = document.getElementById('mi_parts_total').innerText.replace(' ₾','') || '0.00'; partsTotalEl.className='mi-dyn'; form.appendChild(partsTotalEl);
+    const svcTotalEl = document.createElement('input'); svcTotalEl.type='hidden'; svcTotalEl.name='service_total'; svcTotalEl.value = document.getElementById('mi_service_total').innerText.replace(' ₾','') || '0.00'; svcTotalEl.className='mi-dyn'; form.appendChild(svcTotalEl);
+
+    if (printAfter) {
+        let paf = document.getElementById('print_after_save'); if (!paf){ paf = document.createElement('input'); paf.type='hidden'; paf.name='print_after_save'; paf.id='print_after_save'; paf.className='mi-dyn'; form.appendChild(paf); }
+        paf.value='1';
     }
-    return true;
+
+    // Submit normally so PHP will redirect to print/view page
+    form.submit();
 }
 
-function handleSave(){
-    // Basic validation: plate or customer required
-    const customer = document.getElementById('input_customer_name_mobile').value.trim();
-    const plate = document.getElementById('input_plate_mobile').value.trim();
-    if (!customer && !plate) { alert('Please enter a customer name or plate number.'); return false; }
-    if (!prepareData()) return false;
-    document.getElementById('invoice-form').submit();
-    return true;
-}
+// Attach plate typeahead
+attachSimpleTypeahead(document.getElementById('mi_plate'), document.getElementById('mi_plate_suggestions'), './admin/api_customers.php?q=', (it)=> `${it.plate_number} — ${it.full_name || ''} ${it.car_mark? ' — ' + it.car_mark : ''}`, (it)=>{
+    document.getElementById('mi_plate').value = it.plate_number || '';
+    document.getElementById('mi_customer').value = it.full_name || '';
+    document.getElementById('mi_phone').value = it.phone || '';
+    document.getElementById('mi_car').value = it.car_mark || '';
+    document.getElementById('mi_vin').value = it.vin || '';
+    document.getElementById('mi_mileage').value = it.mileage || '';
+});
 
-function submitAndPrint(){ document.getElementById('print_after_save').value = '1'; handleSave(); }
+// Button handlers
+document.getElementById('mi_add_item').addEventListener('click', ()=> addItemRow());
+document.getElementById('mi_save').addEventListener('click', ()=> prepareAndSubmit(false));
+document.getElementById('mi_save_print').addEventListener('click', ()=> prepareAndSubmit(true));
 
-// minimal plate suggestion logic
-(function(){
-    const input = document.getElementById('input_plate_mobile');
-    const box = document.getElementById('plate-suggestions');
-    let timer;
-    input.addEventListener('input', () => {
-        clearTimeout(timer);
-        const q = input.value.trim();
-        if (!q) { box.classList.add('hidden'); box.innerHTML=''; return; }
-        timer = setTimeout(async ()=>{
-            try{
-                const res = await fetch('./admin/api_customers.php?q=' + encodeURIComponent(q));
-                if (!res.ok) { box.classList.add('hidden'); return; }
-                const rows = await res.json();
-                if (!Array.isArray(rows) || rows.length === 0) { box.classList.add('hidden'); return; }
-                box.innerHTML = rows.map(r => `<div class='px-3 py-2 cursor-pointer hover:bg-gray-100' data-json='${JSON.stringify(r).replace(/'/g,"\\'") }'>${r.plate_number} — ${r.full_name || ''}${r.car_mark? ' — ' + r.car_mark : ''}${r.vin? ' — VIN:'+r.vin : ''}</div>`).join('');
-                box.classList.remove('hidden');
-                box.querySelectorAll('div').forEach(el=>el.addEventListener('click', ()=>{
-                    const it = JSON.parse(el.getAttribute('data-json'));
-                    input.value = it.plate_number || '';
-                    document.getElementById('input_customer_name_mobile').value = it.full_name || '';
-                    document.getElementById('input_phone_mobile').value = it.phone || '';
-                    document.getElementById('input_car_mark_mobile').value = it.car_mark || '';
-                    document.getElementById('input_vin_mobile').value = it.vin || '';
-                    document.getElementById('input_mileage_mobile').value = it.mileage || '';
-                    box.classList.add('hidden');
-                }));
-            }catch(e){ box.classList.add('hidden'); }
-        }, 250);
-    });
-    document.addEventListener('click', (ev)=>{ if (!input.contains(ev.target) && !box.contains(ev.target)) box.classList.add('hidden'); });
-})();
-
-// Start with one blank item row
-addItem();
+// seed one empty item
+addItemRow();
 </script>
 </body>
 </html>
