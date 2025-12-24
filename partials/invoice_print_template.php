@@ -121,11 +121,19 @@ function esc($s){ return htmlspecialchars((string)$s); }
     foreach ($items as $it) {
         $qty = isset($it['qty']) ? (float)$it['qty'] : 0;
         $pPart = isset($it['price_part']) ? (float)$it['price_part'] : 0;
+        $dPart = isset($it['discount_part']) ? (float)$it['discount_part'] : 0.0;
         $pSvc = isset($it['price_svc']) ? (float)$it['price_svc'] : 0;
-        $computedParts += $qty * $pPart;
-        $computedSvc += $qty * $pSvc;
+        $dSvc = isset($it['discount_svc']) ? (float)$it['discount_svc'] : 0.0;
+        $linePart = $qty * $pPart * max(0, (1 - $dPart / 100.0));
+        $lineSvc = $qty * $pSvc * max(0, (1 - $dSvc / 100.0));
+        $computedParts += $linePart;
+        $computedSvc += $lineSvc;
     }
-    $computedGrand = $computedParts + $computedSvc;
+    $parts_discount_percent = isset($invoice['parts_discount_percent']) ? (float)$invoice['parts_discount_percent'] : 0.0;
+    $service_discount_percent = isset($invoice['service_discount_percent']) ? (float)$invoice['service_discount_percent'] : 0.0;
+    $computedPartsAfterGlobal = $computedParts * max(0, (1 - $parts_discount_percent / 100.0));
+    $computedSvcAfterGlobal = $computedSvc * max(0, (1 - $service_discount_percent / 100.0));
+    $computedGrand = $computedPartsAfterGlobal + $computedSvcAfterGlobal;
 endif; ?>
             <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse border border-black min-w-[600px]">
                 <thead>
@@ -134,8 +142,10 @@ endif; ?>
                         <th class="border border-black p-0.5 text-left min-w-[200px]">ნაწილის და სერვისის დასახელება</th>
                         <th class="border border-black p-0.5 w-10 sm:w-12 text-center">რაოდ.</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">ფასი ნაწილი</th>
+                        <th class="border border-black p-0.5 w-10 sm:w-12 text-right">Disc%</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">თანხა</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">ფასი სერვისი</th>
+                        <th class="border border-black p-0.5 w-10 sm:w-12 text-right">Disc%</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">თანხა</th>
                         <th class="border border-black p-0.5 w-20 sm:w-24 text-left">შემსრულებელი</th>
                     </tr>
@@ -152,9 +162,11 @@ endif; ?>
 
                             $displayQty = $qty;
                             $displayPPart = $pPart > 0 ? number_format($pPart,2) : '';
-                            $displayTotalPart = ($qty * $pPart) > 0 ? number_format($qty * $pPart, 2) : '';
+                            $displayPartDisc = $dPart > 0 ? number_format($dPart,2) . '%' : '';
+                            $displayTotalPart = $linePart > 0 ? number_format($linePart, 2) : '';
                             $displayPSvc = $pSvc > 0 ? number_format($pSvc,2) : '';
-                            $displayTotalSvc = ($qty * $pSvc) > 0 ? number_format($qty * $pSvc, 2) : '';
+                            $displaySvcDisc = $dSvc > 0 ? number_format($dSvc,2) . '%' : '';
+                            $displayTotalSvc = $lineSvc > 0 ? number_format($lineSvc, 2) : '';
 
                             if ($name === '') {
                                 $displayQty = '';
@@ -169,8 +181,10 @@ endif; ?>
                             echo "<td class=\"border border-black p-0.5\">" . esc($name) . "</td>";
                             echo "<td class=\"border border-black p-0.5 text-center\">" . $displayQty . "</td>";
                             echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPPart . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPartDisc . "</td>";
                             echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalPart . "</td>";
                             echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPSvc . "</td>";
+                            echo "<td class=\"border border-black p-0.5 text-right\">" . $displaySvcDisc . "</td>";
                             echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalSvc . "</td>";
                             echo "<td class=\"border border-black p-0.5\">" . esc($tech) . "</td>";
                             echo "</tr>";
@@ -192,14 +206,15 @@ endif; ?>
                             echo "</tr>";
                         }
 
-                        // Add footer row (totals) matching preview logic (hide zeros)
-                        $displayPartTotal = ($computedParts ?? 0) > 0 ? number_format($computedParts, 2) : '';
-                        $displaySvcTotal = ($computedSvc ?? 0) > 0 ? number_format($computedSvc, 2) : '';
+                        // Add footer row (totals) with global discounts applied
                         echo "<tr class=\"font-bold bg-gray-100 print:bg-gray-100\">";
-                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"4\">ჯამი:</td>";
-                        echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPartTotal . "</td>";
-                        echo "<td class=\"border border-black p-0.5 text-right\">ჯამი:</td>";
-                        echo "<td class=\"border border-black p-0.5 text-right\">" . $displaySvcTotal . "</td>";
+                        // Span first 5 columns (#, name, qty, price part, disc%)
+                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"5\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\">" . ($computedPartsAfterGlobal > 0 ? number_format($computedPartsAfterGlobal,2) : '') . "</td>";
+                        // Next two columns (price svc, disc%) label
+                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"2\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\">" . ($computedSvcAfterGlobal > 0 ? number_format($computedSvcAfterGlobal,2) : '') . "</td>";
+                        // Last column placeholder
                         echo "<td class=\"border border-black p-0.5 bg-gray-300 print:bg-gray-300\"></td>";
                         echo "</tr>";
                     endif; ?>
@@ -211,6 +226,12 @@ endif; ?>
                 <div class="border border-black px-2 sm:px-4 py-2 bg-yellow-100 print:bg-yellow-100 text-sm sm:text-lg font-bold">
                     სულ გადასახდელი: <span id="out_grand_total"><?php $total = $server ? (float)($computedGrand ?? ($invoice['grand_total'] ?? 0)) : 0; echo $total > 0 ? number_format($total, 2) . ' ₾' : ''; ?></span>
                     <input type="text" class="border-b border-black bg-transparent text-sm sm:text-lg font-bold w-16 sm:w-24 ml-2 text-center" placeholder="____" />
+                    <?php if ($server && ($parts_discount_percent>0 || $service_discount_percent>0)): ?>
+                        <div class="text-xs mt-1">
+                            <?php if ($parts_discount_percent>0) echo '<div>Parts discount: '.number_format($parts_discount_percent,2).'%</div>'; ?>
+                            <?php if ($service_discount_percent>0) echo '<div>Service discount: '.number_format($service_discount_percent,2).'%</div>'; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

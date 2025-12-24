@@ -1731,7 +1731,11 @@ if (!empty($serverInvoice)) {
                 return false;
             }
 
-            return prepareData();
+            if (prepareData()) {
+                document.getElementById('invoice-form').submit();
+                return true;
+            }
+            return false;
         }
 
         function handlePrint() {
@@ -1739,9 +1743,7 @@ if (!empty($serverInvoice)) {
             document.getElementById('print_after_save').value = '1';
 
             // Run validation/prepare logic. handleSave() calls prepareData() and returns false on validation failure.
-            if (handleSave()) {
-                document.getElementById('invoice-form').submit();
-            } else {
+            if (!handleSave()) {
                 // Clear flag when validation fails to avoid accidental print after failed save
                 document.getElementById('print_after_save').value = '';
             }

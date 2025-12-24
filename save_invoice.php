@@ -513,15 +513,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $parts_discount_percent = isset($data['parts_discount_percent']) ? floatval($data['parts_discount_percent']) : 0.0;
     $service_discount_percent = isset($data['service_discount_percent']) ? floatval($data['service_discount_percent']) : 0.0;
 
+    // Apply global discounts to calculated totals
+    $calcPartsAfterGlobal = $partsTotal * max(0, (1 - $parts_discount_percent / 100.0));
+    $calcServiceAfterGlobal = $serviceTotal * max(0, (1 - $service_discount_percent / 100.0));
+    $calcGrandAfterGlobal = $calcPartsAfterGlobal + $calcServiceAfterGlobal;
+
     // Use calculated values if POST values are empty or invalid
     $providedPartsTotal = isset($data['parts_total']) && is_numeric($data['parts_total']) ? (float)$data['parts_total'] : null;
     $providedServiceTotal = isset($data['service_total']) && is_numeric($data['service_total']) ? (float)$data['service_total'] : null;
     $providedGrandTotal = isset($data['grand_total']) && is_numeric($data['grand_total']) ? (float)$data['grand_total'] : null;
 
-    // Use provided values if they match calculations (within small tolerance), otherwise use calculated
-    $finalPartsTotal = ($providedPartsTotal !== null && abs($providedPartsTotal - $partsTotal) < 0.01) ? $providedPartsTotal : $partsTotal;
-    $finalServiceTotal = ($providedServiceTotal !== null && abs($providedServiceTotal - $serviceTotal) < 0.01) ? $providedServiceTotal : $serviceTotal;
-    $finalGrandTotal = ($providedGrandTotal !== null && abs($providedGrandTotal - $grandTotal) < 0.01) ? $providedGrandTotal : $grandTotal;
+    // Use provided values if they match calculations (within small tolerance), otherwise use calculated after global discount
+    $finalPartsTotal = ($providedPartsTotal !== null && abs($providedPartsTotal - $calcPartsAfterGlobal) < 0.01) ? $providedPartsTotal : $calcPartsAfterGlobal;
+    $finalServiceTotal = ($providedServiceTotal !== null && abs($providedServiceTotal - $calcServiceAfterGlobal) < 0.01) ? $providedServiceTotal : $calcServiceAfterGlobal;
+    $finalGrandTotal = ($providedGrandTotal !== null && abs($providedGrandTotal - $calcGrandAfterGlobal) < 0.01) ? $providedGrandTotal : $calcGrandAfterGlobal;
 
     // Validate vehicle_id exists if provided
     if ($vehicle_id !== null) {
