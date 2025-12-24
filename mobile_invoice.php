@@ -1808,8 +1808,9 @@ foreach ($oilPrices as $price) {
 
             // Add hidden for oils (remove previous ones first)
             const form = document.getElementById('mobile-invoice-form');
-            form.querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
-            form.querySelectorAll('input[name="oils_json"]').forEach(el => el.remove());
+            // Remove only previously prepared hidden oil inputs to avoid removing actual form inputs
+            form.querySelectorAll('.prepared-input[name^="oil_"]').forEach(el => el.remove());
+            form.querySelectorAll('.prepared-input[name="oils_json"]').forEach(el => el.remove());
             let oilIndex = 0;
             const oilsForJson = [];
             document.querySelectorAll('.oil-card').forEach(card => {

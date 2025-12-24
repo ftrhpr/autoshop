@@ -2016,10 +2016,10 @@ if (!empty($serverInvoice)) {
                 }
             });
 
-            // Remove any previously added hidden oil inputs to avoid duplicates
-            form.querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
-            // Also remove legacy or JSON wrapper
-            form.querySelectorAll('input[name="oils_json"]').forEach(el => el.remove());
+            // Remove any previously added prepared hidden oil inputs to avoid duplicates
+            form.querySelectorAll('.prepared-input[name^="oil_"]').forEach(el => el.remove());
+            // Also remove prepared json wrapper if present
+            form.querySelectorAll('.prepared-input[name="oils_json"]').forEach(el => el.remove());
 
             // Add hidden for oils (defensive: skip malformed rows)
             let oilIndex = 0;
