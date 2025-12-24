@@ -1268,7 +1268,7 @@ foreach ($oilPrices as $price) {
                     const t = parseFloat(card.querySelector('.oil-total').textContent.replace(' ₾','')) || 0;
                     total += t;
                 });
-                document.getElementById('display_oils_total').textContent = total.toFixed(2) + ' ₾';
+                const oilsDisplayEl = document.getElementById('display_oils_total'); if (oilsDisplayEl) oilsDisplayEl.textContent = total.toFixed(2) + ' ₾';
             }
 
             function removeOil(id) {
@@ -1311,7 +1311,7 @@ foreach ($oilPrices as $price) {
 
             document.getElementById('display_parts_total').textContent = partsTotal.toFixed(2) + ' ₾';
             document.getElementById('display_service_total').textContent = serviceTotal.toFixed(2) + ' ₾';
-            document.getElementById('display_oils_total').textContent = oilsTotal.toFixed(2) + ' ₾';
+            const oilsDisplayEl = document.getElementById('display_oils_total'); if (oilsDisplayEl) oilsDisplayEl.textContent = oilsTotal.toFixed(2) + ' ₾';
             document.getElementById('display_grand_total').textContent = grandTotal.toFixed(2) + ' ₾';
 
             // Update hidden fields
