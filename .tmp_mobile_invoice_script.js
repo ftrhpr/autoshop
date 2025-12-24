@@ -19,7 +19,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             // Add initial items
-            for(let i = 0; i < 3; i++) {
+            for(let i = 0; i < 1; i++) {
                 addItem();
             }
             calculateTotals();
@@ -1053,7 +1053,7 @@
                     }
                 });
             } else {
-                 for(let i = 0; i < 3; i++) addItem(); // Add empty rows if no items
+                 for(let i = 0; i < 1; i++) addItem(); // Add empty rows if no items
             }
 
             // Populate photos
