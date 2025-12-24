@@ -23,7 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $action = $_POST['action'] ?? '';
         $type = $_POST['type'] ?? '';
-        $table = $type === 'part' ? 'parts' : 'labors';
+
+        // Oil actions don't need type validation
+        $oilActions = ['add_brand', 'add_viscosity', 'add_price', 'delete_brand', 'delete_viscosity', 'delete_price'];
+        if (!in_array($action, $oilActions)) {
+            $table = $type === 'part' ? 'parts' : 'labors';
+        }
 
         try {
             if ($action === 'add') {
