@@ -304,6 +304,24 @@ foreach ($oilPrices as $price) {
             overflow-y: auto;
         }
 
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .suggestions.hidden {
+            display: none;
+        }
+
         .suggestion-item {
             padding: 0.75rem;
             border-bottom: 1px solid #f3f4f6;
@@ -1070,8 +1088,8 @@ foreach ($oilPrices as $price) {
                 </div>
 
                 <div class="input-group">
-                    <input type="text" class="input-field item-name-input" placeholder="ნივთის აღწერა" oninput="fetchItemSuggestions(this)">
-                    <div class="suggestions-box" style="display: none;"></div>
+                    <input type="text" class="input-field item-name-input" placeholder="ნივთის აღწერა">
+                    <div class="suggestions hidden"></div>
                     <div class="price-source text-xs text-gray-500 mt-1"></div>
                 </div>
 
@@ -1568,135 +1586,130 @@ foreach ($oilPrices as $price) {
         });
 
         // Fetch item suggestions
-        function fetchItemSuggestions(input) {
-            const query = input.value.trim();
-            const box = input.nextElementSibling;
+        let currentSuggestions = [];
+        let currentInput = null;
 
+        function showSuggestions(input, suggestions) {
+            const container = input.parentNode.querySelector('.suggestions');
+            container.innerHTML = '';
+            const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
+            if (Array.isArray(suggestions) && suggestions.length > 0) {
+                suggestions.forEach(suggestion => {
+                    const div = document.createElement('div');
+                    div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between items-center';
+                    // Determine label based on suggested_price_source and presence of vehicleVal
+                    let labelHtml = '';
+                    if (vehicleVal) {
+                        if (suggestion.suggested_price_source === 'usage_vehicle') labelHtml = '<div class="text-xs text-indigo-700">Most used (vehicle)</div>';
+                        else if (suggestion.suggested_price_source === 'item_price') labelHtml = '<div class="text-xs text-green-700">Vehicle price</div>';
+                        else if (suggestion.suggested_price_source === 'usage_aggregate') labelHtml = '<div class="text-xs text-indigo-700">Most used (global)</div>';
+                        else labelHtml = '<div class="text-xs text-yellow-700">Default price</div>';
+                    } else {
+                        if (suggestion.suggested_price_source === 'usage_aggregate') labelHtml = '<div class="text-xs text-indigo-700">Most used (global)</div>';
+                        else labelHtml = '';
+                    }
+                    div.innerHTML = `<div class="flex-1"><div class="font-medium">${suggestion.name}</div><div class="text-xs text-gray-600">${suggestion.description || ''}${suggestion.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${suggestion.vehicle_make_model}</span>` : ''}</div></div><div class="text-right ml-3"><div class="text-sm font-medium text-blue-600">${suggestion.suggested_price > 0 ? suggestion.suggested_price + ' ₾' : ''} ${labelHtml}</div></div>`;
+                    div.addEventListener('click', () => {
+                        input.value = suggestion.name;
+                        const card = input.closest('.item-card');
+
+                        // Record matched DB item id/type on the card for server-side processing
+                        if (suggestion.id) card.querySelector('.item-db-id').value = suggestion.id;
+                        if (suggestion.type) card.querySelector('.item-db-type').value = suggestion.type;
+                        if (suggestion.vehicle_make_model) card.querySelector('.item-db-vehicle').value = suggestion.vehicle_make_model;
+                        // Map suggested_price_source to legacy server-friendly db price source (vehicle / default)
+                        const src = suggestion.suggested_price_source || (suggestion.has_vehicle_price ? 'item_price' : 'default');
+                        const dbSrc = (src === 'usage_vehicle' || src === 'item_price') ? 'vehicle' : 'default';
+                        card.querySelector('.item-db-price-source').value = dbSrc;
+
+                        // Also set hidden inputs
+                        if (suggestion.id) card.querySelector('.item-db-id').value = suggestion.id;
+                        if (suggestion.type) card.querySelector('.item-db-type').value = suggestion.type;
+                        if (suggestion.vehicle_make_model) card.querySelector('.item-db-vehicle').value = suggestion.vehicle_make_model;
+                        card.querySelector('.item-db-price-source').value = dbSrc;
+
+                        // Fill appropriate price field depending on type
+                        const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
+                        if (suggestion.type === 'part') {
+                            const partInput = card.querySelector('.item-price-part');
+                            if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
+                                partInput.value = priceToUse;
+                            }
+                        } else if (suggestion.type === 'labor') {
+                            const svcInput = card.querySelector('.item-price-svc');
+                            if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
+                                svcInput.value = priceToUse;
+                            }
+                        }
+
+                        // Update small badge in the card
+                        const badgeEl = card.querySelector('.price-source');
+                        if (badgeEl) {
+                            if (vehicleVal) {
+                                const src = suggestion.suggested_price_source || (suggestion.has_vehicle_price ? 'item_price' : 'default');
+                                if (src === 'usage_vehicle') {
+                                    badgeEl.textContent = 'Most used (vehicle)';
+                                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
+                                } else if (src === 'item_price') {
+                                    badgeEl.textContent = 'Vehicle price';
+                                    badgeEl.className = 'price-source text-xs text-green-700 mt-1';
+                                } else {
+                                    badgeEl.textContent = 'Default price';
+                                    badgeEl.className = 'price-source text-xs text-yellow-700 mt-1';
+                                }
+                            } else {
+                                if (suggestion.suggested_price_source === 'usage_aggregate') {
+                                    badgeEl.textContent = 'Most used (global)';
+                                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
+                                } else {
+                                    badgeEl.textContent = '';
+                                    badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
+                                }
+                            }
+                        }
+
+                        calculateTotals();
+                        hideSuggestions();
+                        input.focus();
+                        updateProgress();
+                    });
+                    container.appendChild(div);
+                });
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function hideSuggestions() {
+            document.querySelectorAll('.suggestions').forEach(s => s.classList.add('hidden'));
+        }
+
+        function fetchSuggestions(query) {
             if (query.length < 2) {
-                box.style.display = 'none';
+                hideSuggestions();
                 return;
             }
-
-            const carMarkEl = document.getElementById('input_car_mark');
-            const vehicle = carMarkEl && carMarkEl.value ? carMarkEl.value.trim() : '';
+            const vehicle = (document.getElementById('input_car_mark')?.value || '').trim();
             const params = new URLSearchParams({ q: query });
             if (vehicle) params.set('vehicle', vehicle);
 
-            fetch(`admin/api_labors_parts.php?${params}`)
-                .then(r => r.json())
-                .then(data => {
-                    const items = data.data || data;
-                    if (!Array.isArray(items) || items.length === 0) {
-                        box.style.display = 'none';
-                        return;
-                    }
-
-                    // Ensure suggested_price_source exists for each item (fallbacks)
-                    const processedItems = items.map(it => { it.suggested_price = (typeof it.suggested_price !== 'undefined') ? it.suggested_price : it.default_price; it.suggested_price_source = it.suggested_price_source || (it.has_vehicle_price ? 'item_price' : 'default'); return it; });
-                    box.innerHTML = processedItems.map(item => {
-                        const carMarkEl2 = document.getElementById('input_car_mark');
-                        const vehicleVal = carMarkEl2 && carMarkEl2.value ? carMarkEl2.value.trim() : '';
-                        const priceToShow = item.suggested_price > 0 ? item.suggested_price : item.default_price;
-                        let priceIndicator = '';
-                        if (vehicleVal) {
-                            if (item.suggested_price_source === 'usage_vehicle') priceIndicator = '<div class="text-xs text-indigo-700">Most used (vehicle)</div>';
-                            else if (item.suggested_price_source === 'item_price') priceIndicator = '<div class="text-xs text-green-700">vehicle price</div>';
-                            else priceIndicator = '<div class="text-xs text-yellow-700">default price</div>';
-                        } else {
-                            if (item.suggested_price_source === 'usage_aggregate') priceIndicator = '<div class="text-xs text-indigo-700">Most used (global)</div>';
-                        }
-
-                        return `
-                            <div class="suggestion-item">
-                                <div class="flex justify-between items-start">
-                                    <div class="flex-1">
-                                        <div class="font-medium text-sm">${item.name}</div>
-                                        <div class="text-xs text-gray-600">${item.description || ''}${item.vehicle_make_model ? ` — <span class="text-gray-500">${item.vehicle_make_model}</span>` : ''}</div>
-                                    </div>
-                                    <div class="text-right ml-3">
-                                        <div class="text-sm font-medium text-blue-600">${priceToShow ? priceToShow + ' ₾' : ''}</div>
-                                        ${priceIndicator}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                    box.style.display = 'block';
-
-                    // Add click handlers
-                    box.querySelectorAll('.suggestion-item').forEach((el, index) => {
-                        el.addEventListener('click', () => {
-                            selectItem(el, processedItems[index]);
-                            box.style.display = 'none';
-                        });
+            fetch(`admin/api_labors_parts.php?` + params.toString())
+                .then(response => response.json())
+                .then(resp => {
+                    const data = resp && resp.data ? resp.data : resp;
+                    currentSuggestions = Array.isArray(data) ? data : [];
+                    // If we have suggestions, annotate text to show whether vehicle-specific price exists
+                    currentSuggestions = currentSuggestions.map(s => {
+                        s.suggested_price = (typeof s.suggested_price !== 'undefined') ? s.suggested_price : s.default_price;
+                        s.suggested_price_source = s.suggested_price_source || (s.has_vehicle_price ? 'item_price' : 'default');
+                        return s;
                     });
+                    if (currentInput) {
+                        showSuggestions(currentInput, currentSuggestions);
+                    }
                 })
-                .catch(() => box.style.display = 'none');
-        }
-
-        // Select item from suggestions
-        function selectItem(el, item) {
-            const card = el.closest('.item-card');
-            const input = card.querySelector('.item-name-input');
-            input.value = item.name;
-
-            // Set DB metadata
-            card.querySelector('.item-db-id').value = item.id || '';
-            card.querySelector('.item-db-type').value = item.type || '';
-            card.querySelector('.item-db-vehicle').value = item.vehicle_make_model || '';
-            // Map suggested source to legacy server price source (vehicle/default)
-            const srcVal = item.suggested_price_source || (item.has_vehicle_price ? 'item_price' : 'default');
-            const dbSrc = (srcVal === 'usage_vehicle' || srcVal === 'item_price') ? 'vehicle' : 'default';
-            card.querySelector('.item-db-price-source').value = dbSrc;
-
-            // Fill appropriate price field
-            const priceToUse = (typeof item.suggested_price !== 'undefined' && item.suggested_price !== null) ? item.suggested_price : item.default_price;
-            if (item.type === 'part') {
-                const partInput = card.querySelector('.item-price-part');
-                if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
-                    partInput.value = priceToUse;
-                }
-            } else if (item.type === 'labor') {
-                const svcInput = card.querySelector('.item-price-svc');
-                if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
-                    svcInput.value = priceToUse;
-                }
-            }
-
-            // Add price source indicator
-            let badgeEl = card.querySelector('.price-source');
-            if (!badgeEl) {
-                badgeEl = document.createElement('div');
-                badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
-                input.parentNode.appendChild(badgeEl);
-            }
-
-            const vehicleVal = document.getElementById('input_car_mark').value.trim();
-            if (vehicleVal) {
-                const src = item.suggested_price_source || (item.has_vehicle_price ? 'item_price' : 'default');
-                if (src === 'usage_vehicle') {
-                    badgeEl.textContent = 'Most used (vehicle)';
-                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
-                } else if (src === 'item_price') {
-                    badgeEl.textContent = 'Vehicle price';
-                    badgeEl.className = 'price-source text-xs text-green-700 mt-1';
-                } else {
-                    badgeEl.textContent = 'Default price';
-                    badgeEl.className = 'price-source text-xs text-yellow-700 mt-1';
-                }
-            } else {
-                if (item.suggested_price_source === 'usage_aggregate') {
-                    badgeEl.textContent = 'Most used (global)';
-                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
-                } else {
-                    badgeEl.textContent = '';
-                    badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
-                }
-            }
-
-            el.closest('.suggestions-box').style.display = 'none';
-            calculateTotals();
-            updateProgress();
+                .catch(error => console.error('Error fetching suggestions:', error));
         }
 
         // Photo handling
@@ -2085,6 +2098,33 @@ foreach ($oilPrices as $price) {
                 deletedImagesInput.value = JSON.stringify(deleted);
             }
         }
+
+        // Event listeners for item suggestions
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('item-name-input')) {
+                currentInput = e.target;
+                const query = e.target.value.trim();
+                fetchSuggestions(query);
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.input-group')) {
+                hideSuggestions();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.target.classList.contains('item-name-input')) {
+                const container = e.target.parentNode.querySelector('.suggestions');
+                if (e.key === 'Escape') {
+                    hideSuggestions();
+                } else if (e.key === 'ArrowDown' && !container.classList.contains('hidden')) {
+                    const first = container.querySelector('div');
+                    if (first) first.focus();
+                }
+            }
+        });
     </script>
 </body>
 </html>

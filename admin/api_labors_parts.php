@@ -2,7 +2,7 @@
 require '../config.php';
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'manager', 'user'])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
     exit;
@@ -195,7 +195,29 @@ try {
                     if ($ar) { $ar['source'] = 'usage_aggregate'; return $ar; }
 
                     return false;
-                };
+                    $row = $s->fetch(PDO::FETCH_ASSOC);
+                    if ($row) return $row;
+                    // Token OR matching: check if any token from typed value matches stored vehicle (e.g., typed 'Audi Q5' matches stored 'Q5')
+                    $tokens = preg_split('/\s+/', $vLower);
+                    foreach ($tokens as $t) {
+                        $t = trim($t); if ($t === '') continue;
+                        $s = $pdo->prepare("SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1");
+                        $s->execute([$itemType, $itemId, "%{$t}%"]);
+                        $row = $s->fetch(PDO::FETCH_ASSOC);
+                        if ($row) return $row;
+                    }
+                    // Token AND matching (all words present)
+                    $ands = [];
+                    $params = [$itemType, $itemId];
+                    foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                    if (!empty($ands)) {
+                        $sql = 'SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
+                        $s = $pdo->prepare($sql);
+                        $s->execute($params);
+                        $row = $s->fetch(PDO::FETCH_ASSOC);
+                        if ($row) return $row;
+                    }
+                    return false;
                 };
 
                 foreach ($labors as &$l) {
