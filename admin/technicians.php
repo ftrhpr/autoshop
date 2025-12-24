@@ -168,15 +168,73 @@ const selectTech = document.getElementById('selectTech'); if (selectTech) select
 const btnCompute = document.getElementById('btnCompute'); if (btnCompute) btnCompute.addEventListener('click', async ()=>{
     const tech = selectTech ? selectTech.value : null; if (!tech) return alert('Select');
     const start = document.getElementById('startDate') ? document.getElementById('startDate').value : ''; const end = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
-    const res = await fetch('api_technicians.php?action=compute_earnings&technician_id='+encodeURIComponent(tech)+(start?('&start='+encodeURIComponent(start)):'')+(end?('&end='+encodeURIComponent(end)):''));
     const d = await res.json(); if (!d.success) return alert(d.message||'Failed');
     const earningsResult = document.getElementById('earningsResult');
-    if (earningsResult) earningsResult.innerHTML = `<div>Total labor: <strong>${(d.total_labor||0).toFixed(2)}</strong></div><div>Total earned: <strong>${(d.total_earned||0).toFixed(2)}</strong></div>`;
-    let html = '<h4 class="mt-4">Details</h4><table class="w-full text-sm"><thead><tr><th>ID</th><th>Labor</th><th>Earnings</th></tr></thead><tbody>';
-    d.details.forEach(row=> html += `<tr><td><a href="../index.php?print_id=${row.invoice_id}" target="_blank" class="text-blue-600 hover:underline">${row.invoice_id}</a></td><td>${(row.labor_after_discount||0).toFixed(2)}</td><td>${(row.earnings||0).toFixed(2)}</td></tr>`);
-    html += '</tbody></table>'; if (earningsResult) earningsResult.innerHTML += html;
+
+    // Display summary totals in modern cards
+    if (earningsResult) {
+        earningsResult.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <p class="text-sm font-medium text-blue-800">Total Net Labor</p>
+                    <p class="text-2xl font-bold text-blue-900">${(d.total_labor||0).toFixed(2)} ₾</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <p class="text-sm font-medium text-green-800">Total Earned</p>
+                    <p class="text-2xl font-bold text-green-900">${(d.total_earned||0).toFixed(2)} ₾</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p class="text-sm font-medium text-gray-800">Invoices Worked On</p>
+                    <p class="text-2xl font-bold text-gray-900">${d.invoice_count || 0}</p>
+                </div>
+            </div>`;
+    }
+
+    // Build the modern details table
+    let tableHtml = `
+        <h4 class="text-lg font-semibold text-gray-800 mb-2">Earnings Breakdown</h4>
+        <div class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice ID</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Raw Labor</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Global Disc. %</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Labor</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">`;
+
+    if (d.details && d.details.length > 0) {
+        d.details.forEach((row, index) => {
+            const bgColor = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            tableHtml += `
+                <tr class="${bgColor}">
+                    <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
+                        <a href="../index.php?print_id=${row.invoice_id}" target="_blank" class="text-blue-600 hover:underline">#${row.invoice_id}</a>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right text-gray-500">${(row.labor_raw||0).toFixed(2)} ₾</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right text-red-500">${(row.service_discount_percent||0).toFixed(2)}%</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right text-gray-800 font-semibold">${(row.labor_after_discount||0).toFixed(2)} ₾</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right text-green-600 font-bold">${(row.earnings||0).toFixed(2)} ₾</td>
+                </tr>`;
+        });
+    } else {
+        tableHtml += '<tr><td colspan="5" class="text-center text-gray-500 py-6">No earnings details found for this period.</td></tr>';
+    }
+
+    tableHtml += `
+                </tbody>
+            </table>
+        </div>`;
+
+    if (earningsResult) earningsResult.innerHTML += tableHtml;
+    
     // update earnings placeholder in table if present
-    const total = d.total_earned || 0; const el = document.getElementById('earnings-'+tech); if (el) el.textContent = total.toFixed ? total.toFixed(2) : total;
+    const total = d.total_earned || 0; 
+    const el = document.getElementById('earnings-'+tech); 
+    if (el) el.textContent = total.toFixed ? total.toFixed(2) + ' ₾' : total;
 });
 
 // Rules
