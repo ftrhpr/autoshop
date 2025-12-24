@@ -1018,6 +1018,9 @@ foreach ($oilPrices as $price) {
         }
 
         function populateReview() {
+            // Ensure totals are up to date before populating review
+            calculateTotals();
+            
             const reviewContainer = document.getElementById('review-container');
             const items = [];
             document.querySelectorAll('.item-card').forEach(card => {
@@ -1230,7 +1233,7 @@ foreach ($oilPrices as $price) {
                             <label class="price-label">შეფუთვა</label>
                             <select class="input-field oil-package" onchange="updateOilCardPrice(this.closest('.oil-card'))">
                                 <option value="">აირჩიეთ შეფუთვა</option>
-                                <option value="canned">ქილა</option>
+                                <option value="canned">ჩამოსასხმელი</option>
                                 <option value="1lt">1 ლიტრი</option>
                                 <option value="4lt">4 ლიტრი</option>
                                 <option value="5lt">5 ლიტრი</option>
