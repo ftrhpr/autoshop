@@ -90,6 +90,7 @@ try{
         foreach($invoices as $inv){
             $items = json_decode($inv['items'] ?? '[]', true);
             $laborSumForTech = 0.0;
+            $isTechTagged = false; // Flag to check if tech is on at least one item
             foreach($items as $it){
                 // Determine whether this item should be considered 'labor'
                 $isLabor = false;
@@ -99,15 +100,21 @@ try{
                 if (!$isLabor) continue;
 
                 $assignedTechId = isset($it['tech_id']) ? (int)$it['tech_id'] : 0;
-                // include item if explicitly assigned to technician, or if not assigned and invoice-level technician matches
-                // match per-item assigned tech id OR invoice-level technician id OR invoice-level technician name fallback
-                if ($assignedTechId === $tech || ($assignedTechId === 0 && (!empty($inv['technician_id']) && (int)$inv['technician_id'] === $tech)) || ($assignedTechId === 0 && empty($inv['technician_id']) && !empty($inv['technician']) && trim($inv['technician']) === $techName) ){
+                $assignedTechName = isset($it['tech']) ? trim($it['tech']) : '';
+
+                // Match per-item assigned tech id OR per-item tech name fallback
+                $isMatch = ($assignedTechId === $tech) || (!empty($techName) && !empty($assignedTechName) && strtolower($assignedTechName) === strtolower($techName));
+
+                if ($isMatch) {
+                    $isTechTagged = true; // Tech is tagged on this invoice
                     $line = 0.0;
                     if (isset($it['line_total'])) {
                         $line = floatval($it['line_total']);
                     } elseif (isset($it['price_svc'])) {
                         $qty = isset($it['qty']) ? floatval($it['qty']) : 1;
-                        $line = floatval($it['price_svc']) * $qty;
+                        $price = floatval($it['price_svc']);
+                        $discount = isset($it['discount_svc']) ? floatval($it['discount_svc']) : 0.0;
+                        $line = ($price * (1.0 - ($discount / 100.0))) * $qty;
                     } elseif (isset($it['price'])) {
                         $qty = isset($it['qty']) ? floatval($it['qty']) : 1;
                         $line = floatval($it['price']) * $qty;
@@ -115,6 +122,12 @@ try{
                     $laborSumForTech += $line;
                 }
             }
+            
+            // Skip invoice if technician is not tagged on any item
+            if (!$isTechTagged) {
+                continue;
+            }
+
             // Apply global service discount (if any) to technician's labor proportionally
             $serviceDiscountPercent = isset($inv['service_discount_percent']) ? floatval($inv['service_discount_percent']) : 0.0;
             $globalFactor = max(0.0, 1.0 - ($serviceDiscountPercent / 100.0));
@@ -141,7 +154,7 @@ try{
             $totalEarned += $invoiceEarnings;
         }
 
-        $invoiceCountWithLabor = 0; foreach ($applied as $a) { if (!empty($a['labor_after_discount']) && $a['labor_after_discount'] > 0) $invoiceCountWithLabor++; }
+        $invoiceCountWithLabor = count($applied); // Count only the invoices that were processed
         echo json_encode(['success'=>true,'total_earned'=>round($totalEarned,2),'total_labor'=>round($totalLabor,2),'invoice_count'=>$invoiceCountWithLabor,'details'=>$applied]); exit;
     }
 
