@@ -1049,7 +1049,7 @@ foreach ($oilPrices as $price) {
                 </div>
                 <div class="review-section">
                     <div class="review-title">Items</div>
-                    ${items.map(item => `<div class="review-item"><span>-</span> <span>${item}</span></div>`).join('') || '<div class="review-item"><span>No items added.</span></div>'}
+                    ${items.length ? items.map(item => '<div class="review-item"><span>-</span> <span>' + item + '</span></div>').join('') : '<div class="review-item"><span>No items added.</span></div>'}
                 </div>
                  <div class="review-section">
                     <div class="review-title">Totals</div>
