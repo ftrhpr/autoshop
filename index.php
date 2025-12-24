@@ -1571,8 +1571,13 @@ if (!empty($serverInvoice)) {
             (inv.oils || []).forEach(ol => {
                 addOilRow();
                 const tr = document.querySelector('.oil-row:last-child'); if (!tr) return;
+                
+                // Set brand ID directly
                 tr.querySelector('.oil-brand').value = ol.brand || '';
+                
+                // Set viscosity ID directly
                 tr.querySelector('.oil-viscosity').value = ol.viscosity || '';
+                
                 tr.querySelector('.oil-package').value = ol.package || '';
                 tr.querySelector('.oil-qty').value = ol.qty || 1;
                 tr.querySelector('.oil-price').value = ol.price || 0;
