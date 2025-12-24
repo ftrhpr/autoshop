@@ -74,35 +74,54 @@ try{
         $tech = (int)($_GET['technician_id'] ?? 0);
         if (!$tech) throw new Exception('Invalid');
         $start = $_GET['start'] ?? null; $end = $_GET['end'] ?? null;
-        // fetch invoices where service_manager_id matches a user linked to technician
-        // first get user_id if exists
-        $stmt = $pdo->prepare('SELECT user_id FROM technicians WHERE id=? LIMIT 1'); $stmt->execute([$tech]); $t = $stmt->fetch(PDO::FETCH_ASSOC);
-        $userId = $t ? (int)$t['user_id'] : 0;
-        $q = 'SELECT * FROM invoices WHERE 1=1';
+        // Fetch invoices in date range (we will compute per-item assignment to technician)
+        $q = 'SELECT id, items, technician_id, creation_date FROM invoices WHERE 1=1';
         $params = [];
-        if ($userId) { $q .= ' AND service_manager_id = ?'; $params[] = $userId; }
-        else { $q .= ' AND service_manager = ?'; $params[] = ''; /* if unset, no invoices */ }
         if ($start){ $q .= ' AND creation_date >= ?'; $params[] = $start; }
         if ($end){ $q .= ' AND creation_date <= ?'; $params[] = $end; }
         $stmt = $pdo->prepare($q); $stmt->execute($params); $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         $totalEarned = 0.0; $totalLabor = 0.0; $applied = [];
-        // fetch rules
+        // fetch rules for technician
         $r = $pdo->prepare('SELECT * FROM payroll_rules WHERE technician_id=?'); $r->execute([$tech]); $rules = $r->fetchAll(PDO::FETCH_ASSOC);
+
         foreach($invoices as $inv){
             $items = json_decode($inv['items'] ?? '[]', true);
-            $laborSum = 0.0; foreach($items as $it){ if (($it['type'] ?? 'part') === 'labor') $laborSum += floatval($it['line_total'] ?? ($it['price'] * ($it['qty'] ?? 1))); }
-            $totalLabor += $laborSum;
+            $laborSumForTech = 0.0;
+            foreach($items as $it){
+                $type = $it['type'] ?? 'part';
+                if ($type !== 'labor') continue;
+                $assignedTechId = isset($it['tech_id']) ? (int)$it['tech_id'] : 0;
+                // include item if explicitly assigned to technician, or if not assigned and invoice-level technician matches
+                if ($assignedTechId === $tech || ($assignedTechId === 0 && !empty($inv['technician_id']) && (int)$inv['technician_id'] === $tech)){
+                    $line = 0.0;
+                    if (isset($it['line_total'])) {
+                        $line = floatval($it['line_total']);
+                    } elseif (isset($it['price_svc'])) {
+                        $qty = isset($it['qty']) ? floatval($it['qty']) : 1;
+                        $line = floatval($it['price_svc']) * $qty;
+                    } elseif (isset($it['price'])) {
+                        $qty = isset($it['qty']) ? floatval($it['qty']) : 1;
+                        $line = floatval($it['price']) * $qty;
+                    }
+                    $laborSumForTech += $line;
+                }
+            }
+            // apply rules to this invoice's technician-specific labor sum
             $invoiceEarnings = 0.0;
             foreach($rules as $rule){
                 if ($rule['rule_type'] === 'percentage'){
-                    $invoiceEarnings += ($rule['value'] / 100.0) * $laborSum;
+                    $invoiceEarnings += ($rule['value'] / 100.0) * $laborSumForTech;
                 } else if ($rule['rule_type'] === 'fixed_per_invoice'){
-                    $invoiceEarnings += floatval($rule['value']);
+                    // apply fixed per invoice only if technician had labor on that invoice
+                    if ($laborSumForTech > 0) $invoiceEarnings += floatval($rule['value']);
                 }
             }
-            $applied[] = ['invoice_id'=>$inv['id'],'labor'=>$laborSum,'earnings'=>$invoiceEarnings];
+            $applied[] = ['invoice_id'=>$inv['id'],'labor'=>$laborSumForTech,'earnings'=>$invoiceEarnings];
+            $totalLabor += $laborSumForTech;
             $totalEarned += $invoiceEarnings;
         }
+
         echo json_encode(['success'=>true,'total_earned'=>$totalEarned,'total_labor'=>$totalLabor,'details'=>$applied]); exit;
     }
 

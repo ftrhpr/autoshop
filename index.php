@@ -617,57 +617,82 @@ if (!empty($serverInvoice)) {
 
             function attachTypeahead(input, endpoint, formatItem, onSelect) {
                 const box = document.createElement('div');
-                box.className = 'absolute bg-white border rounded mt-1 shadow z-50 w-full';
+                box.className = 'bg-white border rounded shadow';
                 box.style.maxHeight = '220px';
                 box.style.overflow = 'auto';
-                input.parentElement.style.position = 'relative';
-                input.parentElement.appendChild(box);
+                box.style.position = 'absolute';
+                box.style.zIndex = '9999';
+                box.style.display = 'none';
+                box.style.boxSizing = 'border-box';
+                document.body.appendChild(box);
+
+                const updatePos = () => {
+                    const r = input.getBoundingClientRect();
+                    box.style.left = (r.left + window.scrollX) + 'px';
+                    box.style.top = (r.bottom + window.scrollY) + 'px';
+                    box.style.width = r.width + 'px';
+                };
+
+                let scrollHandler = () => updatePos();
+                let resizeHandler = () => updatePos();
 
                 input.addEventListener('input', debounce(async () => {
                     const q = input.value.trim();
-                    if (!q) { box.innerHTML = ''; return; }
+                    if (!q) { box.innerHTML = ''; box.style.display = 'none'; return; }
                     try {
+                        updatePos();
                         console.log('Searching for:', q);
                         const res = await fetch(endpoint + encodeURIComponent(q));
                         if (!res.ok) { 
                             console.log('Response not ok:', res.status);
-                            box.innerHTML = ''; return; 
+                            box.innerHTML = ''; box.style.display = 'none'; return; 
                         }
                         const list = await res.json();
                         console.log('Results:', list);
-                        if (!list.success || !Array.isArray(list.technicians)) { box.innerHTML = ''; return; }
+                        if (!list.success || !Array.isArray(list.technicians)) { box.innerHTML = ''; box.style.display = 'none'; return; }
                         const items = list.technicians;
                         box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                        box.style.display = 'block';
                         box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
                             const item = JSON.parse(el.getAttribute('data-json'));
                             onSelect(item);
                             box.innerHTML = '';
+                            box.style.display = 'none';
                         }));
+                        window.addEventListener('scroll', scrollHandler, true);
+                        window.addEventListener('resize', resizeHandler);
                     } catch (e) {
                         console.log('Error:', e);
                         box.innerHTML = '';
+                        box.style.display = 'none';
                     }
                 }));
 
                 input.addEventListener('focus', async () => {
                     try {
+                        updatePos();
                         const res = await fetch(endpoint);
                         if (!res.ok) return;
                         const list = await res.json();
                         if (!list.success || !Array.isArray(list.technicians)) return;
                         const items = list.technicians;
                         box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                        box.style.display = 'block';
                         box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
                             const item = JSON.parse(el.getAttribute('data-json'));
                             onSelect(item);
                             box.innerHTML = '';
+                            box.style.display = 'none';
                         }));
+                        window.addEventListener('scroll', scrollHandler, true);
+                        window.addEventListener('resize', resizeHandler);
                     } catch (e) {
                         box.innerHTML = '';
+                        box.style.display = 'none';
                     }
                 });
 
-                document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) box.innerHTML = ''; });
+                document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) { box.innerHTML = ''; box.style.display = 'none'; window.removeEventListener('scroll', scrollHandler, true); window.removeEventListener('resize', resizeHandler); } });
             
             // make available globally in case other inline scripts run before this definition (defensive)
             try{ window.attachTypeahead = attachTypeahead; }catch(e){}
@@ -1254,7 +1279,7 @@ if (!empty($serverInvoice)) {
                     <div class="price-source text-xs text-gray-500 mt-1"></div>
                 </div>
                 <button class="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="openItemSearch(this)" title="Search items"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
-                <div class="suggestions absolute z-10 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
+                <div class="suggestions absolute z-50 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
                 <td class="px-3 py-3"><input type="number" min="1" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-part w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-svc w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
