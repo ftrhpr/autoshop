@@ -230,16 +230,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     } else {
                         // Update existing vehicle price
                         $pdo->prepare("UPDATE item_prices SET price = ?, created_by = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?")->execute([floatval($it[$priceField]), $_SESSION['user_id'], $pv['id']]);
+                        error_log("save_invoice: updated item_price id={$pv['id']} to price=" . floatval($it[$priceField]) . " for item_id={$it['db_id']}");
                         $it['db_vehicle'] = $pv['vehicle_make_model'];
                     }
                 } else {
                     if (!empty($it[$priceField]) && floatval($it[$priceField]) != $defaultPrice) {
                         // Create new vehicle price
                         $vehicleCanonical = trim($vehicleMake);
-                        $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)");
+                        $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
                         $ins->execute([$it['db_type'], $it['db_id'], $vehicleCanonical, floatval($it[$priceField]), $_SESSION['user_id']]);
                         $it['db_vehicle'] = $vehicleCanonical;
                         $created_items[] = ['type' => $it['db_type'] . '_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it[$priceField]), 'item_id' => $it['db_id']];
+                        error_log("save_invoice: upserted item_price for {$it['db_type']} id={$it['db_id']} vehicle={$vehicleCanonical} price={$it[$priceField]}");
                     }
                 }
             }
@@ -306,7 +308,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $sql = 'SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
                                 $pvStmt3 = $pdo->prepare($sql);
                                 $pvStmt3->execute($params);
-                                $pv = $pv;
+                                $pv = $pvStmt3->fetch();
+                                if ($pv) error_log("save_invoice: matched part vehicle price (AND) for item_id={$it['db_id']} vehicle={$pv['vehicle_make_model']} price={$pv['price']}");
                             }
                         }
 
@@ -317,16 +320,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             } else {
                                 // Update existing vehicle price
                                 $pdo->prepare("UPDATE item_prices SET price = ?, created_by = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?")->execute([floatval($it['price_part']), $_SESSION['user_id'], $pv['id']]);
+                                error_log("save_invoice: updated item_price id={$pv['id']} to price=" . floatval($it['price_part']) . " for part id={$it['db_id']}");
                                 $it['db_vehicle'] = $pv['vehicle_make_model'];
                             }
                         } else {
                             if (!empty($it['price_part']) && floatval($it['price_part']) != $defaultPrice) {
-                                // Create new vehicle price
+                                // Create or update vehicle price
                                 $vehicleCanonical = trim($vehicleMake);
-                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)");
+                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
                                 $ins->execute(['part', $it['db_id'], $vehicleCanonical, floatval($it['price_part']), $_SESSION['user_id']]);
                                 $it['db_vehicle'] = $vehicleCanonical;
                                 $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_part']), 'item_id' => $it['db_id']];
+                                error_log("save_invoice: upserted item_price for part id={$it['db_id']} vehicle={$vehicleCanonical} price={$it['price_part']}");
                             }
                         }
                     }
@@ -354,9 +359,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if ($vehicleMake !== '' && !empty($it['price_part'])) {
                         try {
                             $vehicleCanonical = trim($vehicleMake);
-                            $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
+                            $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
                             $insP->execute(['part', $newPartId, $vehicleCanonical, floatval($it['price_part']), $_SESSION['user_id']]);
-                            error_log("save_invoice: created item_price for part id={$newPartId} vehicle={$vehicleCanonical} price={$it['price_part']}");
+                            error_log("save_invoice: upserted item_price for part id={$newPartId} vehicle={$vehicleCanonical} price={$it['price_part']}");
                             $it['db_vehicle'] = $vehicleCanonical;
                             $created_items[] = ['type' => 'part_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_part']), 'item_id' => $newPartId];
                         } catch (PDOException $e) {
@@ -433,16 +438,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             } else {
                                 // Update existing vehicle price
                                 $pdo->prepare("UPDATE item_prices SET price = ?, created_by = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?")->execute([floatval($it['price_svc']), $_SESSION['user_id'], $pv['id']]);
+                                error_log("save_invoice: updated item_price id={$pv['id']} to price=" . floatval($it['price_svc']) . " for labor id={$it['db_id']}");
                                 $it['db_vehicle'] = $pv['vehicle_make_model'];
                             }
                         } else {
                             if (!empty($it['price_svc']) && floatval($it['price_svc']) != $defaultPrice) {
-                                // Create new vehicle price
+                                // Create or update vehicle price
                                 $vehicleCanonical = trim($vehicleMake);
-                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)");
+                                $ins = $pdo->prepare("INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP");
                                 $ins->execute(['labor', $it['db_id'], $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
                                 $it['db_vehicle'] = $vehicleCanonical;
                                 $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $it['db_id']];
+                                error_log("save_invoice: upserted item_price for labor id={$it['db_id']} vehicle={$vehicleCanonical} price={$it['price_svc']}");
                             }
                         }
                     }
@@ -470,9 +477,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if ($vehicleMake !== '' && !empty($it['price_svc'])) {
                         try {
                             $vehicleCanonical = trim($vehicleMake);
-                            $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
-                            $insP->execute(['labor', $newLaborId, $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
-                            error_log("save_invoice: created item_price for labor id={$newLaborId} vehicle={$vehicleCanonical} price={$it['price_svc']}");
+                        $insP = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
+                        $insP->execute(['labor', $newLaborId, $vehicleCanonical, floatval($it['price_svc']), $_SESSION['user_id']]);
+                        error_log("save_invoice: upserted item_price for new labor id={$newLaborId} vehicle={$vehicleCanonical} price={$it['price_svc']}");
                             $it['db_vehicle'] = $vehicleCanonical;
                             $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $newLaborId];
                         } catch (PDOException $e) {

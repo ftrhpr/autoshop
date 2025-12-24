@@ -574,7 +574,9 @@ button.btn-press-anim:active { transform: translateY(1px) scale(0.995); transiti
 <script>
 document.addEventListener('DOMContentLoaded', function(){
     const created = <?php echo json_encode($created_items, JSON_UNESCAPED_UNICODE); ?>;
-    if (!Array.isArray(created)) return;
+    if (!Array.isArray(created) || created.length === 0) return;
+
+    // Show lightweight toasts (existing behavior)
     created.forEach((it, idx) => {
         let text = '';
         if (it.type === 'part') text = 'Saved new Part: ' + it.name;
@@ -586,6 +588,52 @@ document.addEventListener('DOMContentLoaded', function(){
             try { if (typeof showToast === 'function') showToast(text, 0); else console.log(text); } catch(e){ console.log(text); }
         }, idx * 500);
     });
+
+    // Create a persistent flash banner listing created items (dismissible)
+    (function(){
+        function escapeHtml(s){ return (''+s).replace(/[&<>\"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+        const banner = document.createElement('div');
+        banner.id = 'created-items-flash';
+        banner.className = 'fixed top-4 left-4 right-4 md:left-64 z-50 pointer-events-auto';
+        const inner = document.createElement('div');
+        inner.className = 'max-w-4xl mx-auto bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow-md flex items-start justify-between';
+
+        const listWrap = document.createElement('div');
+        listWrap.className = 'flex-1 mr-4';
+        const title = document.createElement('strong');
+        title.className = 'block text-yellow-800 mb-1';
+        title.innerText = 'Saved new items';
+        const ul = document.createElement('ul');
+        ul.className = 'text-sm text-yellow-700 list-disc pl-5 mb-0';
+
+        created.forEach(it => {
+            const li = document.createElement('li');
+            if (it.type === 'part') li.innerText = 'Part: ' + escapeHtml(it.name);
+            else if (it.type === 'labor') li.innerText = 'Labor: ' + escapeHtml(it.name);
+            else if (it.type === 'part_price') li.innerText = `Part price for ${escapeHtml(it.name)} (${escapeHtml(it.vehicle)}): ${escapeHtml(it.price)} ₾`;
+            else if (it.type === 'labor_price') li.innerText = `Labor price for ${escapeHtml(it.name)} (${escapeHtml(it.vehicle)}): ${escapeHtml(it.price)} ₾`;
+            else li.innerText = escapeHtml(it.name || it.item_id || 'Created item');
+            ul.appendChild(li);
+        });
+
+        listWrap.appendChild(title);
+        listWrap.appendChild(ul);
+        inner.appendChild(listWrap);
+
+        const btn = document.createElement('button');
+        btn.className = 'ml-4 text-yellow-800 font-bold text-xl leading-none px-3 py-1 rounded hover:bg-yellow-100';
+        btn.setAttribute('aria-label', 'Dismiss created items');
+        btn.innerHTML = '&times;';
+        btn.addEventListener('click', () => { banner.remove(); });
+
+        inner.appendChild(btn);
+        banner.appendChild(inner);
+        document.body.appendChild(banner);
+
+        // Auto-dismiss after 10 seconds
+        setTimeout(()=>{ if (banner && banner.parentNode) banner.remove(); }, 10000);
+    })();
+
 });
 </script>
 <?php endif; ?>
