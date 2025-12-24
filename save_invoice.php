@@ -322,6 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (empty($it['price_svc']) && $it['db_type'] === 'labor') $it['price_svc'] = $defaultPrice;
 
             if ($vehicleMake !== '') {
+                $priceField = $it['db_type'] === 'part' ? 'price_part' : 'price_svc';
                 // Smart lookup for vehicle price - prefer most-used historical price first
                 $pv = false;
                 $vLower = strtolower(trim($vehicleMake));
@@ -332,42 +333,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (empty($it[$priceField]) || floatval($it[$priceField]) == floatval($pv['price'])) {
                             $it[$priceField] = $pv['price'];
                             $it['db_vehicle'] = $pv['vehicle_make_model'];
-                        } // else: invoice overrides historical suggestion and will update/create item_prices below
+                        }
                     }
                 }
+
                 // Fallback to configured per-vehicle item_prices if no historical suggestion found
                 if (!$pv) {
+                    // exact match
                     $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
                     $pvStmt->execute([$it['db_type'], $it['db_id'], $vLower]);
                     $pv = $pvStmt->fetch();
 
-                if (!$pv) {
-                    $pvStmt2 = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
-                    $pvStmt2->execute([$it['db_type'], $it['db_id'], "%{$vLower}%"]);
-                    $pv = $pvStmt2->fetch();
-                }
-
-                if (!$pv) {
-                    $tokens = preg_split('/\s+/', $vLower);
-                    foreach ($tokens as $t) {
-                        $t = trim($t); if ($t === '') continue;
-                        $pvStmtTok = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
-                        $pvStmtTok->execute([$it['db_type'], $it['db_id'], "%{$t}%"]);
-                        $pv = $pvStmtTok->fetch();
-                        if ($pv) break;
+                    // containing full string
+                    if (!$pv) {
+                        $pvStmt2 = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                        $pvStmt2->execute([$it['db_type'], $it['db_id'], "%{$vLower}%"]);
+                        $pv = $pvStmt2->fetch();
                     }
-                }
 
-                if (!$pv) {
-                    $tokens = preg_split('/\s+/', $vLower);
-                    $ands = [];
-                    $params = [$it['db_type'], $it['db_id']];
-                    foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
-                    if (!empty($ands)) {
-                        $sql = 'SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
-                        $pvStmt3 = $pdo->prepare($sql);
-                        $pvStmt3->execute($params);
-                        $pv = $pvStmt3->fetch();
+                    // token OR matching
+                    if (!$pv) {
+                        $tokens = preg_split('/\s+/', $vLower);
+                        foreach ($tokens as $t) {
+                            $t = trim($t); if ($t === '') continue;
+                            $pvStmtTok = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
+                            $pvStmtTok->execute([$it['db_type'], $it['db_id'], "%{$t}%"]);
+                            $pv = $pvStmtTok->fetch();
+                            if ($pv) break;
+                        }
+                    }
+
+                    // token AND matching
+                    if (!$pv) {
+                        $tokens = preg_split('/\s+/', $vLower);
+                        $ands = [];
+                        $params = [$it['db_type'], $it['db_id']];
+                        foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                        if (!empty($ands)) {
+                            $sql = 'SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
+                            $pvStmt3 = $pdo->prepare($sql);
+                            $pvStmt3->execute($params);
+                            $pv = $pvStmt3->fetch();
+                        }
                     }
                 }
 
@@ -615,7 +622,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $pv = $pvStmtTok->fetch();
                                 if ($pv) break;
                             }
-                        }
+
                             // Try token AND-matching (all tokens must appear in vehicle_make_model)
                             $tokens = preg_split('/\s+/', $vLower);
                             $ands = [];

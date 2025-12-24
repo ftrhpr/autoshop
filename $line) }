@@ -1,0 +1,16 @@
+At line:1 char:258
++ ... + } elseif ($c -eq '}') { $depth-- } } Write-Output (Line $i: depth=$ ...
++                                                               ~~~
+Variable reference is not valid. ':' was not followed by a valid variable name character. Consider 
+using ${} to delimit the name.
+At line:1 char:276
++ ... eif ($c -eq '}') { $depth-- } } Write-Output (Line $i: depth=$depth -
++                                                                          ~
+Missing closing ')' in expression.
+At line:1 char:117
++ ... p\save_invoice.php'; $depth=0; for ($i=560;$i -le 640;$i++) { $line = ...
++                                                                 ~
+Missing closing '}' in statement block or type definition.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidVariableReferenceWithDrive
+ 
