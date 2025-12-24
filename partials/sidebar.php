@@ -20,16 +20,18 @@ $menu_sections = [
         ['label' => 'Create Invoice', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => null],
         ['label' => 'Mobile Invoice', 'href' => $appRoot . '/mobile_invoice.php', 'icon' => 'mobile-alt', 'permission' => null],
         ['label' => 'Invoices', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
+        ['label' => 'Export Invoices', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'manage_customers'],
+        ['label' => 'Import Customers', 'href' => $appRoot . '/admin/import_customers.php', 'icon' => 'download', 'permission' => 'manage_customers'],
         ['label' => 'Customers', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
         ['label' => 'Parts, Labors & Oils', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
         ['label' => 'Users & Access', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
             ['label' => 'Users', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
             ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']
         ]],
-        ['label' => 'Technicians', 'href' => $appRoot . '/admin/technicians.php', 'icon' => 'user', 'permission' => 'manage_users']
+        ['label' => 'Technicians', 'href' => $appRoot . '/admin/technicians.php', 'icon' => 'user', 'permission' => 'manage_users'],
+        ['label' => 'Item Price Usage', 'href' => $appRoot . '/admin/item_price_usage.php', 'icon' => 'clock', 'permission' => 'manage_prices']
     ]],
     ['label' => 'Settings', 'items' => [
-        ['label' => 'System Settings', 'href' => $appRoot . '/admin/settings.php', 'icon' => 'shield', 'permission' => 'manage_settings'],
         ['label' => 'Audit Logs', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
     ]]
 ];
