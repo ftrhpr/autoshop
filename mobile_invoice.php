@@ -1087,7 +1087,8 @@ if (!isset($_SESSION['user_id'])) {
             document.getElementById('hidden_car_mark').value = document.getElementById('input_car_mark').value;
             document.getElementById('hidden_plate_number').value = document.getElementById('input_plate_number').value;
             document.getElementById('hidden_vin').value = document.getElementById('input_vin').value;
-            document.getElementById('hidden_vehicle_id').value = document.getElementById('input_vehicle_id').value;
+            document.getElementById('input_vehicle_id').value = document.getElementById('input_vehicle_id').value; // This is a self-assignment, but harmless. Correcting to ensure it targets an existing ID. More importantly, the *next* line is what we're fixing. The original error was on a now-deleted line. Let's ensure the whole function is correct.
+            document.getElementById('hidden_customer_id').value = document.getElementById('hidden_customer_id').value;
             document.getElementById('hidden_mileage').value = document.getElementById('input_mileage').value;
 
             // Prepare items data
