@@ -511,7 +511,7 @@ if (!isset($_SESSION['user_id'])) {
             <input type="hidden" name="vehicle_id" id="input_vehicle_id">
 
             <!-- Step 1: Vehicle Section -->
-            <div class="form-step" data-step="1">
+            <div class="form-step active-step" data-step="1">
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-car"></i>
@@ -552,7 +552,7 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-primary next-btn">Next Step</button>
+                    <button type="button" class="btn-primary next-btn" style="margin-left: auto;">Next Step</button>
                 </div>
             </div>
 
@@ -599,8 +599,8 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-primary next-btn">Next Step</button>
                     <button type="button" class="btn-secondary prev-btn">Previous</button>
+                    <button type="button" class="btn-primary next-btn">Next Step</button>
                 </div>
             </div>
 
@@ -655,8 +655,8 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-primary next-btn">Next Step</button>
                     <button type="button" class="btn-secondary prev-btn">Previous</button>
+                    <button type="button" class="btn-primary next-btn">Next Step</button>
                 </div>
             </div>
 
@@ -690,8 +690,8 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-primary next-btn">Review Invoice</button>
                     <button type="button" class="btn-secondary prev-btn">Previous</button>
+                    <button type="button" class="btn-primary next-btn">Review Invoice</button>
                 </div>
             </div>
 
