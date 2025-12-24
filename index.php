@@ -1910,8 +1910,10 @@ if (!empty($serverInvoice)) {
             `;
             tbody.appendChild(footerRow);
 
-            // Update Grand Total Text
-            document.getElementById('out_grand_total').innerText = totals.grandTotal > 0 ? totals.grandTotal.toFixed(2) + ' ₾' : '';
+            // Include oils total in preview grand total
+            const oilsTotalPreview = parseFloat(document.getElementById('oils-total')?.textContent.replace(' ₾', '') || '0') || 0;
+            const previewGrand = (totals.grandTotal || 0) + oilsTotalPreview;
+            document.getElementById('out_grand_total').innerText = previewGrand > 0 ? previewGrand.toFixed(2) + ' ₾' : '';
         }
 
         function prepareData() {

@@ -140,7 +140,9 @@ function esc($s){ return htmlspecialchars((string)$s); }
     $service_discount_percent = isset($invoice['service_discount_percent']) ? (float)$invoice['service_discount_percent'] : 0.0;
     $computedPartsAfterGlobal = $computedParts * max(0, (1 - $parts_discount_percent / 100.0));
     $computedSvcAfterGlobal = $computedSvc * max(0, (1 - $service_discount_percent / 100.0));
-    $computedGrand = $computedPartsAfterGlobal + $computedSvcAfterGlobal;
+    // Include oils (if present) in the computed grand total for printing
+    $computedOils = isset($oilsTotal) ? (float)$oilsTotal : 0.0;
+    $computedGrand = $computedPartsAfterGlobal + $computedSvcAfterGlobal + $computedOils;
 endif; ?>
             <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse border border-black min-w-[600px]">
                 <thead>
