@@ -56,6 +56,7 @@ if (isset($_GET['edit_id'])) {
                 'technician' => $inv['technician'] ?? '',
                 'technician_id' => isset($inv['technician_id']) ? (int)$inv['technician_id'] : 0,
                 'items' => $inv_items,
+                'oils' => !empty($inv['oils']) ? json_decode($inv['oils'], true) : [],
                 'images' => !empty($inv['images']) ? json_decode($inv['images'], true) : [],
                 'grand_total' => (float)$inv['grand_total'],
                 'parts_total' => (float)$inv['parts_total'],

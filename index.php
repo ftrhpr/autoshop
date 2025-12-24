@@ -81,6 +81,7 @@ if ($loadId) {
                 'technician' => $inv['technician'] ?? '',
                 'technician_id' => isset($inv['technician_id']) ? (int)$inv['technician_id'] : 0,
                 'items' => $inv_items,
+                'oils' => !empty($inv['oils']) ? json_decode($inv['oils'], true) : [],
                 'images' => !empty($inv['images']) ? json_decode($inv['images'], true) : [],
                 'grand_total' => (float)$inv['grand_total'],
                 'parts_total' => (float)$inv['parts_total'],
@@ -1488,19 +1489,19 @@ if (!empty($serverInvoice)) {
             tr.innerHTML = `
                 <td class="px-4 py-3 font-medium text-center text-gray-400 oil-row-number">${oilRowCount}</td>
                 <td class="px-4 py-3">
-                    <select class="oil-brand w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
+                    <select name="oil_brand_${oilRowCount}" class="oil-brand w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
                         <option value="">Select Brand</option>
                         ${oilBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
                     </select>
                 </td>
                 <td class="px-4 py-3">
-                    <select class="oil-viscosity w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
+                    <select name="oil_viscosity_${oilRowCount}" class="oil-viscosity w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
                         <option value="">Select Viscosity</option>
                         ${oilViscosities.map(v => `<option value="${v.id}">${v.viscosity}</option>`).join('')}
                     </select>
                 </td>
                 <td class="px-4 py-3">
-                    <select class="oil-package w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
+                    <select name="oil_package_${oilRowCount}" class="oil-package w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
                         <option value="">Select Package</option>
                         <option value="canned">Canned</option>
                         <option value="1lt">1 Liter</option>
@@ -1509,13 +1510,13 @@ if (!empty($serverInvoice)) {
                     </select>
                 </td>
                 <td class="px-4 py-3">
-                    <input type="number" min="1" value="1" class="oil-qty w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
+                    <input name="oil_qty_${oilRowCount}" type="number" min="1" value="1" class="oil-qty w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
                 </td>
                 <td class="px-4 py-3">
-                    <input type="number" min="0" step="0.01" value="0" class="oil-unit-price w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" readonly>
+                    <input name="oil_unit_price_${oilRowCount}" type="number" min="0" step="0.01" value="0" class="oil-unit-price w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" readonly>
                 </td>
                 <td class="px-4 py-3">
-                    <input type="number" min="0" max="100" value="0" class="oil-discount w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
+                    <input name="oil_discount_${oilRowCount}" type="number" min="0" max="100" value="0" class="oil-discount w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
                 </td>
                 <td class="px-4 py-3">
                     <span class="oil-total font-medium">0.00 ₾</span>
