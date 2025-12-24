@@ -118,7 +118,40 @@ function esc($s){ return htmlspecialchars((string)$s); }
         </div>
         <?php endif; ?>
 
-
+        <!-- Oils Summary (moved to top) -->
+        <?php if ($server && !empty($oils)): ?>
+            <div class="mb-4">
+                <div class="font-bold mb-2">Oils Summary</div>
+                <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse mb-2">
+                    <thead>
+                        <tr>
+                            <th class="border border-black p-0.5 text-center w-6">#</th>
+                            <th class="border border-black p-0.5 text-left">Brand / Viscosity / Package</th>
+                            <th class="border border-black p-0.5 text-center w-10">Qty</th>
+                            <th class="border border-black p-0.5 text-right w-16">Unit</th>
+                            <th class="border border-black p-0.5 text-right w-10">Disc%</th>
+                            <th class="border border-black p-0.5 text-right w-16">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $oi = 1; foreach ($oils as $o): ?>
+                            <tr>
+                                <td class="border border-black p-0.5 text-center"><?php echo $oi++; ?></td>
+                                <td class="border border-black p-0.5"><?php echo esc(trim(($o['brand_name'] ?? '') . ' ' . ($o['viscosity_name'] ?? '') . ' ' . ($o['package_type'] ?? ''))); ?></td>
+                                <td class="border border-black p-0.5 text-center"><?php echo isset($o['qty']) ? (int)$o['qty'] : ''; ?></td>
+                                <td class="border border-black p-0.5 text-right"><?php echo isset($o['unit_price']) ? number_format((float)$o['unit_price'],2) : ''; ?></td>
+                                <td class="border border-black p-0.5 text-right"><?php echo (isset($o['discount']) && $o['discount']>0) ? number_format((float)$o['discount'],2) . '%' : ''; ?></td>
+                                <td class="border border-black p-0.5 text-right font-semibold"><?php echo (isset($o['line_total']) && $o['line_total']>0) ? number_format((float)$o['line_total'],2) : ''; ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        <tr class="font-bold bg-gray-50">
+                            <td class="border border-black p-0.5" colSpan="5">Oils total:</td>
+                            <td class="border border-black p-0.5 text-right"><?php echo ($oilsTotal > 0 ? number_format($oilsTotal,2) : ''); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
 
         <!-- Table -->
         <div class="mb-2 overflow-x-auto">
@@ -230,33 +263,7 @@ endif; ?>
                         echo "<td class=\"border border-black p-0.5 bg-gray-300 print:bg-gray-300\"></td>";
                         echo "</tr>";
 
-                        // If there are oils, render them in a small table-like block and add to totals
-                        if ($server && !empty($oils)) {
-                            echo "<tr class=\"bg-white\"><td class=\"border border-black p-0.5\" colSpan=\"10\">";
-                            echo "<div class=\"mt-3 mb-1 font-bold\">Oils</div>";
-                            echo "<table class=\"w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse mb-2\">";
-                            echo "<thead><tr><th class=\"border border-black p-0.5 text-center\">#</th><th class=\"border border-black p-0.5\">Brand / Viscosity / Package</th><th class=\"border border-black p-0.5 text-center\">Qty</th><th class=\"border border-black p-0.5 text-right\">Unit</th><th class=\"border border-black p-0.5 text-right\">Disc%</th><th class=\"border border-black p-0.5 text-right\">Total</th></tr></thead>";
-                            echo "<tbody>";
-                            $oi = 1;
-                            foreach ($oils as $o) {
-                                echo "<tr>";
-                                echo "<td class=\"border border-black p-0.5 text-center\">" . $oi++ . "</td>";
-                                $name = trim(($o['brand_name'] ?? '') . ' ' . ($o['viscosity_name'] ?? '') . ' ' . ($o['package_type'] ?? ''));
-                                echo "<td class=\"border border-black p-0.5\">" . esc($name) . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-center\">" . (isset($o['qty']) ? (int)$o['qty'] : '') . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right\">" . (isset($o['unit_price']) ? number_format((float)$o['unit_price'],2) : '') . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right\">" . (isset($o['discount']) && $o['discount']>0 ? number_format((float)$o['discount'],2) . '%' : '') . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right font-semibold\">" . (isset($o['line_total']) && $o['line_total']>0 ? number_format((float)$o['line_total'],2) : '') . "</td>";
-                                echo "</tr>";
-                            }
-                            // Oils total row
-                            echo "<tr class=\"font-bold bg-gray-50\">";
-                            echo "<td class=\"border border-black p-0.5\" colSpan=\"5\">Oils total:</td>";
-                            echo "<td class=\"border border-black p-0.5 text-right\">" . ($oilsTotal > 0 ? number_format($oilsTotal,2) : '') . "</td>";
-                            echo "</tr>";
 
-                            echo "</tbody></table></td></tr>";
-                        }
                     endif; ?>
                 </tbody>
             </table>
