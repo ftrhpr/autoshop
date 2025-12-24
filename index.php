@@ -1539,7 +1539,7 @@ if (!empty($serverInvoice)) {
 
             if (brandId && viscosityId && packageType) {
                 const priceKey = brandId + '_' + viscosityId + '_' + packageType;
-                const unitPrice = oilPriceLookup[priceKey] || 0;
+                const unitPrice = parseFloat(oilPriceLookup[priceKey]) || 0;
                 const discountedPrice = unitPrice * (1 - discount / 100);
                 const total = qty * discountedPrice;
 
