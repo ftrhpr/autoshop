@@ -2397,7 +2397,7 @@ if (!empty($serverInvoice)) {
                 const dbSrc = (srcVal === 'usage_vehicle' || srcVal === 'item_price') ? 'vehicle' : 'default';
                 row.dataset.itemDbPriceSource = dbSrc;
 
-n                // Also set hidden inputs
+                // Also set hidden inputs
                 if (id) row.querySelector('.item-db-id').value = id;
                 if (type) row.querySelector('.item-db-type').value = type;
                 if (vehicle) row.querySelector('.item-db-vehicle').value = vehicle;

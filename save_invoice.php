@@ -325,8 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Smart lookup for vehicle price - prefer most-used historical price first
                 $pv = false;
                 $vLower = strtolower(trim($vehicleMake));
-
-n                // Try historical usage-derived price first (if any)
+                // Try historical usage-derived price first (if any)
                 if (is_callable($findVehiclePriceUsage)) {
                     $pv = $findVehiclePriceUsage($it['db_type'], $it['db_id'], $vehicleMake);
                     if ($pv) {
@@ -336,8 +335,7 @@ n                // Try historical usage-derived price first (if any)
                         } // else: invoice overrides historical suggestion and will update/create item_prices below
                     }
                 }
-
-n                // Fallback to configured per-vehicle item_prices if no historical suggestion found
+                // Fallback to configured per-vehicle item_prices if no historical suggestion found
                 if (!$pv) {
                     $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
                     $pvStmt->execute([$it['db_type'], $it['db_id'], $vLower]);
@@ -427,7 +425,7 @@ n                // Fallback to configured per-vehicle item_prices if no histori
                         $pv = false;
                         $vLower = strtolower(trim($vehicleMake));
 
-n                        if (is_callable($findVehiclePriceUsage)) {
+                        if (is_callable($findVehiclePriceUsage)) {
                             $pv = $findVehiclePriceUsage('part', $it['db_id'], $vehicleMake);
                             if ($pv) {
                                 if (empty($it['price_part']) || floatval($it['price_part']) == floatval($pv['price'])) {
@@ -584,7 +582,7 @@ n                        if (is_callable($findVehiclePriceUsage)) {
                         $pv = false;
                         $vLower = strtolower(trim($vehicleMake));
 
-n                        if (is_callable($findVehiclePriceUsage)) {
+                        if (is_callable($findVehiclePriceUsage)) {
                             $pv = $findVehiclePriceUsage('labor', $it['db_id'], $vehicleMake);
                             if ($pv) {
                                 if (empty($it['price_svc']) || floatval($it['price_svc']) == floatval($pv['price'])) {
@@ -594,7 +592,7 @@ n                        if (is_callable($findVehiclePriceUsage)) {
                             }
                         }
 
-n                        if (!$pv) {
+                        if (!$pv) {
                             // Smart lookup: try exact match first, then token-based matching (e.g., 'Corolla' matches 'Toyota Corolla')
                             $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
                             $pvStmt->execute(['labor', $it['db_id'], $vLower]);
