@@ -109,7 +109,7 @@ foreach ($oilPrices as $price) {
 
         /* Georgian fonts for headers */
         h1, h2, h3, h4, h5, h6 {
-            font-family: 'BPG Arial', 'BPG Arial Caps', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'BPG Arial', 'BPG Arial Caps';
         }
 
         .mobile-container {
