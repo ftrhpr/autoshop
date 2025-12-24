@@ -100,6 +100,18 @@ if ($loadId) {
         $invoiceNotFound = true;
     }
 }
+
+// Load oil data for the invoice form
+$oilBrands = $pdo->query("SELECT * FROM oil_brands ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$oilViscosities = $pdo->query("SELECT * FROM oil_viscosities ORDER BY viscosity")->fetchAll(PDO::FETCH_ASSOC);
+$oilPrices = $pdo->query("SELECT * FROM oil_prices ORDER BY brand_id, viscosity_id, package_type")->fetchAll(PDO::FETCH_ASSOC);
+
+// Create a lookup array for oil prices
+$oilPriceLookup = [];
+foreach ($oilPrices as $price) {
+    $key = $price['brand_id'] . '_' . $price['viscosity_id'] . '_' . $price['package_type'];
+    $oilPriceLookup[$key] = $price['price'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="ka">
@@ -313,6 +325,7 @@ if ($loadId) {
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="vehicle">Vehicle</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">Customer</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="items">Items</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="oils">Oils</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="photos">Photos</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="review">Review</button>
                     </nav>
@@ -444,6 +457,58 @@ if ($loadId) {
                                 <p class="font-bold text-xl text-green-800" id="display_grand_total"></p>
                             </div>
                         </div>
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
+                                <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="oils-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                            Engine Oils
+                        </h2>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm bg-white rounded-lg overflow-hidden shadow-sm min-w-[800px]">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">#</th>
+                                        <th class="px-4 py-3 text-left">Brand</th>
+                                        <th class="px-4 py-3 text-left">Viscosity</th>
+                                        <th class="px-4 py-3 text-left">Package</th>
+                                        <th class="px-4 py-3 text-center">Quantity</th>
+                                        <th class="px-4 py-3 text-right">Unit Price</th>
+                                        <th class="px-4 py-3 text-right">Discount %</th>
+                                        <th class="px-4 py-3 text-right">Total</th>
+                                        <th class="px-4 py-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="oils-table-body" class="divide-y divide-gray-100">
+                                    <!-- Oil rows added via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="button" onclick="addOilRow()" class="mt-4 flex items-center gap-2 text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Oil
+                        </button>
+
+                        <div class="mt-6 bg-green-50 p-4 rounded-lg">
+                            <p class="text-sm text-green-700 font-medium">Oils Total</p>
+                            <p class="font-bold text-xl text-green-800" id="oils-total">0.00 ₾</p>
+                        </div>
+
                         <div class="mt-6 flex justify-between">
                             <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
                             <div class="flex gap-2">
@@ -597,6 +662,12 @@ if (!empty($serverInvoice)) {
         // Global defaults for service manager (prefill with current logged in user)
         let smDefault = <?php echo json_encode($_SESSION['username'] ?? ''); ?>;
         let smDefaultId = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
+
+        // Oil data
+        let oilBrands = <?php echo json_encode($oilBrands); ?>;
+        let oilViscosities = <?php echo json_encode($oilViscosities); ?>;
+        let oilPriceLookup = <?php echo json_encode($oilPriceLookup); ?>;
+        let oilRowCount = 0;
 
         // Function to update image count (defined globally)
         function updateImageCount() {
@@ -1233,6 +1304,7 @@ if (!empty($serverInvoice)) {
             // If server supplied invoice data, populate and optionally print
             if (window.serverInvoice) {
                 loadServerInvoice(window.serverInvoice);
+                updateReviewContent(); // Update review tab with loaded data
             }
 
             // Initialize tabs
@@ -1321,6 +1393,7 @@ if (!empty($serverInvoice)) {
             const mileage = document.getElementById('input_mileage').value || 'Not specified';
 
             const totals = calculateTotals();
+            const oilsTotal = parseFloat(document.getElementById('oils-total').textContent.replace(' ₾', '')) || 0;
 
             reviewContent.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1345,7 +1418,8 @@ if (!empty($serverInvoice)) {
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p><strong>Parts Total:</strong> ${totals.partTotal > 0 ? totals.partTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
                             <p><strong>Service Total:</strong> ${totals.svcTotal > 0 ? totals.svcTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
-                            <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${totals.grandTotal > 0 ? totals.grandTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
+                            ${oilsTotal > 0 ? `<p><strong>Oils Total:</strong> ${oilsTotal.toFixed(2)} ₾</p>` : ''}
+                            <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${(totals.grandTotal + oilsTotal).toFixed(2)} ₾</p>
                         </div>
 
                         <div class="bg-blue-50 p-4 rounded-lg">
@@ -1402,6 +1476,108 @@ if (!empty($serverInvoice)) {
                 techInput.addEventListener('input', ()=>{ if (tr.dataset && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
             }
             renumberRows();
+        }
+
+        // Oil functions
+        function addOilRow() {
+            oilRowCount++;
+            const tbody = document.getElementById('oils-table-body');
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-50 oil-row";
+            tr.id = `oil-row-${oilRowCount}`;
+            tr.innerHTML = `
+                <td class="px-4 py-3 font-medium text-center text-gray-400 oil-row-number">${oilRowCount}</td>
+                <td class="px-4 py-3">
+                    <select class="oil-brand w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
+                        <option value="">Select Brand</option>
+                        ${oilBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <select class="oil-viscosity w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
+                        <option value="">Select Viscosity</option>
+                        ${oilViscosities.map(v => `<option value="${v.id}">${v.viscosity}</option>`).join('')}
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <select class="oil-package w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
+                        <option value="">Select Package</option>
+                        <option value="canned">Canned</option>
+                        <option value="1lt">1 Liter</option>
+                        <option value="4lt">4 Liter</option>
+                        <option value="5lt">5 Liter</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="number" min="1" value="1" class="oil-qty w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
+                </td>
+                <td class="px-4 py-3">
+                    <input type="number" min="0" step="0.01" value="0" class="oil-unit-price w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" readonly>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="number" min="0" max="100" value="0" class="oil-discount w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
+                </td>
+                <td class="px-4 py-3">
+                    <span class="oil-total font-medium">0.00 ₾</span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <button onclick="removeOilRow(${oilRowCount})" class="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            renumberOilRows();
+        }
+
+        function updateOilPrice(row) {
+            const brandId = row.querySelector('.oil-brand').value;
+            const viscosityId = row.querySelector('.oil-viscosity').value;
+            const packageType = row.querySelector('.oil-package').value;
+            const qty = parseFloat(row.querySelector('.oil-qty').value) || 0;
+            const discount = parseFloat(row.querySelector('.oil-discount').value) || 0;
+
+            if (brandId && viscosityId && packageType) {
+                const priceKey = brandId + '_' + viscosityId + '_' + packageType;
+                const unitPrice = oilPriceLookup[priceKey] || 0;
+                const discountedPrice = unitPrice * (1 - discount / 100);
+                const total = qty * discountedPrice;
+
+                row.querySelector('.oil-unit-price').value = unitPrice.toFixed(2);
+                row.querySelector('.oil-total').textContent = total.toFixed(2) + ' ₾';
+            } else {
+                row.querySelector('.oil-unit-price').value = '0.00';
+                row.querySelector('.oil-total').textContent = '0.00 ₾';
+            }
+
+            updateOilsTotal();
+        }
+
+        function updateOilsTotal() {
+            let total = 0;
+            document.querySelectorAll('.oil-row').forEach(row => {
+                const totalText = row.querySelector('.oil-total').textContent;
+                const amount = parseFloat(totalText.replace(' ₾', '')) || 0;
+                total += amount;
+            });
+            document.getElementById('oils-total').textContent = total.toFixed(2) + ' ₾';
+            updateReviewContent(); // Update review tab when oils total changes
+        }
+
+        function removeOilRow(id) {
+            const row = document.getElementById(`oil-row-${id}`);
+            if (row) {
+                row.remove();
+                updateOilsTotal();
+                renumberOilRows();
+            }
+        }
+
+        function renumberOilRows() {
+            let count = 1;
+            document.querySelectorAll('.oil-row-number').forEach(cell => {
+                cell.textContent = count++;
+            });
         }
 
         function loadServerInvoice(inv) {
@@ -1499,6 +1675,22 @@ if (!empty($serverInvoice)) {
                 // recalc totals if needed
                 calculateTotals();
             });
+
+            // Load oils
+            document.querySelectorAll('.oil-row').forEach(r => r.remove());
+            (inv.oils || []).forEach(ol => {
+                addOilRow();
+                const tr = document.querySelector('.oil-row:last-child'); if (!tr) return;
+                tr.querySelector('.oil-brand').value = ol.brand_id || '';
+                tr.querySelector('.oil-viscosity').value = ol.viscosity_id || '';
+                tr.querySelector('.oil-package').value = ol.package_type || '';
+                tr.querySelector('.oil-qty').value = ol.qty || 1;
+                tr.querySelector('.oil-discount').value = (ol.discount !== undefined) ? ol.discount : 0;
+                // Update price and total
+                updateOilPrice(tr);
+            });
+            updateOilsTotal();
+
             // Apply any stored global discounts and refresh totals
             const pdElem = document.getElementById('input_parts_discount'); if (pdElem) pdElem.value = (inv.parts_discount_percent !== undefined) ? inv.parts_discount_percent : pdElem.value || 0;
             const sdElem = document.getElementById('input_service_discount'); if (sdElem) sdElem.value = (inv.service_discount_percent !== undefined) ? inv.service_discount_percent : sdElem.value || 0;
