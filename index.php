@@ -2011,19 +2011,33 @@ if (!empty($serverInvoice)) {
             // Remove any previously added hidden oil inputs to avoid duplicates
             form.querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
 
-            // Add hidden for oils
+            // Add hidden for oils (defensive: skip malformed rows)
             let oilIndex = 0;
             document.querySelectorAll('.oil-row').forEach(row => {
-                let brandId = row.querySelector('.oil-brand').value;
-                let viscosityId = row.querySelector('.oil-viscosity').value;
-                let packageType = row.querySelector('.oil-package').value;
-                
+                const brandEl = row.querySelector('.oil-brand');
+                const viscosityEl = row.querySelector('.oil-viscosity');
+                const packageEl = row.querySelector('.oil-package');
+                const qtyEl = row.querySelector('.oil-qty');
+                const discountEl = row.querySelector('.oil-discount');
+
+                if (!brandEl || !viscosityEl || !packageEl || !qtyEl || !discountEl) {
+                    // Malformed row (DOM changed); skip it to avoid exceptions
+                    console.warn('prepareData: skipping malformed oil row', row);
+                    return;
+                }
+
+                const brandId = (brandEl.value || '').toString().trim();
+                const viscosityId = (viscosityEl.value || '').toString().trim();
+                const packageType = (packageEl.value || '').toString().trim();
+                const qtyVal = (qtyEl.value || '').toString().trim();
+                const discountVal = (discountEl.value || '').toString().trim();
+
                 if (brandId && viscosityId && packageType) {
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_brand_${oilIndex}" value="${brandId}">`);
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_viscosity_${oilIndex}" value="${viscosityId}">`);
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_package_${oilIndex}" value="${packageType}">`);
-                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_qty_${oilIndex}" value="${row.querySelector('.oil-qty').value}">`);
-                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_discount_${oilIndex}" value="${row.querySelector('.oil-discount').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_qty_${oilIndex}" value="${qtyVal || '1'}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_discount_${oilIndex}" value="${discountVal || '0'}">`);
                     oilIndex++;
                 }
             });
