@@ -270,9 +270,6 @@ if ($loadId) {
                 <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="<?php echo $serverInvoice['id']; ?>">
                 <?php endif; ?>
 
-                <!-- Datalist for technician search -->
-                <datalist id="technicians-list"></datalist>
-
                 <!-- Tab Navigation -->
                 <div class="mb-6">
                     <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
@@ -760,20 +757,6 @@ if (!empty($serverInvoice)) {
 
 
 
-            // Populate technicians datalist for smart search
-            fetch('api_technicians_list.php')
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success && data.technicians) {
-                        window.techniciansList = data.technicians; // Store for lookup
-                        const datalist = document.getElementById('technicians-list');
-                        if (datalist) {
-                            datalist.innerHTML = data.technicians.map(t => `<option value="${t.name}">`).join('');
-                        }
-                    }
-                })
-                .catch(e => console.log('Failed to load technicians for datalist:', e));
-
             // Enhanced Image input preview with delete functionality
             const imgInput = document.getElementById('input_images');
             const imgPreview = document.getElementById('input_images_preview');
@@ -1244,7 +1227,7 @@ if (!empty($serverInvoice)) {
                 <td class="px-3 py-3"><input type="number" min="1" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-part w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-svc w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
-                <td class="px-3 py-3"><input type="text" placeholder="Name" list="technicians-list" class="item-tech w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
+                <td class="px-3 py-3"><input type="text" placeholder="Name" class="item-tech w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3 text-center">
                     <button onclick="removeRow(${rowCount})" class="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors">
                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -1256,22 +1239,18 @@ if (!empty($serverInvoice)) {
                 <input type="hidden" name="item_db_price_source_${rowCount}" class="item-db-price-source">
             `;
             tbody.appendChild(tr);
-            // Handle technician selection from datalist
+            // Attach per-row technician typeahead (defensive: may be defined later)
             const techInput = tr.querySelector('.item-tech');
-            if (techInput) {
-                techInput.addEventListener('change', () => {
-                    const val = techInput.value.trim();
-                    if (val && window.techniciansList) {
-                        const tech = window.techniciansList.find(t => t.name === val);
-                        if (tech) {
-                            tr.dataset.itemTechId = tech.id;
-                        } else {
-                            delete tr.dataset.itemTechId;
-                        }
-                    } else {
-                        delete tr.dataset.itemTechId;
-                    }
-                });
+            if (techInput){
+                const at = (typeof attachTypeahead === 'function') ? attachTypeahead : (window.attachTypeahead || null);
+                if (at) {
+                    at(techInput, 'api_technicians_search.php?q=', t => t.name, (it) => {
+                        techInput.value = it.name || '';
+                        tr.dataset.itemTechId = it.id;
+                    });
+                }
+                // Clear stored technician id when user types custom text
+                techInput.addEventListener('input', ()=>{ if (tr.dataset && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
             }
             renumberRows();
         }
