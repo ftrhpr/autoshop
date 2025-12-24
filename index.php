@@ -2012,9 +2012,12 @@ if (!empty($serverInvoice)) {
 
             // Remove any previously added hidden oil inputs to avoid duplicates
             form.querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
+            // Also remove legacy or JSON wrapper
+            form.querySelectorAll('input[name="oils_json"]').forEach(el => el.remove());
 
             // Add hidden for oils (defensive: skip malformed rows)
             let oilIndex = 0;
+            const oilsForJson = [];
             document.querySelectorAll('.oil-row').forEach(row => {
                 const brandEl = row.querySelector('.oil-brand');
                 const viscosityEl = row.querySelector('.oil-viscosity');
@@ -2040,9 +2043,28 @@ if (!empty($serverInvoice)) {
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_package_${oilIndex}" value="${packageType}">`);
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_qty_${oilIndex}" value="${qtyVal || '1'}">`);
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_discount_${oilIndex}" value="${discountVal || '0'}">`);
+
+                    oilsForJson.push({
+                        brand_id: parseInt(brandId) || null,
+                        viscosity_id: parseInt(viscosityId) || null,
+                        package_type: packageType,
+                        qty: parseInt(qtyVal) || 1,
+                        discount: parseFloat(discountVal) || 0
+                    });
+
                     oilIndex++;
                 }
             });
+
+            // Add JSON wrapper for oils (preferred payload)
+            if (oilsForJson.length > 0) {
+                const jsonInput = document.createElement('input');
+                jsonInput.type = 'hidden';
+                jsonInput.name = 'oils_json';
+                jsonInput.className = 'prepared-input';
+                jsonInput.value = JSON.stringify(oilsForJson);
+                form.appendChild(jsonInput);
+            }
 
             return true;
         }

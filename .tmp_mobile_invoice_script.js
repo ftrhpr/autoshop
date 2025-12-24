@@ -946,8 +946,11 @@
             });
 
             // Add hidden for oils (remove previous ones first)
-            document.getElementById('mobile-invoice-form').querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
+            const form = document.getElementById('mobile-invoice-form');
+            form.querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
+            form.querySelectorAll('input[name="oils_json"]').forEach(el => el.remove());
             let oilIndex = 0;
+            const oilsForJson = [];
             document.querySelectorAll('.oil-card').forEach(card => {
                 const brand = card.querySelector('.oil-brand')?.value || '';
                 const viscosity = card.querySelector('.oil-viscosity')?.value || '';
@@ -963,11 +966,29 @@
                         input.className = 'prepared-input';
                         input.name = nameMap[i] + oilIndex;
                         input.value = val;
-                        document.getElementById('mobile-invoice-form').appendChild(input);
+                        form.appendChild(input);
                     });
+
+                    oilsForJson.push({
+                        brand_id: parseInt(brand) || null,
+                        viscosity_id: parseInt(viscosity) || null,
+                        package_type: packageType,
+                        qty: parseInt(qty) || 1,
+                        discount: parseFloat(discount) || 0
+                    });
+
                     oilIndex++;
                 }
             });
+
+            if (oilsForJson.length > 0) {
+                const jsonInput = document.createElement('input');
+                jsonInput.type = 'hidden';
+                jsonInput.name = 'oils_json';
+                jsonInput.className = 'prepared-input';
+                jsonInput.value = JSON.stringify(oilsForJson);
+                form.appendChild(jsonInput);
+            }
 
             return true;
         }
