@@ -620,12 +620,21 @@ if (!empty($serverInvoice)) {
                 box.className = 'absolute bg-white border rounded mt-1 shadow z-50 w-full';
                 box.style.maxHeight = '220px';
                 box.style.overflow = 'auto';
-                input.parentElement.style.position = 'relative';
-                input.parentElement.appendChild(box);
+                box.style.position = 'fixed';
+                box.style.zIndex = '9999';
+                document.body.appendChild(box);
+
+                const updatePosition = () => {
+                    const rect = input.getBoundingClientRect();
+                    box.style.top = (rect.bottom + window.scrollY) + 'px';
+                    box.style.left = (rect.left + window.scrollX) + 'px';
+                    box.style.width = rect.width + 'px';
+                };
 
                 input.addEventListener('input', debounce(async () => {
                     const q = input.value.trim();
                     if (!q) { box.innerHTML = ''; return; }
+                    updatePosition();
                     try {
                         console.log('Searching for:', q);
                         const res = await fetch(endpoint + encodeURIComponent(q));
@@ -650,6 +659,7 @@ if (!empty($serverInvoice)) {
                 }));
 
                 input.addEventListener('focus', async () => {
+                    updatePosition();
                     try {
                         const res = await fetch(endpoint);
                         if (!res.ok) return;
@@ -668,6 +678,8 @@ if (!empty($serverInvoice)) {
                 });
 
                 document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) box.innerHTML = ''; });
+                window.addEventListener('scroll', updatePosition);
+                window.addEventListener('resize', updatePosition);
             
             // make available globally in case other inline scripts run before this definition (defensive)
             try{ window.attachTypeahead = attachTypeahead; }catch(e){}
