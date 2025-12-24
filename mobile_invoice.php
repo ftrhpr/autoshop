@@ -564,8 +564,7 @@ if (isset($_GET['edit_id'])) {
             <div class="step-indicator" data-step="2">2</div>
             <div class="step-indicator" data-step="3">3</div>
             <div class="step-indicator" data-step="4">4</div>
-            <div class="step-indicator" data-step="5">5</div>
-            <div class="step-indicator" data-step="6">✓</div>
+            <div class="step-indicator" data-step="5">✓</div>
         </div>
 
         <form id="mobile-invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data">
@@ -744,70 +743,8 @@ if (isset($_GET['edit_id'])) {
                 </div>
             </div>
 
-            <!-- Step 4: Oil Section -->
+            <!-- Step 4: Photos Section -->
             <div class="form-step" data-step="4">
-                <div class="form-section">
-                    <div class="section-header">
-                        <i class="fas fa-oil-can"></i>
-                        Oil Selection
-                    </div>
-
-                    <div class="input-group">
-                        <label class="input-label" for="oil_package_select">
-                            <i class="fas fa-oil-can mr-1"></i>
-                            Select Oil Package
-                        </label>
-                        <select id="oil_package_select" class="input-field">
-                            <option value="">Choose an oil package...</option>
-                            <?php
-                            $oilPackages = $pdo->query("
-                                SELECT p.id, b.name as brand_name, v.viscosity, p.package_type, p.amount, p.price
-                                FROM oil_packages p
-                                JOIN oil_brands b ON p.brand_id = b.id
-                                JOIN oil_viscosities v ON p.viscosity_id = v.id
-                                ORDER BY b.name, v.viscosity, p.package_type, p.amount
-                            ")->fetchAll();
-                            foreach ($oilPackages as $package):
-                                $description = $package['brand_name'] . ' ' . $package['viscosity'];
-                                if ($package['package_type'] === 'canned') {
-                                    $description .= ' (' . $package['amount'] . 'L Canned)';
-                                } else {
-                                    $description .= ' (' . $package['package_type'] . ')';
-                                }
-                                $description .= ' - ' . number_format($package['price'], 2) . ' ₾';
-                            ?>
-                                <option value="<?php echo $package['id']; ?>" data-price="<?php echo $package['price']; ?>" data-description="<?php echo htmlspecialchars($description); ?>">
-                                    <?php echo htmlspecialchars($description); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label class="input-label" for="oil_quantity">
-                            <i class="fas fa-hashtag mr-1"></i>
-                            Quantity
-                        </label>
-                        <input type="number" id="oil_quantity" class="input-field" min="1" value="1">
-                    </div>
-
-                    <button type="button" onclick="addOilToInvoice()" class="btn-secondary" style="margin-bottom: 1rem;">
-                        <i class="fas fa-plus mr-2"></i>
-                        Add Oil to Invoice
-                    </button>
-
-                    <div id="oil-items-list" class="space-y-2">
-                        <!-- Oil items will be added here -->
-                    </div>
-                </div>
-                <div class="step-navigation form-section">
-                    <button type="button" class="btn-secondary prev-btn">Previous</button>
-                    <button type="button" class="btn-primary next-btn">Next Step</button>
-                </div>
-            </div>
-
-            <!-- Step 5: Photos Section -->
-            <div class="form-step" data-step="5">
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-camera"></i>
@@ -841,8 +778,8 @@ if (isset($_GET['edit_id'])) {
                 </div>
             </div>
 
-            <!-- Step 6: Review & Save Section -->
-            <div class="form-step" data-step="6">
+            <!-- Step 5: Review & Save Section -->
+            <div class="form-step" data-step="5">
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-check-circle"></i>
@@ -1202,60 +1139,6 @@ if (isset($_GET['edit_id'])) {
                 calculateTotals();
                 updateProgress();
             }
-        }
-
-        // Add oil to invoice
-        function addOilToInvoice() {
-            const select = document.getElementById('oil_package_select');
-            const quantity = parseInt(document.getElementById('oil_quantity').value) || 1;
-            const selectedOption = select.options[select.selectedIndex];
-
-            if (!selectedOption.value) {
-                alert('Please select an oil package.');
-                return;
-            }
-
-            const description = selectedOption.getAttribute('data-description');
-            const price = parseFloat(selectedOption.getAttribute('data-price'));
-
-            // Add as a regular item
-            addItem();
-            const cards = document.querySelectorAll('.item-card');
-            const lastCard = cards[cards.length - 1];
-
-            lastCard.querySelector('.item-name-input').value = description;
-            lastCard.querySelector('.item-qty').value = quantity;
-            lastCard.querySelector('.item-price-part').value = price;
-            lastCard.querySelector('.item-price-svc').value = 0;
-
-            // Update the oil items list display
-            updateOilItemsList();
-
-            // Switch to items step
-            goToStep(3);
-
-            calculateTotals();
-        }
-
-        function updateOilItemsList() {
-            const list = document.getElementById('oil-items-list');
-            list.innerHTML = '';
-
-            document.querySelectorAll('.item-card').forEach((card, index) => {
-                const name = card.querySelector('.item-name-input').value;
-                const qty = card.querySelector('.item-qty').value;
-                const price = card.querySelector('.item-price-part').value;
-
-                if (name && name.toLowerCase().includes('oil')) {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'flex justify-between items-center p-2 bg-gray-50 rounded';
-                    itemDiv.innerHTML = `
-                        <span>${name} (x${qty})</span>
-                        <span>${(price * qty).toFixed(2)} ₾</span>
-                    `;
-                    list.appendChild(itemDiv);
-                }
-            });
         }
 
         // Calculate totals

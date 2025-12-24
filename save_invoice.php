@@ -33,6 +33,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    // Process oils
+    $oils = [];
+    for ($i = 0; isset($data["oil_brand_id_$i"]); $i++) {
+        $brand_id = (int)($data["oil_brand_id_$i"] ?? 0);
+        $viscosity_id = (int)($data["oil_viscosity_id_$i"] ?? 0);
+        $package_type = $data["oil_package_type_$i"] ?? '';
+        if ($brand_id && $viscosity_id && $package_type) {
+            $oils[] = [
+                'brand_id' => $brand_id,
+                'viscosity_id' => $viscosity_id,
+                'package_type' => $package_type,
+                'qty' => (int)($data["oil_qty_$i"] ?? 1),
+                'discount' => (float)($data["oil_discount_$i"] ?? 0),
+            ];
+        }
+    }
+
     // Handle vehicle - find or create for existing customer
     // DEBUG: log incoming items payload to help diagnose missing-created-items issue
     error_log("save_invoice: raw POST keys: " . json_encode(array_keys($_POST)) . "\n");
@@ -673,7 +690,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($existing_id) {
         // Update existing invoice (include VIN, technician)
-        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, technician = ?, technician_id = ?, vehicle_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, parts_discount_percent = ?, service_discount_percent = ?, grand_total = ? WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, technician = ?, technician_id = ?, vehicle_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, oils = ?, parts_total = ?, service_total = ?, parts_discount_percent = ?, service_discount_percent = ?, grand_total = ? WHERE id = ?");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
@@ -688,6 +705,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $vin,
             $data['mileage'],
             json_encode($items),
+            json_encode($oils),
             $finalPartsTotal,
             $finalServiceTotal,
             $parts_discount_percent,
@@ -698,7 +716,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $invoice_id = $existing_id;
     } else {
         // Insert new invoice (include VIN, technician)
-        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, technician, technician_id, vehicle_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, parts_discount_percent, service_discount_percent, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, technician, technician_id, vehicle_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, oils, parts_total, service_total, parts_discount_percent, service_discount_percent, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
@@ -713,6 +731,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $vin,
             $data['mileage'],
             json_encode($items),
+            json_encode($oils),
             $finalPartsTotal,
             $finalServiceTotal,
             $parts_discount_percent,

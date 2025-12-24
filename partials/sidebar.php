@@ -21,8 +21,8 @@ $menu_sections = [
         ['label' => 'Mobile Invoice', 'href' => $appRoot . '/mobile_invoice.php', 'icon' => 'mobile-alt', 'permission' => null],
         ['label' => 'Invoices', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
         ['label' => 'Customers', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
+        ['label' => 'Oil Prices', 'href' => $appRoot . '/admin/oil_prices.php', 'icon' => 'oil-can', 'permission' => 'manage_prices'],
         ['label' => 'Labors & Parts', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
-        ['label' => 'Oil Configuration', 'href' => $appRoot . '/admin/oils.php', 'icon' => 'oil-can', 'permission' => null],
         ['label' => 'Users & Access', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
             ['label' => 'Users', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
             ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']
