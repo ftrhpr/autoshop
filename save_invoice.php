@@ -921,7 +921,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Redirect based on flag
     if (!empty($data['print_after_save'])) {
-        header('Location: print_invoice.php?id=' . $invoice_id);
+        if (!empty($invoice_id) && is_numeric($invoice_id)) {
+            header('Location: print_invoice.php?id=' . $invoice_id);
+        } else {
+            // Log unexpected missing invoice id and redirect to manager with error
+            error_log("save_invoice: print_after_save requested but invoice_id missing or invalid. POST keys: " . json_encode(array_keys($_POST)) . " parsed invoice_id=" . var_export($invoice_id, true));
+            header('Location: manager.php?error=missing_invoice_id');
+        }
     } elseif ($existing_id) {
         // After update, go back to manager
         header('Location: manager.php?updated=' . $invoice_id);
