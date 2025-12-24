@@ -649,6 +649,24 @@ if (!empty($serverInvoice)) {
                     }
                 }));
 
+                input.addEventListener('focus', async () => {
+                    try {
+                        const res = await fetch(endpoint);
+                        if (!res.ok) return;
+                        const list = await res.json();
+                        if (!list.success || !Array.isArray(list.technicians)) return;
+                        const items = list.technicians;
+                        box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                        box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
+                            const item = JSON.parse(el.getAttribute('data-json'));
+                            onSelect(item);
+                            box.innerHTML = '';
+                        }));
+                    } catch (e) {
+                        box.innerHTML = '';
+                    }
+                });
+
                 document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) box.innerHTML = ''; });
             
             // make available globally in case other inline scripts run before this definition (defensive)
