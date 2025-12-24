@@ -129,7 +129,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
                             <th class="border border-black p-0.5 text-left">ბრენდი / სიბლანტე</th>
                             <th class="border border-black p-0.5 text-center w-10">რაოდ.</th>
                             <th class="border border-black p-0.5 text-right w-16">ფასი</th>
-                            <th class="border border-black p-0.5 text-right w-10">ფასდ. %</th>
+                            <th class="border border-black p-0.5 text-right w-10">%</th>
                             <th class="border border-black p-0.5 text-right w-16">სულ</th>
                         </tr>
                     </thead>
@@ -184,10 +184,10 @@ endif; ?>
                         <th class="border border-black p-0.5 text-left min-w-[200px]">ნაწილის და სერვისის დასახელება</th>
                         <th class="border border-black p-0.5 w-10 sm:w-12 text-center">რაოდ.</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">ფასი ნაწილი</th>
-                        <th class="border border-black p-0.5 w-10 sm:w-12 text-right">Disc%</th>
+                        <th class="border border-black p-0.5 w-10 sm:w-12 text-right">%</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">თანხა</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">ფასი სერვისი</th>
-                        <th class="border border-black p-0.5 w-10 sm:w-12 text-right">Disc%</th>
+                        <th class="border border-black p-0.5 w-10 sm:w-12 text-right">%</th>
                         <th class="border border-black p-0.5 w-16 sm:w-20 text-right">თანხა</th>
                         <th class="border border-black p-0.5 w-20 sm:w-24 text-left">შემსრულებელი</th>
                     </tr>
