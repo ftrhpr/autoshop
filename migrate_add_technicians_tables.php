@@ -41,6 +41,18 @@ try {
         echo "Added column technician to invoices." . PHP_EOL;
     }
 
+    // Add global discount columns (parts/service) if missing
+    $colCheck->execute(['parts_discount_percent']);
+    if ($colCheck->fetchColumn() == 0) {
+        $pdo->exec("ALTER TABLE invoices ADD COLUMN parts_discount_percent DECIMAL(5,2) NULL DEFAULT 0");
+        echo "Added column parts_discount_percent to invoices." . PHP_EOL;
+    }
+    $colCheck->execute(['service_discount_percent']);
+    if ($colCheck->fetchColumn() == 0) {
+        $pdo->exec("ALTER TABLE invoices ADD COLUMN service_discount_percent DECIMAL(5,2) NULL DEFAULT 0");
+        echo "Added column service_discount_percent to invoices." . PHP_EOL;
+    }
+
 } catch (PDOException $e) {
     echo "Error creating technicians tables: " . $e->getMessage() . PHP_EOL;
 }

@@ -73,6 +73,8 @@ if ($loadId) {
                 'grand_total' => (float)$inv['grand_total'],
                 'parts_total' => (float)$inv['parts_total'],
                 'service_total' => (float)$inv['service_total'],
+                'parts_discount_percent' => isset($inv['parts_discount_percent']) ? (float)$inv['parts_discount_percent'] : 0.0,
+                'service_discount_percent' => isset($inv['service_discount_percent']) ? (float)$inv['service_discount_percent'] : 0.0,
                 '_print' => true
             ];
             if ($inv_customer) $serverInvoice['customer'] = $inv_customer;
@@ -269,6 +271,9 @@ if ($loadId) {
                 <?php if ($serverInvoice): ?>
                 <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="<?php echo $serverInvoice['id']; ?>">
                 <?php endif; ?>
+                <!-- Global discounts -->
+                <input type="hidden" name="parts_discount_percent" id="hidden_parts_discount">
+                <input type="hidden" name="service_discount_percent" id="hidden_service_discount">
 
                 <!-- Tab Navigation -->
                 <div class="mb-6">
@@ -365,7 +370,9 @@ if ($loadId) {
                                         <th class="px-4 py-3 text-left">Item Name</th>
                                         <th class="px-4 py-3 text-center">Qty</th>
                                         <th class="px-4 py-3 text-right">Part Price</th>
+                                        <th class="px-4 py-3 text-right">Disc %</th>
                                         <th class="px-4 py-3 text-right">Svc Price</th>
+                                        <th class="px-4 py-3 text-right">Disc %</th>
                                         <th class="px-4 py-3 text-left">Technician</th>
                                         <th class="px-4 py-3 text-center">Action</th>
                                     </tr>
@@ -386,10 +393,12 @@ if ($loadId) {
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <p class="text-xs text-gray-600">Parts Total</p>
                                 <p class="font-bold text-lg" id="display_parts_total"></p>
+                                <div class="mt-2 text-xs text-slate-600">Discount: <input type="number" id="input_parts_discount" min="0" max="100" value="0" class="w-20 ml-2 border p-1 rounded text-sm" oninput="calculateTotals()"> %</div>
                             </div>
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <p class="text-xs text-gray-600">Service Total</p>
                                 <p class="font-bold text-lg" id="display_service_total"></p>
+                                <div class="mt-2 text-xs text-slate-600">Discount: <input type="number" id="input_service_discount" min="0" max="100" value="0" class="w-20 ml-2 border p-1 rounded text-sm" oninput="calculateTotals()"> %</div>
                             </div>
                             <div class="bg-green-50 p-4 rounded-lg">
                                 <p class="text-xs text-green-700">Grand Total</p>
@@ -1282,7 +1291,9 @@ if (!empty($serverInvoice)) {
                 <div class="suggestions absolute z-50 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
                 <td class="px-3 py-3"><input type="number" min="1" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-part w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
+                <td class="px-3 py-3"><input type="number" min="0" max="100" value="0" oninput="calculateTotals()" class="item-discount-part w-full border-gray-200 rounded p-2 text-sm"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-svc w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
+                <td class="px-3 py-3"><input type="number" min="0" max="100" value="0" oninput="calculateTotals()" class="item-discount-svc w-full border-gray-200 rounded p-2 text-sm"></td>
                 <td class="px-3 py-3"><input type="text" placeholder="Name" class="item-tech w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3 text-center">
                     <button onclick="removeRow(${rowCount})" class="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors">
@@ -1383,10 +1394,17 @@ if (!empty($serverInvoice)) {
                 tr.querySelector('.item-name').value = it.name || '';
                 tr.querySelector('.item-qty').value = it.qty || 1;
                 tr.querySelector('.item-price-part').value = it.price_part || 0;
+                tr.querySelector('.item-discount-part').value = (it.discount_part !== undefined) ? it.discount_part : 0;
                 tr.querySelector('.item-price-svc').value = it.price_svc || 0;
+                tr.querySelector('.item-discount-svc').value = (it.discount_svc !== undefined) ? it.discount_svc : 0;
                 tr.querySelector('.item-tech').value = it.tech || '';
                 if (it.tech_id) tr.dataset.itemTechId = it.tech_id;
+                // recalc totals if needed
+                calculateTotals();
             });
+            // Apply any stored global discounts and refresh totals
+            const pdElem = document.getElementById('input_parts_discount'); if (pdElem) pdElem.value = (inv.parts_discount_percent !== undefined) ? inv.parts_discount_percent : pdElem.value || 0;
+            const sdElem = document.getElementById('input_service_discount'); if (sdElem) sdElem.value = (inv.service_discount_percent !== undefined) ? inv.service_discount_percent : sdElem.value || 0;
             calculateTotals();
         }
 
@@ -1414,21 +1432,30 @@ if (!empty($serverInvoice)) {
             rows.forEach(row => {
                 const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
                 const pPart = parseFloat(row.querySelector('.item-price-part').value) || 0;
+                const dPart = parseFloat(row.querySelector('.item-discount-part')?.value) || 0;
                 const pSvc = parseFloat(row.querySelector('.item-price-svc').value) || 0;
-                
-                partTotal += (qty * pPart);
-                svcTotal += (qty * pSvc);
+                const dSvc = parseFloat(row.querySelector('.item-discount-svc')?.value) || 0;
+
+                const linePart = qty * pPart * Math.max(0, (1 - dPart / 100));
+                const lineSvc = qty * pSvc * Math.max(0, (1 - dSvc / 100));
+                partTotal += linePart;
+                svcTotal += lineSvc;
             });
 
-            // Ensure totals are valid numbers
-            partTotal = isNaN(partTotal) ? 0 : partTotal;
-            svcTotal = isNaN(svcTotal) ? 0 : svcTotal;
-            const grandTotal = partTotal + svcTotal;
+            // Apply global discounts
+            const globalPartDisc = parseFloat(document.getElementById('input_parts_discount')?.value) || 0;
+            const globalSvcDisc = parseFloat(document.getElementById('input_service_discount')?.value) || 0;
+            const finalPartTotal = Math.max(0, partTotal * (1 - globalPartDisc / 100));
+            const finalSvcTotal = Math.max(0, svcTotal * (1 - globalSvcDisc / 100));
+            const grandTotal = finalPartTotal + finalSvcTotal;
 
+            // Ensure totals are valid numbers
             // Update desktop totals
-            document.getElementById('display_parts_total').innerText = partTotal > 0 ? partTotal.toFixed(2) + ' ₾' : '';
-            document.getElementById('display_service_total').innerText = svcTotal > 0 ? svcTotal.toFixed(2) + ' ₾' : '';
+            document.getElementById('display_parts_total').innerText = finalPartTotal > 0 ? finalPartTotal.toFixed(2) + ' ₾' : '';
+            document.getElementById('display_service_total').innerText = finalSvcTotal > 0 ? finalSvcTotal.toFixed(2) + ' ₾' : '';
             document.getElementById('display_grand_total').innerText = grandTotal > 0 ? grandTotal.toFixed(2) + ' ₾' : '';
+
+            return { partTotal: finalPartTotal, svcTotal: finalSvcTotal, grandTotal };
 
             return { partTotal, svcTotal, grandTotal };
         }
@@ -1497,7 +1524,9 @@ if (!empty($serverInvoice)) {
                 const name = row.querySelector('.item-name').value;
                 const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
                 const pPart = parseFloat(row.querySelector('.item-price-part').value) || 0;
+                const dPart = parseFloat(row.querySelector('.item-discount-part')?.value) || 0;
                 const pSvc = parseFloat(row.querySelector('.item-price-svc').value) || 0;
+                const dSvc = parseFloat(row.querySelector('.item-discount-svc')?.value) || 0;
                 const tech = row.querySelector('.item-tech').value;
 
                 // Do not display zeros in rows (if empty name or 0 value)
@@ -1506,16 +1535,18 @@ if (!empty($serverInvoice)) {
                      // We will still render it to maintain the row count visual from edit mode, but blank.
                 }
 
-                const totalPart = qty * pPart;
-                const totalSvc = qty * pSvc;
+                const pPartDisc = pPart * Math.max(0, (1 - dPart/100));
+                const pSvcDisc = pSvc * Math.max(0, (1 - dSvc/100));
+                const totalPart = qty * pPartDisc;
+                const totalSvc = qty * pSvcDisc;
 
                 // Logic: If Name is empty, show blank row (even if default values exist)
                 // If Name exists, show values, but if specific price is 0, show blank.
                 
                 let displayQty = qty;
-                let displayPPart = formatPrice(pPart);
+                let displayPPart = formatPrice(pPartDisc);
                 let displayTotalPart = formatPrice(totalPart);
-                let displayPSvc = formatPrice(pSvc);
+                let displayPSvc = formatPrice(pSvcDisc);
                 let displayTotalSvc = formatPrice(totalSvc);
 
                 if (!name) {
@@ -1617,6 +1648,11 @@ if (!empty($serverInvoice)) {
             // technician_id is set when user selects from suggestions; keep existing value if set
             const hidTechId = document.getElementById('hidden_technician_id');
             if (hidTechId && !hidTechId.value) hidTechId.value = '';
+            // Copy global discounts
+            const partsDiscInput = document.getElementById('input_parts_discount'); const svcDiscInput = document.getElementById('input_service_discount');
+            const hiddenPartsDisc = document.getElementById('hidden_parts_discount'); const hiddenSvcDisc = document.getElementById('hidden_service_discount');
+            if (hiddenPartsDisc && partsDiscInput) hiddenPartsDisc.value = partsDiscInput.value || '0';
+            if (hiddenSvcDisc && svcDiscInput) hiddenSvcDisc.value = svcDiscInput.value || '0';
 
             // Ensure service manager is set (prevent empty)
             const smEl = document.getElementById('input_service_manager');
@@ -1643,6 +1679,11 @@ if (!empty($serverInvoice)) {
                     if (row.dataset && row.dataset.itemTechId) {
                         form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_id_${index}" value="${row.dataset.itemTechId}">`);
                     }
+                    // include per-item discounts
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_part_${index}" value="${row.querySelector('.item-discount-part').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_svc_${index}" value="${row.querySelector('.item-discount-svc').value}">`);
+                
+
                     // include matched db id/type if suggestion was used
                     if (row.dataset && row.dataset.itemDbId) {
                         form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_id_${index}" value="${row.dataset.itemDbId}">`);

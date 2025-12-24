@@ -18,8 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $items[] = [
                 'name' => $name,
                 'qty' => $data["item_qty_$i"],
-                'price_part' => $data["item_price_part_$i"],
+                        'price_part' => $data["item_price_part_$i"],
+                'discount_part' => isset($data["item_discount_part_$i"]) ? floatval($data["item_discount_part_$i"]) : 0.0,
                 'price_svc' => $data["item_price_svc_$i"],
+                'discount_svc' => isset($data["item_discount_svc_$i"]) ? floatval($data["item_discount_svc_$i"]) : 0.0,
                 'tech' => $data["item_tech_$i"],
                 'tech_id' => isset($data["item_tech_id_$i"]) ? (int)$data["item_tech_id_$i"] : null,
                 // optional matched DB info from autocomplete
@@ -484,15 +486,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $serviceTotal = 0.00;
     $grandTotal = 0.00;
 
-    foreach ($items as $item) {
+    foreach ($items as $idx => $item) {
         $qty = (float)($item['qty'] ?? 0);
         $pricePart = (float)($item['price_part'] ?? 0);
+        $discountPart = isset($item['discount_part']) ? floatval($item['discount_part']) : 0.0;
         $priceSvc = (float)($item['price_svc'] ?? 0);
+        $discountSvc = isset($item['discount_svc']) ? floatval($item['discount_svc']) : 0.0;
 
-        $partsTotal += $qty * $pricePart;
-        $serviceTotal += $qty * $priceSvc;
+        $linePart = $qty * $pricePart * max(0, (1 - $discountPart / 100.0));
+        $lineSvc = $qty * $priceSvc * max(0, (1 - $discountSvc / 100.0));
+
+        // store computed line_total for labor for future reference
+        if (!empty($item['db_type']) && $item['db_type'] === 'labor') {
+            $items[$idx]['line_total'] = $lineSvc;
+        } elseif (isset($item['price_svc']) && $item['price_svc'] > 0) {
+            // heuristically treat lines with price_svc as labor
+            $items[$idx]['line_total'] = $lineSvc;
+        }
+
+        $partsTotal += $linePart;
+        $serviceTotal += $lineSvc;
     }
     $grandTotal = $partsTotal + $serviceTotal;
+
+    // Read posted global discounts (if any)
+    $parts_discount_percent = isset($data['parts_discount_percent']) ? floatval($data['parts_discount_percent']) : 0.0;
+    $service_discount_percent = isset($data['service_discount_percent']) ? floatval($data['service_discount_percent']) : 0.0;
 
     // Use calculated values if POST values are empty or invalid
     $providedPartsTotal = isset($data['parts_total']) && is_numeric($data['parts_total']) ? (float)$data['parts_total'] : null;
@@ -518,7 +537,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($existing_id) {
         // Update existing invoice (include VIN, technician)
-        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, technician = ?, technician_id = ?, vehicle_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, grand_total = ? WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE invoices SET creation_date = ?, service_manager = ?, service_manager_id = ?, technician = ?, technician_id = ?, vehicle_id = ?, customer_name = ?, phone = ?, car_mark = ?, plate_number = ?, vin = ?, mileage = ?, items = ?, parts_total = ?, service_total = ?, parts_discount_percent = ?, service_discount_percent = ?, grand_total = ? WHERE id = ?");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
@@ -535,13 +554,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             json_encode($items),
             $finalPartsTotal,
             $finalServiceTotal,
+            $parts_discount_percent,
+            $service_discount_percent,
             $finalGrandTotal,
             $existing_id
         ]);
         $invoice_id = $existing_id;
     } else {
         // Insert new invoice (include VIN, technician)
-        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, technician, technician_id, vehicle_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO invoices (creation_date, service_manager, service_manager_id, technician, technician_id, vehicle_id, customer_name, phone, car_mark, plate_number, vin, mileage, items, parts_total, service_total, parts_discount_percent, service_discount_percent, grand_total, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['creation_date'],
             $serviceManagerName,
@@ -558,6 +579,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             json_encode($items),
             $finalPartsTotal,
             $finalServiceTotal,
+            $parts_discount_percent,
+            $service_discount_percent,
             $finalGrandTotal,
             $_SESSION['user_id']
         ]);
