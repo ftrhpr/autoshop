@@ -121,16 +121,16 @@ function esc($s){ return htmlspecialchars((string)$s); }
         <!-- Oils Summary (moved to top) -->
         <?php if ($server && !empty($oils)): ?>
             <div class="mb-4">
-                <div class="font-bold mb-2">Oils Summary</div>
+                <div class="font-bold mb-2">ზეთები</div>
                 <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse mb-2">
                     <thead>
                         <tr>
                             <th class="border border-black p-0.5 text-center w-6">#</th>
-                            <th class="border border-black p-0.5 text-left">Brand / Viscosity / Package</th>
-                            <th class="border border-black p-0.5 text-center w-10">Qty</th>
-                            <th class="border border-black p-0.5 text-right w-16">Unit</th>
-                            <th class="border border-black p-0.5 text-right w-10">Disc%</th>
-                            <th class="border border-black p-0.5 text-right w-16">Total</th>
+                            <th class="border border-black p-0.5 text-left">ბრენდი / სიბლანტე</th>
+                            <th class="border border-black p-0.5 text-center w-10">რაოდ.</th>
+                            <th class="border border-black p-0.5 text-right w-16">ფასი</th>
+                            <th class="border border-black p-0.5 text-right w-10">ფასდ. %</th>
+                            <th class="border border-black p-0.5 text-right w-16">სულ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,7 +145,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
                             </tr>
                         <?php endforeach; ?>
                         <tr class="font-bold bg-gray-50">
-                            <td class="border border-black p-0.5" colSpan="5">Oils total:</td>
+                            <td class="border border-black p-0.5" colSpan="5">ჯამი:</td>
                             <td class="border border-black p-0.5 text-right"><?php echo ($oilsTotal > 0 ? number_format($oilsTotal,2) : ''); ?></td>
                         </tr>
                     </tbody>
