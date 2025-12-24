@@ -35,19 +35,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Process oils
     $oils = [];
+    // Collect raw oil_* POST entries for debugging
+    $oil_post_entries = [];
+    foreach ($data as $k => $v) {
+        if (strpos($k, 'oil_') === 0) $oil_post_entries[$k] = $v;
+    }
+    if (!empty($oil_post_entries)) error_log("save_invoice: raw POST oil entries: " . json_encode($oil_post_entries) . "\n");
+
     for ($i = 0; isset($data["oil_brand_$i"]); $i++) {
         $brand_id = trim($data["oil_brand_$i"] ?? '');
         $viscosity_id = trim($data["oil_viscosity_$i"] ?? '');
         $package_type = trim($data["oil_package_$i"] ?? '');
-        
+
+        // Parse qty and discount defensively
+        $qty_raw = isset($data["oil_qty_$i"]) ? $data["oil_qty_$i"] : '1';
+        $qty = is_numeric($qty_raw) ? max(1, (int)$qty_raw) : 1;
+        $discount_raw = isset($data["oil_discount_$i"]) ? $data["oil_discount_$i"] : '0';
+        $discount = is_numeric($discount_raw) ? floatval($discount_raw) : 0.0;
+
         if ($brand_id !== '' && $viscosity_id !== '' && $package_type !== '') {
             $oils[] = [
                 'brand_id' => (int)$brand_id,
                 'viscosity_id' => (int)$viscosity_id,
                 'package_type' => $package_type,
-                'qty' => isset($data["oil_qty_$i"]) ? (int)$data["oil_qty_$i"] : 1,
-                'discount' => isset($data["oil_discount_$i"]) ? floatval($data["oil_discount_$i"]) : 0.0,
+                'qty' => $qty,
+                'discount' => $discount,
             ];
+        } else {
+            error_log("save_invoice: skipping incomplete oil row at index {$i}: brand='{$brand_id}' viscosity='{$viscosity_id}' package='{$package_type}' qty_raw='{$qty_raw}' discount_raw='{$discount_raw}'\n");
         }
     }
 
