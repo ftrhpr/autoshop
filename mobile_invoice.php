@@ -1,250 +1,319 @@
 <?php
 require 'config.php';
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
+if (!isset($_SESSION['user_id'])) { header('Location: login.php'); exit; }
+
+// Preload invoice if editing/viewing
+$serverInvoice = null;
+if (!empty($_GET['edit_id']) || !empty($_GET['print_id'])) {
+    $loadId = !empty($_GET['edit_id']) ? (int)$_GET['edit_id'] : (int)$_GET['print_id'];
+    $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ? LIMIT 1'); $stmt->execute([$loadId]); $inv = $stmt->fetch();
+    if ($inv) {
+        $inv_items = json_decode($inv['items'], true) ?: [];
+        $serverInvoice = [
+            'id' => (int)$inv['id'],
+            'creation_date' => $inv['creation_date'],
+            'customer_name' => $inv['customer_name'],
+            'phone' => $inv['phone'],
+            'car_mark' => $inv['car_mark'],
+            'plate_number' => $inv['plate_number'],
+            'vin' => $inv['vin'] ?? '',
+            'mileage' => $inv['mileage'],
+            'service_manager' => $inv['service_manager'],
+            'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
+            'technician' => $inv['technician'] ?? '',
+            'technician_id' => isset($inv['technician_id']) ? (int)$inv['technician_id'] : 0,
+            'items' => $inv_items,
+            'grand_total' => (float)$inv['grand_total'],
+            'parts_total' => (float)$inv['parts_total'],
+            'service_total' => (float)$inv['service_total'],
+            'parts_discount_percent' => isset($inv['parts_discount_percent']) ? (float)$inv['parts_discount_percent'] : 0.0,
+            'service_discount_percent' => isset($inv['service_discount_percent']) ? (float)$inv['service_discount_percent'] : 0.0,
+        ];
+    }
 }
-$username = $_SESSION['username'] ?? '';
-$todayLocal = date('Y-m-d\TH:i');
+
+// Small helper for escaping in JS
+function h_json($v){ return json_encode($v, JSON_UNESCAPED_UNICODE); }
 ?>
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mobile Invoice — Test UI</title>
+<title>Mobile Invoice — AutoShop</title>
 <link rel="stylesheet" href="main.css">
 <style>
-    /* Mobile-first custom styles */
-    body { background:#f7fafc; font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
-    .container { max-width:720px; margin:0 auto; padding:16px; }
-    .card { background:#fff; border-radius:12px; padding:14px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); margin-bottom:12px; }
-    .field-label { font-weight:600; font-size:0.9rem; color:#334155; margin-bottom:6px; }
-    .input { width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:10px; font-size:1rem; }
-    .row { display:flex; gap:8px; margin-top:8px; }
-    .row .col { flex:1; }
-    .btn { display:inline-block; background:#047857; color:#fff; padding:12px 16px; border-radius:10px; font-weight:600; text-align:center; }
-    .btn.secondary { background:#0ea5e9; }
-    .item-card { background:#fbfdff; border-radius:10px; padding:10px; margin-bottom:8px; border:1px solid #e6eef6; }
-    .small { font-size:0.9rem; color:#475569; }
-    .sticky-footer { position:sticky; bottom:12px; display:flex; gap:8px; }
-    .typeahead-box { position:absolute; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 8px 20px rgba(2,6,23,0.08); max-height:240px; overflow:auto; z-index:99999; }
-    .typeahead-item { padding:10px; border-bottom:1px solid #f1f5f9; }
-    .typeahead-item:hover { background:#f8fafc; cursor:pointer; }
-    @media(min-width:768px){ .container { padding:24px; } }
+/* Mobile-specific tweaks for the testing page */
+body { -webkit-tap-highlight-color: transparent; }
+.header { position: sticky; top: 0; z-index: 60; background: #fff; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.container { padding: 1rem; max-width: 900px; margin: 0 auto; }
+.item-row { display:flex; gap:8px; align-items:center; }
+.item-row .flex-1 { flex:1 }
+.small { font-size:0.9rem }
+.touch-btn { padding: 12px 16px; border-radius:10px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 9999; }
 </style>
 </head>
-<body>
-<div class="container">
-    <header class="flex items-center justify-between mb-4">
-        <h1 style="font-size:1.2rem; font-weight:700;">Create Invoice — Mobile Test</h1>
-        <a href="manager.php" class="small text-slate-600">Back</a>
-    </header>
+<body class="bg-gray-50">
+<header class="header p-3 shadow-sm">
+  <div class="container flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <button onclick="history.back();" class="text-gray-700">←</button>
+      <h1 class="text-lg font-semibold">Quick Invoice (Mobile)</h1>
+    </div>
+    <div>
+      <button id="btnSave" class="bg-green-600 text-white touch-btn">Save</button>
+    </div>
+  </div>
+</header>
 
-    <form id="mobile-invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="created_by" value="<?php echo htmlspecialchars($_SESSION['user_id'] ?? ''); ?>">
-        <input type="hidden" name="creation_date" id="hidden_creation_date" value="<?php echo $todayLocal; ?>">
+<main class="container mt-4">
+  <form id="mobile-invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="<?php echo $serverInvoice ? (int)$serverInvoice['id'] : ''; ?>">
 
-        <div class="card">
-            <div class="field-label">Plate Number</div>
-            <div style="position:relative">
-                <input id="mi_plate" name="plate_number" class="input" placeholder="e.g., ZZ-000-ZZ" autocomplete="off">
-                <div id="mi_plate_suggestions" class="typeahead-box" style="display:none;"></div>
-            </div>
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="field-label">Customer</div>
-                    <input id="mi_customer" name="customer_name" class="input" placeholder="Customer name">
-                </div>
-                <div class="col">
-                    <div class="field-label">Phone</div>
-                    <input id="mi_phone" name="phone_number" class="input" placeholder="Phone number">
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="field-label">Make / Model</div>
-                    <input id="mi_car" name="car_mark" class="input" placeholder="Make Model">
-                </div>
-                <div class="col">
-                    <div class="field-label">VIN</div>
-                    <input id="mi_vin" name="vin" class="input" placeholder="VIN">
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col">
-                    <div class="field-label">Mileage</div>
-                    <input id="mi_mileage" name="mileage" class="input" placeholder="e.g., 150000">
-                </div>
-                <div class="col">
-                    <div class="field-label">Service Manager</div>
-                    <input id="mi_sm" name="service_manager" class="input" placeholder="Service manager" value="<?php echo htmlspecialchars($username); ?>">
-                </div>
-            </div>
+    <section class="bg-white rounded-lg p-4 mb-4 shadow-sm">
+      <h2 class="font-medium mb-2">Vehicle & Customer</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="small mb-1">Plate Number</label>
+          <input type="text" id="input_plate_number" name="plate_number" class="w-full p-3 border rounded-lg" placeholder="Plate (e.g., ZZ-000-ZZ)">
         </div>
-
-        <div class="card">
-            <div class="flex items-center justify-between mb-2">
-                <div style="font-weight:700">Items</div>
-                <button type="button" id="mi_add_item" class="btn secondary">+ Add Item</button>
-            </div>
-            <div id="mi_items_list"></div>
-            <div class="row mt-2">
-                <div class="col small">Parts Total: <span id="mi_parts_total">0.00 ₾</span></div>
-                <div class="col small">Service Total: <span id="mi_service_total">0.00 ₾</span></div>
-            </div>
+        <div>
+          <label class="small mb-1">Make / Model</label>
+          <input type="text" id="input_car_mark" name="car_mark" class="w-full p-3 border rounded-lg" placeholder="Toyota Corolla">
         </div>
-
-        <div class="card">
-            <div class="field-label">Notes (optional)</div>
-            <textarea name="notes" class="input" rows="3" placeholder="Extra notes..."></textarea>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="small mb-1">VIN</label>
+            <input id="input_vin" name="vin" class="w-full p-3 border rounded-lg" placeholder="VIN">
+          </div>
+          <div>
+            <label class="small mb-1">Mileage</label>
+            <input id="input_mileage" name="mileage" class="w-full p-3 border rounded-lg" placeholder="km">
+          </div>
         </div>
+      </div>
+    </section>
 
-        <div class="sticky-footer">
-            <button type="button" id="mi_save" class="btn">Save</button>
-            <button type="button" id="mi_save_print" class="btn">Save & Print</button>
+    <section class="bg-white rounded-lg p-4 mb-4 shadow-sm">
+      <h2 class="font-medium mb-2">Customer</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="small mb-1">Name</label>
+          <input id="input_customer_name" name="customer_name" class="w-full p-3 border rounded-lg">
         </div>
-    </form>
+        <div>
+          <label class="small mb-1">Phone</label>
+          <input id="input_phone_number" name="phone_number" class="w-full p-3 border rounded-lg">
+        </div>
+      </div>
+    </section>
 
-    <div style="height:60px"></div>
-</div>
+    <section id="items-section" class="bg-white rounded-lg p-4 mb-4 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-medium">Items</h2>
+        <button type="button" id="btnAddItem" class="bg-blue-600 text-white px-3 py-2 rounded-md">Add Item</button>
+      </div>
+      <div id="mobile-items-list" class="space-y-3"></div>
+    </section>
+
+    <section class="bg-white rounded-lg p-4 mb-4 shadow-sm">
+      <h2 class="font-medium mb-2">Discounts & Totals</h2>
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="small mb-1">Parts Discount %</label>
+          <input id="input_parts_discount" class="w-full p-3 border rounded-lg" name="parts_discount_percent" value="0">
+        </div>
+        <div>
+          <label class="small mb-1">Service Discount %</label>
+          <input id="input_service_discount" class="w-full p-3 border rounded-lg" name="service_discount_percent" value="0">
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-gray-600">Parts</div>
+          <div id="display_parts_total" class="text-lg font-semibold">0.00 ₾</div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-600">Service</div>
+          <div id="display_service_total" class="text-lg font-semibold">0.00 ₾</div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-600">Grand</div>
+          <div id="display_grand_total" class="text-lg font-semibold">0.00 ₾</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="flex gap-3 mb-6">
+      <button type="button" id="btnSave2" class="flex-1 bg-green-600 text-white touch-btn rounded-md">Save Invoice</button>
+      <button type="button" id="btnSavePrint" class="flex-1 bg-indigo-600 text-white touch-btn rounded-md">Save & Print</button>
+    </section>
+
+    <!-- Hidden fields prepared by JS -->
+    <input type="hidden" id="hidden_creation_date" name="creation_date">
+    <input type="hidden" id="hidden_service_manager" name="service_manager" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>">
+    <input type="hidden" id="hidden_service_manager_id" name="service_manager_id" value="<?php echo htmlspecialchars($_SESSION['user_id'] ?? ''); ?>">
+    <input type="hidden" id="hidden_customer_id" name="customer_id">
+    <input type="hidden" id="hidden_vehicle_id" name="vehicle_id">
+    <input type="hidden" id="hidden_parts_total" name="parts_total">
+    <input type="hidden" id="hidden_service_total" name="service_total">
+    <input type="hidden" id="hidden_grand_total" name="grand_total">
+
+    <input type="hidden" id="print_after_save" name="print_after_save" value="">
+  </form>
+</main>
 
 <script>
-// Minimal typeahead implementation for the page (works with existing endpoints)
-function attachSimpleTypeahead(input, suggestionsEl, endpoint, formatItem, onSelect){
-    let current = -1;
-    let items = [];
-    input.addEventListener('input', async function(){
-        const q = input.value.trim();
-        if (!q) { suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; return; }
-        try {
-            const res = await fetch(endpoint + encodeURIComponent(q));
-            if (!res.ok) { suggestionsEl.style.display='none'; return; }
-            const data = await res.json();
-            // accept multiple shapes
-            if (Array.isArray(data)) items = data;
-            else if (data && Array.isArray(data.rows)) items = data.rows;
-            else if (data && Array.isArray(data.customers)) items = data.customers;
-            else if (data && Array.isArray(data.technicians)) items = data.technicians;
-            else items = [];
-            if (!items.length) { suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; return; }
-            suggestionsEl.innerHTML = items.map((it, idx) => `<div class="typeahead-item" data-idx="${idx}">${formatItem(it)}</div>`).join('');
-            suggestionsEl.style.display = 'block';
-        } catch(e){ console.log(e); suggestionsEl.style.display='none'; }
+// Paste of minimal attachTypeahead (same behavior as desktop)
+function debounce(fn, wait=250){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
+function attachTypeahead(input, endpoint, formatItem, onSelect){
+    const box = document.createElement('div');
+    box.className = 'bg-white border rounded shadow';
+    box.style.maxHeight = '260px'; box.style.overflow='auto'; box.style.position='absolute'; box.style.zIndex='2147483647'; box.style.display='none'; box.style.boxSizing='border-box'; box.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'; document.body.appendChild(box);
+    const updatePos = ()=>{
+        const r = input.getBoundingClientRect(); const viewportH = window.innerHeight || document.documentElement.clientHeight; const spaceBelow = viewportH - r.bottom; const spaceAbove = r.top;
+        let top = r.bottom + window.scrollY; let maxH = Math.min(260, Math.max(80, spaceBelow - 10));
+        if (spaceBelow < 160 && spaceAbove > spaceBelow){ maxH = Math.min(260, Math.max(80, spaceAbove - 10)); top = r.top + window.scrollY - maxH; }
+        box.style.left = (r.left + window.scrollX) + 'px'; box.style.top = top + 'px'; box.style.width = r.width + 'px'; box.style.maxHeight = maxH + 'px';
+    };
+    let scrollHandler = ()=>updatePos(), resizeHandler=()=>updatePos();
+    input.addEventListener('input', debounce(async ()=>{
+        const q = input.value.trim(); if (!q){ box.innerHTML=''; box.style.display='none'; return; }
+        try{ updatePos(); const res = await fetch(endpoint + encodeURIComponent(q)); if (!res.ok){ box.innerHTML=''; box.style.display='none'; return; } const list = await res.json(); let items = [];
+            if (Array.isArray(list)) items = list; else if (list && Array.isArray(list.technicians)) items = list.technicians; else if (list && Array.isArray(list.rows)) items = list.rows; else if (list && Array.isArray(list.customers)) items = list.customers;
+            if (!Array.isArray(items) || items.length === 0){ box.innerHTML=''; box.style.display='none'; return; }
+            box.innerHTML = items.map(it => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-json='${JSON.stringify(it).replace(/'/g,"\\'") }'>${formatItem(it)}</div>`).join('');
+            box.style.display='block'; box.querySelectorAll('div').forEach(el => el.addEventListener('click', ()=>{ const item = JSON.parse(el.getAttribute('data-json')); onSelect(item); box.innerHTML=''; box.style.display='none'; }));
+            window.addEventListener('scroll', scrollHandler, true); window.addEventListener('resize', resizeHandler);
+        }catch(e){ box.innerHTML=''; box.style.display='none'; }
+    }));
+    input.addEventListener('focus', async ()=>{ try{ updatePos(); const res = await fetch(endpoint); if (!res.ok) return; const list = await res.json(); let items=[]; if (Array.isArray(list)) items = list; else if (list && Array.isArray(list.technicians)) items = list.technicians; else if (list && Array.isArray(list.rows)) items = list.rows; else if (list && Array.isArray(list.customers)) items = list.customers; if (!items || items.length===0) return; box.innerHTML = items.map(it => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-json='${JSON.stringify(it).replace(/'/g,"\\'") }'>${formatItem(it)}</div>`).join(''); box.style.display='block'; box.querySelectorAll('div').forEach(el => el.addEventListener('click', ()=>{ const item = JSON.parse(el.getAttribute('data-json')); onSelect(item); box.innerHTML=''; box.style.display='none'; })); window.addEventListener('scroll', scrollHandler, true); window.addEventListener('resize', resizeHandler); }catch(e){ box.innerHTML=''; box.style.display='none'; } });
+    document.addEventListener('click', ev => { if (!input.contains(ev.target) && !box.contains(ev.target)){ box.innerHTML=''; box.style.display='none'; window.removeEventListener('scroll', scrollHandler, true); window.removeEventListener('resize', resizeHandler); } });
+}
+
+// Mobile items handling
+let mobileRowCount = 0;
+function addItemRow(it=null){
+    const list = document.getElementById('mobile-items-list');
+    const row = document.createElement('div'); row.className='p-3 border rounded-lg item-row'; row.dataset.idx=mobileRowCount;
+    row.innerHTML = `
+        <div class="flex-1">
+          <input class="item-name w-full p-2 border rounded mb-2" placeholder="Description" value="${it?.name||''}">
+          <div class="grid grid-cols-3 gap-2">
+            <input class="item-qty p-2 border rounded" type="number" min="1" value="${it?.qty||1}">
+            <input class="item-price-part p-2 border rounded" type="number" min="0" value="${it?.price_part||0}" placeholder="Part">
+            <input class="item-price-svc p-2 border rounded" type="number" min="0" value="${it?.price_svc||0}" placeholder="Service">
+          </div>
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <input class="item-discount-part p-2 border rounded" type="number" min="0" max="100" value="${it?.discount_part||0}" placeholder="% parts">
+            <input class="item-discount-svc p-2 border rounded" type="number" min="0" max="100" value="${it?.discount_svc||0}" placeholder="% svc">
+            <input class="item-tech p-2 border rounded" type="text" placeholder="Technician" value="${it?.tech||''}">
+          </div>
+        </div>
+        <div style="width:48px;text-align:center">
+          <button class="remove-item text-red-600" title="Remove">×</button>
+        </div>`;
+    list.appendChild(row);
+
+    // attach technician typeahead
+    const tech = row.querySelector('.item-tech'); attachTypeahead(tech,'api_technicians_search.php?q=', t=>t.name, it2=>{ tech.value = it2.name; row.dataset.itemTechId = it2.id; });
+    tech.addEventListener('input', ()=>{ if (row.dataset.itemTechId) delete row.dataset.itemTechId; calculateTotals(); });
+    row.querySelectorAll('input').forEach(i => i.addEventListener('input', ()=> calculateTotals()));
+    row.querySelector('.remove-item').addEventListener('click', ()=>{ row.remove(); calculateTotals(); });
+    mobileRowCount++;
+    calculateTotals();
+}
+
+function calculateTotals(){
+    let partTotal=0, svcTotal=0;
+    document.querySelectorAll('#mobile-items-list .item-row').forEach(row=>{
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const pPart = parseFloat(row.querySelector('.item-price-part').value) || 0; const dPart = parseFloat(row.querySelector('.item-discount-part').value) || 0;
+        const pSvc = parseFloat(row.querySelector('.item-price-svc').value) || 0; const dSvc = parseFloat(row.querySelector('.item-discount-svc').value) || 0;
+        partTotal += qty * pPart * Math.max(0, (1 - dPart/100)); svcTotal += qty * pSvc * Math.max(0, (1 - dSvc/100));
     });
-    suggestionsEl.addEventListener('click', (ev) => {
-        const tgt = ev.target.closest('.typeahead-item'); if (!tgt) return;
-        const idx = parseInt(tgt.getAttribute('data-idx'));
-        const it = items[idx]; if (!it) return;
-        onSelect(it);
-        suggestionsEl.style.display='none'; suggestionsEl.innerHTML='';
-    });
-    document.addEventListener('click', (e)=>{ if (!input.contains(e.target) && !suggestionsEl.contains(e.target)) { suggestionsEl.style.display='none'; } });
+    const globalP = parseFloat(document.getElementById('input_parts_discount').value) || 0; const globalS = parseFloat(document.getElementById('input_service_discount').value) || 0;
+    const finalP = Math.max(0, partTotal * (1 - globalP/100)); const finalS = Math.max(0, svcTotal * (1 - globalS/100)); const grand = finalP + finalS;
+    document.getElementById('display_parts_total').innerText = finalP>0? finalP.toFixed(2)+' ₾':'0.00 ₾';
+    document.getElementById('display_service_total').innerText = finalS>0? finalS.toFixed(2)+' ₾':'0.00 ₾';
+    document.getElementById('display_grand_total').innerText = grand>0? grand.toFixed(2)+' ₾':'0.00 ₾';
+    return {partTotal:finalP, svcTotal:finalS, grandTotal:grand};
 }
 
-// Item management
-let itemIdx = 0;
-function addItemRow(data = {}){
-    const id = itemIdx++;
-    const wrap = document.createElement('div'); wrap.className = 'item-card'; wrap.dataset.idx = id;
-    wrap.innerHTML = `
-        <div class="row">
-            <div class="col"><input class="input mi_item_name" placeholder="Description" value="${(data.name||'').replace(/"/g,'&quot;')}"></div>
-            <div style="width:86px"><input class="input mi_item_qty" type="number" min="1" value="${data.qty||1}"></div>
-        </div>
-        <div class="row mt-2">
-            <div class="col"><input class="input mi_item_price_part" placeholder="Part price" type="number" min="0" value="${data.price_part||0}"></div>
-            <div style="width:110px"><input class="input mi_item_price_svc" placeholder="Svc price" type="number" min="0" value="${data.price_svc||0}"></div>
-        </div>
-        <div class="row mt-2">
-            <div class="col small">Technician</div>
-            <div style="width:120px;text-align:right"><button type="button" class="btn" data-action="remove">Remove</button></div>
-        </div>
-        <div class="row mt-2">
-            <div class="col"><input class="input mi_item_tech" placeholder="Technician"></div>
-        </div>
-    `;
-    document.getElementById('mi_items_list').appendChild(wrap);
+function prepareData(){
+    // set hidden fields
+    document.getElementById('hidden_creation_date').value = new Date().toISOString().slice(0,16).replace('T',' ');
+    document.getElementById('hidden_service_manager').value = document.getElementById('hidden_service_manager').value || '';
+    document.getElementById('hidden_service_manager_id').value = document.getElementById('hidden_service_manager_id').value || '';
+    // copy vehicle/customer
+    document.getElementById('hidden_vehicle_id').value = document.getElementById('input_plate_number').dataset.vehicleId || '';
+    document.getElementById('hidden_customer_id').value = document.getElementById('input_customer_name').dataset.customerId || '';
 
-    // attach simple typeahead for technician on this row
-    const techInput = wrap.querySelector('.mi_item_tech');
-    attachSimpleTypeahead(techInput, createTypeaheadContainer(techInput), 'api_technicians_search.php?q=', it => it.name, (it) => { techInput.value = it.name || ''; wrap.dataset.techId = it.id; });
+    // totals
+    const t = calculateTotals(); document.getElementById('hidden_parts_total').value = t.partTotal.toFixed(2); document.getElementById('hidden_service_total').value = t.svcTotal.toFixed(2); document.getElementById('hidden_grand_total').value = t.grandTotal.toFixed(2);
 
-    wrap.querySelector('[data-action="remove"]').addEventListener('click', ()=>{ wrap.remove(); calcTotals(); });
+    // remove previous item hidden inputs to avoid duplicates (form may persist)
+    Array.from(document.querySelectorAll('input[name^="item_name_"]')).forEach(el=>el.remove());
+    Array.from(document.querySelectorAll('input[name^="item_qty_"]')).forEach(el=>el.remove());
 
-    wrap.querySelectorAll('.mi_item_qty, .mi_item_price_part, .mi_item_price_svc').forEach(el => el.addEventListener('input', calcTotals));
-    calcTotals();
-}
-
-function createTypeaheadContainer(input){
-    const container = document.createElement('div'); container.className='typeahead-box'; container.style.display='none'; container.style.position='absolute'; container.style.left='0'; container.style.right='0'; container.style.top=(input.offsetHeight+6)+'px'; input.parentElement.style.position='relative'; input.parentElement.appendChild(container); return container;
-}
-
-function calcTotals(){
-    let parts = 0, svc = 0;
-    document.querySelectorAll('.item-card').forEach(card => {
-        const qty = parseFloat(card.querySelector('.mi_item_qty').value) || 0;
-        const pp = parseFloat(card.querySelector('.mi_item_price_part').value) || 0;
-        const ps = parseFloat(card.querySelector('.mi_item_price_svc').value) || 0;
-        parts += qty * pp; svc += qty * ps;
-    });
-    document.getElementById('mi_parts_total').innerText = parts.toFixed(2) + ' ₾';
-    document.getElementById('mi_service_total').innerText = svc.toFixed(2) + ' ₾';
-}
-
-function prepareAndSubmit(printAfter){
-    // Build the form minimally and submit
     const form = document.getElementById('mobile-invoice-form');
-    // Remove previous dynamic hidden fields
-    document.querySelectorAll('.mi-dyn').forEach(el=>el.remove());
-    // Add items
-    let i=0;
-    document.querySelectorAll('.item-card').forEach(card => {
-        const name = card.querySelector('.mi_item_name').value.trim();
-        if (!name) return;
-        const qty = card.querySelector('.mi_item_qty').value || 1;
-        const pp = card.querySelector('.mi_item_price_part').value || 0;
-        const ps = card.querySelector('.mi_item_price_svc').value || 0;
-        const tech = card.querySelector('.mi_item_tech').value || '';
-        const techId = card.dataset.techId || '';
-        const inputs = [`item_name_${i}`, `item_qty_${i}`, `item_price_part_${i}`, `item_price_svc_${i}`, `item_tech_${i}`, `item_tech_id_${i}`];
-        const vals = [name, qty, pp, ps, tech, techId];
-        inputs.forEach((n, idx)=>{
-            const h = document.createElement('input'); h.type='hidden'; h.name=n; h.value=vals[idx]; h.className='mi-dyn'; form.appendChild(h);
-        });
-        i++;
+    let index = 0; document.querySelectorAll('#mobile-items-list .item-row').forEach(row=>{
+        const name = row.querySelector('.item-name').value.trim(); if (!name) return;
+        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_name_${index}" value="${name}">`);
+        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_qty_${index}" value="${row.querySelector('.item-qty').value}">`);
+        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_part_${index}" value="${row.querySelector('.item-price-part').value}">`);
+        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_svc_${index}" value="${row.querySelector('.item-price-svc').value}">`);
+        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_part_${index}" value="${row.querySelector('.item-discount-part').value}">`);
+        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_svc_${index}" value="${row.querySelector('.item-discount-svc').value}">`);
+        const tId = row.dataset.itemTechId || '';
+        if (tId) form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_id_${index}" value="${tId}">`);
+        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_${index}" value="${row.querySelector('.item-tech').value}">`);
+        index++;
     });
-
-    // Add global totals (optional)
-    const partsTotalEl = document.createElement('input'); partsTotalEl.type='hidden'; partsTotalEl.name='parts_total'; partsTotalEl.value = document.getElementById('mi_parts_total').innerText.replace(' ₾','') || '0.00'; partsTotalEl.className='mi-dyn'; form.appendChild(partsTotalEl);
-    const svcTotalEl = document.createElement('input'); svcTotalEl.type='hidden'; svcTotalEl.name='service_total'; svcTotalEl.value = document.getElementById('mi_service_total').innerText.replace(' ₾','') || '0.00'; svcTotalEl.className='mi-dyn'; form.appendChild(svcTotalEl);
-
-    if (printAfter) {
-        let paf = document.getElementById('print_after_save'); if (!paf){ paf = document.createElement('input'); paf.type='hidden'; paf.name='print_after_save'; paf.id='print_after_save'; paf.className='mi-dyn'; form.appendChild(paf); }
-        paf.value='1';
-    }
-
-    // Submit normally so PHP will redirect to print/view page
-    form.submit();
+    return true;
 }
 
-// Attach plate typeahead
-attachSimpleTypeahead(document.getElementById('mi_plate'), document.getElementById('mi_plate_suggestions'), './admin/api_customers.php?q=', (it)=> `${it.plate_number} — ${it.full_name || ''} ${it.car_mark? ' — ' + it.car_mark : ''}`, (it)=>{
-    document.getElementById('mi_plate').value = it.plate_number || '';
-    document.getElementById('mi_customer').value = it.full_name || '';
-    document.getElementById('mi_phone').value = it.phone || '';
-    document.getElementById('mi_car').value = it.car_mark || '';
-    document.getElementById('mi_vin').value = it.vin || '';
-    document.getElementById('mi_mileage').value = it.mileage || '';
+function handleSave(printAfter=false){
+    // basic validation
+    const customerName = document.getElementById('input_customer_name').value.trim(); const plate = document.getElementById('input_plate_number').value.trim();
+    if (!customerName){ alert('Please enter customer name'); document.getElementById('input_customer_name').focus(); return; }
+    if (!plate){ alert('Please enter plate number'); document.getElementById('input_plate_number').focus(); return; }
+
+    if (!prepareData()) return;
+    if (printAfter) document.getElementById('print_after_save').value = '1';
+    document.getElementById('mobile-invoice-form').submit();
+}
+
+// Attach behaviors
+document.getElementById('btnAddItem').addEventListener('click', ()=>addItemRow());
+document.getElementById('btnSave').addEventListener('click', ()=>handleSave(false));
+document.getElementById('btnSave2').addEventListener('click', ()=>handleSave(false));
+document.getElementById('btnSavePrint').addEventListener('click', ()=>handleSave(true));
+
+// Plate typeahead: use admin/api_customers.php?q=
+attachTypeahead(document.getElementById('input_plate_number'),'./admin/api_customers.php?q=', c=>`${c.plate_number} — ${c.full_name} ${c.car_mark? '— '+c.car_mark:''}`, it=>{
+    document.getElementById('input_plate_number').value = it.plate_number || '';
+    document.getElementById('input_customer_name').value = it.full_name || '';
+    document.getElementById('input_phone_number').value = it.phone || '';
+    document.getElementById('input_car_mark').value = it.car_mark || '';
+    document.getElementById('input_vin').value = it.vin || '';
+    document.getElementById('input_mileage').value = it.mileage || '';
+    // store associated ids on input dataset for prepareData
+    document.getElementById('input_plate_number').dataset.vehicleId = it.id || '';
+    document.getElementById('input_customer_name').dataset.customerId = it.customer_id || '';
 });
 
-// Button handlers
-document.getElementById('mi_add_item').addEventListener('click', ()=> addItemRow());
-document.getElementById('mi_save').addEventListener('click', ()=> prepareAndSubmit(false));
-document.getElementById('mi_save_print').addEventListener('click', ()=> prepareAndSubmit(true));
+// Service manager default is current user; attach typeahead to customer name for search too
+attachTypeahead(document.getElementById('input_customer_name'),'./admin/api_customers.php?customer_q=', c=>`${c.full_name} — ${c.phone}`, it=>{
+    document.getElementById('input_customer_name').value = it.full_name || '';
+    document.getElementById('input_phone_number').value = it.phone || '';
+});
 
-// seed one empty item
-addItemRow();
+// If server invoice provided, load values
+(function(){ const inv = <?php echo $serverInvoice ? h_json($serverInvoice) : 'null'; ?>; if (!inv) return; if (inv.creation_date) document.getElementById('hidden_creation_date').value = inv.creation_date.replace('T',' ').substring(0,16);
+    if (inv.customer_name) document.getElementById('input_customer_name').value = inv.customer_name; if (inv.phone) document.getElementById('input_phone_number').value = inv.phone; if (inv.car_mark) document.getElementById('input_car_mark').value = inv.car_mark; if (inv.plate_number) document.getElementById('input_plate_number').value = inv.plate_number; if (inv.vin) document.getElementById('input_vin').value = inv.vin; if (inv.mileage) document.getElementById('input_mileage').value=inv.mileage;
+    (inv.items||[]).forEach(it=>addItemRow(it)); document.getElementById('input_parts_discount').value = inv.parts_discount_percent||0; document.getElementById('input_service_discount').value = inv.service_discount_percent||0; calculateTotals(); })();
 </script>
 </body>
 </html>
