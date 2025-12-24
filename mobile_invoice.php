@@ -1303,10 +1303,14 @@ foreach ($oilPrices as $price) {
             partsTotal *= (1 - globalPartsDiscount / 100);
             serviceTotal *= (1 - globalServiceDiscount / 100);
 
+            // Compute oils total from numeric fields (unit price * qty * (1-discount))
             let oilsTotal = 0;
             document.querySelectorAll('.oil-card').forEach(card => {
-                const t = parseFloat(card.querySelector('.oil-total')?.textContent.replace(' ₾','')) || 0;
-                oilsTotal += t;
+                const qty = parseFloat(card.querySelector('.oil-qty')?.value) || 0;
+                const unit = parseFloat(card.querySelector('.oil-unit-price')?.value) || 0;
+                const discount = parseFloat(card.querySelector('.oil-discount')?.value) || 0;
+                const line = qty * unit * Math.max(0, (1 - discount / 100));
+                oilsTotal += line;
             });
 
             const grandTotal = partsTotal + serviceTotal + oilsTotal;
@@ -1322,9 +1326,9 @@ foreach ($oilPrices as $price) {
             document.getElementById('hidden_grand_total').value = grandTotal.toFixed(2);
             document.getElementById('hidden_parts_discount').value = globalPartsDiscount;
             document.getElementById('hidden_service_discount').value = globalServiceDiscount;
-            // Also set hidden oils if present
-            const hiddenOilsField = document.querySelector('input[name="hidden_oils_json"]');
-            if (hiddenOilsField) hiddenOilsField.value = JSON.stringify(Array.from(document.querySelectorAll('.oil-card')).map(card => ({
+            // Also set hidden oils JSON (name matches server expected 'oils_json')
+            const jsonOilsField = document.querySelector('input[name="oils_json"]');
+            if (jsonOilsField) jsonOilsField.value = JSON.stringify(Array.from(document.querySelectorAll('.oil-card')).map(card => ({
                 brand_id: parseInt(card.querySelector('.oil-brand')?.value || 0) || null,
                 viscosity_id: parseInt(card.querySelector('.oil-viscosity')?.value || 0) || null,
                 package_type: card.querySelector('.oil-package')?.value || '',
