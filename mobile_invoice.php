@@ -1844,6 +1844,12 @@ foreach ($oilPrices as $price) {
             }
             hiddenOilsInput.value = JSON.stringify(oilCards);
 
+            // Debug: log prepared oils payload for inspection
+            try {
+                console.log('mobile prepareData: prepared oilCards:', hiddenOilsInput.value);
+                hiddenOilsInput.dataset.preview = hiddenOilsInput.value;
+            } catch (e) { console.warn('mobile prepareData: failed to attach preview', e); }
+
             return true;
         }
 

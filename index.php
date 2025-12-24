@@ -2053,6 +2053,13 @@ if (!empty($serverInvoice)) {
                 form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="hidden_oils_json" value='${JSON.stringify(oilCards)}'>`);
             }
 
+            // Debug: log prepared oils payload for inspection
+            try {
+                console.log('prepareData: prepared oilCards:', JSON.stringify(oilCards));
+                // Attach preview to form dataset for easier inspection after submit
+                form.dataset.preparedOils = JSON.stringify(oilCards);
+            } catch (e) { console.warn('prepareData: failed to stringify oilCards', e); }
+
             return true;
         }
 
