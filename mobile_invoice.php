@@ -102,15 +102,12 @@ foreach ($oilPrices as $price) {
     <style>
         /* Mobile-first responsive design */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'BPG Arial', 'BPG Arial Caps';
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
 
-        /* Georgian fonts for headers */
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'BPG Arial', 'BPG Arial Caps';
-        }
+        /* All elements use Georgian fonts */
 
         .mobile-container {
             max-width: 480px;
