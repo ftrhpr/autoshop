@@ -30,14 +30,15 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT i.id, i.updated_at as created_at, i.customer_name, i.phone, i.car_mark, i.plate_number, i.vin, i.mileage, i.grand_total, i.is_new, i.opened_in_fina, u.username as sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id WHERE i.updated_at >= ? ORDER BY i.updated_at ASC');
+    $stmt = $pdo->prepare('SELECT i.id, i.created_at as created_at, i.updated_at as updated_at, i.customer_name, i.phone, i.car_mark, i.plate_number, i.vin, i.mileage, i.grand_total, i.is_new, i.opened_in_fina, u.username as sm_username FROM invoices i LEFT JOIN users u ON i.service_manager_id = u.id WHERE i.updated_at >= ? ORDER BY i.updated_at ASC');
     $stmt->execute([$lastTimestamp]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $newCount = count($rows);
     $latestTimestamp = $lastTimestamp;
     if ($newCount > 0) {
-        $latestTimestamp = end($rows)['created_at'];
+        // Use the most recent updated_at for live polling, not created_at which is static
+        $latestTimestamp = end($rows)['updated_at'];
     }
 
     error_log("Live updates API: Found $newCount updated invoices since $lastTimestamp, new latest: $latestTimestamp");

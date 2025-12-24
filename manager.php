@@ -572,6 +572,8 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                     row.classList.add('invoice-viewed');
                 }
                 row.setAttribute('data-invoice-id', invoice.id);
+                // Preserve original created_at for this invoice so it doesn't change on updates (e.g., FINA toggles)
+                row.setAttribute('data-created-at', invoice.created_at || '');
 
                 row.innerHTML = `
                     <td class="px-2 md:px-4 py-2">${invoice.id}</td>
