@@ -3,6 +3,7 @@
 // If $invoice is set, render server-side values; otherwise render placeholders for client-side JS to fill.
 $server = isset($invoice) && is_array($invoice);
 $serverItems = isset($items) && is_array($items);
+$serverOils = isset($oils) && is_array($oils);
 function esc($s){ return htmlspecialchars((string)$s); }
 ?>
 <div class="w-full overflow-x-auto pb-8 print:pb-0 print:overflow-visible flex justify-center bg-gray-200/50 p-4 rounded-lg print:bg-white print:p-0">
@@ -122,9 +123,12 @@ function esc($s){ return htmlspecialchars((string)$s); }
 
         <!-- Table -->
         <div class="mb-2 overflow-x-auto">
-<?php if ($server && $serverItems):
+<?php if ($server && ($serverItems || $serverOils)):
     $computedParts = 0.0;
     $computedSvc = 0.0;
+    $computedOils = 0.0;
+    
+    // Process items
     foreach ($items as $it) {
         $qty = isset($it['qty']) ? (float)$it['qty'] : 0;
         $pPart = isset($it['price_part']) ? (float)$it['price_part'] : 0;
@@ -136,11 +140,31 @@ function esc($s){ return htmlspecialchars((string)$s); }
         $computedParts += $linePart;
         $computedSvc += $lineSvc;
     }
+    
+    // Process oils
+    foreach ($oils as $ol) {
+        // Get oil details from database
+        $oilPrice = 0.00;
+        if (isset($ol['brand_id']) && isset($ol['viscosity_id']) && isset($ol['package_type'])) {
+            $stmt = $pdo->prepare("SELECT price FROM oil_prices WHERE brand_id = ? AND viscosity_id = ? AND package_type = ? LIMIT 1");
+            $stmt->execute([$ol['brand_id'], $ol['viscosity_id'], $ol['package_type']]);
+            $priceData = $stmt->fetch();
+            if ($priceData) {
+                $oilPrice = (float)$priceData['price'];
+            }
+        }
+        $qty = isset($ol['qty']) ? (float)$ol['qty'] : 1;
+        $discount = isset($ol['discount']) ? (float)$ol['discount'] : 0.0;
+        $lineOil = $qty * $oilPrice * max(0, (1 - $discount / 100.0));
+        $computedOils += $lineOil;
+    }
+    
     $parts_discount_percent = isset($invoice['parts_discount_percent']) ? (float)$invoice['parts_discount_percent'] : 0.0;
     $service_discount_percent = isset($invoice['service_discount_percent']) ? (float)$invoice['service_discount_percent'] : 0.0;
     $computedPartsAfterGlobal = $computedParts * max(0, (1 - $parts_discount_percent / 100.0));
     $computedSvcAfterGlobal = $computedSvc * max(0, (1 - $service_discount_percent / 100.0));
-    $computedGrand = $computedPartsAfterGlobal + $computedSvcAfterGlobal;
+    $computedOilsAfterGlobal = $computedOils; // Oils don't have global discounts
+    $computedGrand = $computedPartsAfterGlobal + $computedSvcAfterGlobal + $computedOilsAfterGlobal;
 endif; ?>
             <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse border border-black min-w-[600px]">
                 <thead>
@@ -197,8 +221,60 @@ endif; ?>
                             echo "</tr>";
                         }
 
+                        // Display oils
+                        if ($serverOils) {
+                            foreach ($oils as $ol) {
+                                // Get oil details
+                                $oilName = 'Oil';
+                                $oilPrice = 0.00;
+                                if (isset($ol['brand_id']) && isset($ol['viscosity_id']) && isset($ol['package_type'])) {
+                                    // Get brand name
+                                    $stmt = $pdo->prepare("SELECT name FROM oil_brands WHERE id = ? LIMIT 1");
+                                    $stmt->execute([$ol['brand_id']]);
+                                    $brand = $stmt->fetch();
+                                    
+                                    // Get viscosity
+                                    $stmt = $pdo->prepare("SELECT viscosity FROM oil_viscosities WHERE id = ? LIMIT 1");
+                                    $stmt->execute([$ol['viscosity_id']]);
+                                    $viscosity = $stmt->fetch();
+                                    
+                                    if ($brand && $viscosity) {
+                                        $package = $ol['package_type'];
+                                        $oilName = $brand['name'] . ' ' . $viscosity['viscosity'] . ' (' . $package . ')';
+                                        
+                                        // Get price
+                                        $stmt = $pdo->prepare("SELECT price FROM oil_prices WHERE brand_id = ? AND viscosity_id = ? AND package_type = ? LIMIT 1");
+                                        $stmt->execute([$ol['brand_id'], $ol['viscosity_id'], $ol['package_type']]);
+                                        $priceData = $stmt->fetch();
+                                        if ($priceData) {
+                                            $oilPrice = (float)$priceData['price'];
+                                        }
+                                    }
+                                }
+                                
+                                $qty = isset($ol['qty']) ? (float)$ol['qty'] : 1;
+                                $discount = isset($ol['discount']) ? (float)$ol['discount'] : 0.0;
+                                $lineTotal = $qty * $oilPrice * max(0, (1 - $discount / 100.0));
+                                
+                                $displayQty = $qty;
+                                $displayPrice = $oilPrice > 0 ? number_format($oilPrice, 2) : '';
+                                $displayDisc = $discount > 0 ? number_format($discount, 2) . '%' : '';
+                                $displayTotal = $lineTotal > 0 ? number_format($lineTotal, 2) : '';
+                                
+                                echo "<tr>";
+                                echo "<td class=\"border border-black p-0.5 text-center\">" . $i++ . "</td>";
+                                echo "<td class=\"border border-black p-0.5\">" . esc($oilName) . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-center\">" . $displayQty . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPrice . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayDisc . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\" colspan=\"4\">" . $displayTotal . "</td>";
+                                echo "<td class=\"border border-black p-0.5\"></td>";
+                                echo "</tr>";
+                            }
+                        }
+
                         // Fill empty rows up to 15 to fit one page
-                        $rowsCount = count($items);
+                        $rowsCount = count($items) + count($oils);
                         $needed = max(0, 15 - $rowsCount);
                         for ($j = 0; $j < $needed; $j++) {
                             echo "<tr>";
@@ -216,14 +292,23 @@ endif; ?>
                         // Add footer row (totals) with global discounts applied
                         echo "<tr class=\"font-bold bg-gray-100 print:bg-gray-100\">";
                         // Span first 5 columns (#, name, qty, price part, disc%)
-                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"5\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"5\">ნაწილების ჯამი:</td>";
                         echo "<td class=\"border border-black p-0.5 text-right\">" . ($computedPartsAfterGlobal > 0 ? number_format($computedPartsAfterGlobal,2) : '') . "</td>";
                         // Next two columns (price svc, disc%) label
-                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"2\">ჯამი:</td>";
+                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"2\">სერვისის ჯამი:</td>";
                         echo "<td class=\"border border-black p-0.5 text-right\">" . ($computedSvcAfterGlobal > 0 ? number_format($computedSvcAfterGlobal,2) : '') . "</td>";
                         // Last column placeholder
                         echo "<td class=\"border border-black p-0.5 bg-gray-300 print:bg-gray-300\"></td>";
                         echo "</tr>";
+                        
+                        // Add oils total row if there are oils
+                        if ($serverOils && $computedOilsAfterGlobal > 0) {
+                            echo "<tr class=\"font-bold bg-blue-100 print:bg-blue-100\">";
+                            echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"5\">წებოვანი ნივთიერებების ჯამი:</td>";
+                            echo "<td class=\"border border-black p-0.5 text-right\" colspan=\"4\">" . number_format($computedOilsAfterGlobal, 2) . "</td>";
+                            echo "<td class=\"border border-black p-0.5 bg-gray-300 print:bg-gray-300\"></td>";
+                            echo "</tr>";
+                        }
                     endif; ?>
                 </tbody>
             </table>

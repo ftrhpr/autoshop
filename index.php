@@ -1679,6 +1679,7 @@ if (!empty($serverInvoice)) {
 
             // Load oils
             document.querySelectorAll('.oil-row').forEach(r => r.remove());
+            oilRowCount = 0; // Reset counter when loading
             (inv.oils || []).forEach(ol => {
                 addOilRow();
                 const tr = document.querySelector('.oil-row:last-child'); if (!tr) return;
