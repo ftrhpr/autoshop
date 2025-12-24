@@ -397,6 +397,7 @@ if (!isset($_SESSION['user_id'])) {
                         Plate Number *
                     </label>
                     <input type="text" id="input_plate_number" class="input-field" placeholder="ZZ-000-ZZ">
+                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
@@ -447,6 +448,7 @@ if (!isset($_SESSION['user_id'])) {
                         Customer Name *
                     </label>
                     <input type="text" id="input_customer_name" class="input-field" placeholder="Enter customer name">
+                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
@@ -463,6 +465,7 @@ if (!isset($_SESSION['user_id'])) {
                         Service Manager
                     </label>
                     <input type="text" id="input_service_manager" class="input-field" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>">
+                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
             </div>
 
