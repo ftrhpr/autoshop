@@ -115,22 +115,34 @@ try{
                     $laborSumForTech += $line;
                 }
             }
-            // apply rules to this invoice's technician-specific labor sum
+            // Apply global service discount (if any) to technician's labor proportionally
+            $serviceDiscountPercent = isset($inv['service_discount_percent']) ? floatval($inv['service_discount_percent']) : 0.0;
+            $globalFactor = max(0.0, 1.0 - ($serviceDiscountPercent / 100.0));
+
+            // Labor after applying global service discount
+            $laborAfterGlobal = $laborSumForTech * $globalFactor;
+
+            // apply rules to this invoice's technician-specific labor (after global discount)
             $invoiceEarnings = 0.0;
             foreach($rules as $rule){
                 if ($rule['rule_type'] === 'percentage'){
-                    $invoiceEarnings += ($rule['value'] / 100.0) * $laborSumForTech;
+                    $invoiceEarnings += ($rule['value'] / 100.0) * $laborAfterGlobal;
                 } else if ($rule['rule_type'] === 'fixed_per_invoice'){
                     // apply fixed per invoice only if technician had labor on that invoice
-                    if ($laborSumForTech > 0) $invoiceEarnings += floatval($rule['value']);
+                    if ($laborAfterGlobal > 0) $invoiceEarnings += floatval($rule['value']);
                 }
             }
-            $applied[] = ['invoice_id'=>$inv['id'],'labor'=>$laborSumForTech,'earnings'=>$invoiceEarnings];
-            $totalLabor += $laborSumForTech;
+
+            // Record detailed applied info (include raw and post-discount labor for transparency)
+            $applied[] = ['invoice_id'=>$inv['id'],'labor_raw'=>round($laborSumForTech,2),'service_discount_percent'=>$serviceDiscountPercent,'labor_after_discount'=>round($laborAfterGlobal,2),'earnings'=>round($invoiceEarnings,2)];
+
+            // Tally totals (use post-global-discount labor for totals)
+            $totalLabor += $laborAfterGlobal;
             $totalEarned += $invoiceEarnings;
         }
 
-        echo json_encode(['success'=>true,'total_earned'=>$totalEarned,'total_labor'=>$totalLabor,'invoice_count'=>count($invoices),'details'=>$applied]); exit;
+        $invoiceCountWithLabor = 0; foreach ($applied as $a) { if (!empty($a['labor_after_discount']) && $a['labor_after_discount'] > 0) $invoiceCountWithLabor++; }
+        echo json_encode(['success'=>true,'total_earned'=>round($totalEarned,2),'total_labor'=>round($totalLabor,2),'invoice_count'=>$invoiceCountWithLabor,'details'=>$applied]); exit;
     }
 
     echo json_encode(['success'=>false,'error'=>'unknown_action']);
