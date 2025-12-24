@@ -794,12 +794,6 @@ if (!isset($_SESSION['user_id'])) {
                     box.style.display = 'none';
                 }
             });
-
-            document.addEventListener('click', (e) => {
-                if (!input.contains(e.target) && !box.contains(e.target)) {
-                    box.style.display = 'none';
-                }
-            });
         }
 
         // Attach typeaheads
@@ -940,13 +934,14 @@ if (!isset($_SESSION['user_id'])) {
                         return;
                     }
 
-                    box.innerHTML = items.map(item => {
+                    box.innerHTML = items.map item => {
                         const vehicleVal = document.getElementById('input_car_mark').value.trim();
                         const priceToShow = item.suggested_price > 0 ? item.suggested_price : item.default_price;
                         const priceIndicator = vehicleVal ? (item.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : '';
 
+                        const itemJSON = JSON.stringify(item).replace(/"/g, '&quot;');
                         return `
-                            <div class="suggestion-item" onclick="selectItem(this, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                            <div class="suggestion-item" data-item='${itemJSON}'>
                                 <div class="flex justify-between items-start">
                                     <div class="flex-1">
                                         <div class="font-medium text-sm">${item.name}</div>
@@ -960,6 +955,15 @@ if (!isset($_SESSION['user_id'])) {
                             </div>
                         `;
                     }).join('');
+
+                    // Add click listeners
+                    box.querySelectorAll('.suggestion-item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            const itemData = JSON.parse(el.dataset.item);
+                            selectItem(el, itemData);
+                        });
+                    });
+
                     box.style.display = 'block';
                 })
                 .catch(() => box.style.display = 'none');
@@ -1026,10 +1030,15 @@ if (!isset($_SESSION['user_id'])) {
                         const items = data.technicians || [];
                         if (Array.isArray(items) && items.length > 0) {
                             box.innerHTML = items.map(item => `
-                                <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
+                                <div class="suggestion-item" data-name="${item.name}" data-id="${item.id}">
                                     ${item.name}
                                 </div>
                             `).join('');
+                            box.querySelectorAll('.suggestion-item').forEach(el => {
+                                el.addEventListener('click', () => {
+                                    selectTechnician(el, el.dataset.name, el.dataset.id);
+                                });
+                            });
                             box.style.display = 'block';
                         }
                     });
@@ -1041,10 +1050,15 @@ if (!isset($_SESSION['user_id'])) {
                 .then(items => {
                     if (Array.isArray(items) && items.length > 0) {
                         box.innerHTML = items.map(item => `
-                            <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
+                            <div class="suggestion-item" data-name="${item.name}" data-id="${item.id}">
                                 ${item.name}
                             </div>
                         `).join('');
+                        box.querySelectorAll('.suggestion-item').forEach(el => {
+                            el.addEventListener('click', () => {
+                                selectTechnician(el, el.dataset.name, el.dataset.id);
+                            });
+                        });
                         box.style.display = 'block';
                     } else {
                         box.style.display = 'none';
@@ -1224,6 +1238,16 @@ if (!isset($_SESSION['user_id'])) {
                 toast.classList.remove('show');
             }, 3000);
         }
+
+        // Global click listener to close suggestion boxes
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('.suggestions-box').forEach(box => {
+                const input = box.previousElementSibling;
+                if (!input.contains(e.target) && !box.contains(e.target)) {
+                    box.style.display = 'none';
+                }
+            });
+        });
 
         // Update progress on input changes
         document.addEventListener('input', updateProgress);
