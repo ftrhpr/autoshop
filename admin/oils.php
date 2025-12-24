@@ -89,30 +89,29 @@ $packages = $pdo->query("
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-gray-100">
-    <div class="min-h-screen flex">
-        <!-- Sidebar -->
-        <div class="w-64 bg-blue-800 text-white">
-            <div class="p-4">
-                <h1 class="text-xl font-bold">AutoShop Admin</h1>
-            </div>
-            <nav class="mt-4">
-                <a href="index.php" class="block px-4 py-2 hover:bg-blue-700">Dashboard</a>
-                <a href="customers.php" class="block px-4 py-2 hover:bg-blue-700">Customers</a>
-                <a href="users.php" class="block px-4 py-2 hover:bg-blue-700">Users</a>
-                <a href="technicians.php" class="block px-4 py-2 hover:bg-blue-700">Technicians</a>
-                <a href="labors_parts.php" class="block px-4 py-2 hover:bg-blue-700">Labors & Parts</a>
-                <a href="oils.php" class="block px-4 py-2 bg-blue-900">Oil Configuration</a>
-                <a href="logs.php" class="block px-4 py-2 hover:bg-blue-700">Logs</a>
-                <a href="../logout.php" class="block px-4 py-2 hover:bg-blue-700">Logout</a>
+<body class="bg-gray-50 min-h-screen overflow-auto font-sans antialiased pb-20">
+    <?php include __DIR__ . '/../partials/sidebar.php'; ?>
+    <div class="min-h-screen ml-0 md:ml-64 pt-4 pl-4">
+        <!-- Header -->
+        <header class="flex-shrink-0 p-4 md:p-6">
+            <nav aria-label="Breadcrumb" class="mb-4">
+                <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                    <li><a href="index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
+                    <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
+                    <li aria-current="page">Oil Configuration</li>
+                </ol>
             </nav>
-        </div>
+            <h1 class="text-4xl font-bold text-gray-900 flex items-center">
+                <svg class="w-10 h-10 mr-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                Oil Configuration
+            </h1>
+        </header>
 
         <!-- Main Content -->
-        <div class="flex-1 p-8">
-            <div class="max-w-6xl mx-auto">
-                <h1 class="text-3xl font-bold mb-8">Oil Configuration</h1>
-
+        <main class="flex-1 p-4 md:p-6">
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-xl mx-4 md:mx-6 mb-4">
                 <?php if ($message): ?>
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
                         <?php echo htmlspecialchars($message); ?>
@@ -266,7 +265,7 @@ $packages = $pdo->query("
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
