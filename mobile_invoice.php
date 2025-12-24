@@ -240,6 +240,11 @@ if (!isset($_SESSION['user_id'])) {
             border-bottom: none;
         }
 
+        .price-source {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
         .photo-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -604,6 +609,7 @@ if (!isset($_SESSION['user_id'])) {
                 <div class="input-group">
                     <input type="text" class="input-field item-name-input" placeholder="Item description" oninput="fetchItemSuggestions(this)">
                     <div class="suggestions-box" style="display: none;"></div>
+                    <div class="price-source text-xs text-gray-500 mt-1"></div>
                 </div>
 
                 <div class="price-grid">
@@ -759,6 +765,32 @@ if (!isset($_SESSION['user_id'])) {
                 }, 300);
             });
 
+            // Show all suggestions on focus
+            input.addEventListener('focus', async () => {
+                try {
+                    const res = await fetch(endpoint);
+                    if (!res.ok) return;
+
+                    const list = await res.json();
+                    let items = Array.isArray(list) ? list : (list.technicians || list.rows || list.customers || []);
+
+                    if (items.length === 0) return;
+
+                    box.innerHTML = items.map(item => `<div class="suggestion-item">${formatItem(item)}</div>`).join('');
+                    box.style.display = 'block';
+
+                    box.querySelectorAll('.suggestion-item').forEach((el, index) => {
+                        el.addEventListener('click', () => {
+                            onSelect(items[index]);
+                            box.style.display = 'none';
+                        });
+                    });
+
+                } catch (e) {
+                    box.style.display = 'none';
+                }
+            });
+
             document.addEventListener('click', (e) => {
                 if (!input.contains(e.target) && !box.contains(e.target)) {
                     box.style.display = 'none';
@@ -772,7 +804,7 @@ if (!isset($_SESSION['user_id'])) {
             attachTypeahead(
                 document.getElementById('input_plate_number'),
                 './admin/api_customers.php?q=',
-                c => `${c.plate_number} — ${c.full_name} — ${c.car_mark || ''}`,
+                c => `${c.plate_number} — ${c.full_name}${c.car_mark ? ' — ' + c.car_mark : ''}${c.vin ? ' — VIN:'+c.vin : ''}`,
                 (item) => {
                     document.getElementById('input_plate_number').value = item.plate_number || '';
                     document.getElementById('input_customer_name').value = item.full_name || '';
@@ -782,6 +814,8 @@ if (!isset($_SESSION['user_id'])) {
                     document.getElementById('input_mileage').value = item.mileage || '';
                     document.getElementById('input_vehicle_id').value = item.id || '';
                     document.getElementById('input_customer_id').value = item.customer_id || '';
+                    // Focus customer name for quick edits
+                    document.getElementById('input_customer_name').focus();
                 }
             );
 
@@ -794,6 +828,23 @@ if (!isset($_SESSION['user_id'])) {
                     document.getElementById('input_customer_name').value = item.full_name || '';
                     document.getElementById('input_phone_number').value = item.phone || '';
                     document.getElementById('input_customer_id').value = item.id;
+                    // Clear vehicle id
+                    document.getElementById('input_vehicle_id').value = '';
+
+                    // Autofill from customer's most recent vehicle if plate is empty
+                    const plateField = document.getElementById('input_plate_number');
+                    if (plateField && (!plateField.value || plateField.value.trim() === '')) {
+                        fetch('./admin/api_customers.php?customer_id=' + encodeURIComponent(item.id))
+                            .then(r => r.json())
+                            .then(cust => {
+                                if (!cust || !Array.isArray(cust.vehicles) || cust.vehicles.length === 0) return;
+                                const first = cust.vehicles[0];
+                                plateField.value = first.plate_number || '';
+                                document.getElementById('input_vin').value = first.vin || '';
+                                document.getElementById('input_mileage').value = first.mileage || '';
+                                document.getElementById('input_vehicle_id').value = first.id || '';
+                            }).catch(()=>{});
+                    }
                 }
             );
 
@@ -807,6 +858,59 @@ if (!isset($_SESSION['user_id'])) {
                     document.getElementById('input_service_manager_id').value = item.id;
                 }
             );
+
+            // Add blur events for smart auto-fill
+            const plateInput = document.getElementById('input_plate_number');
+            if (plateInput) {
+                plateInput.addEventListener('blur', () => {
+                    const val = plateInput.value.trim();
+                    if (!val) return;
+
+                    const customerNameElem = document.getElementById('input_customer_name');
+                    const customerName = customerNameElem.value.trim();
+
+                    fetch('./admin/api_customers.php?plate=' + encodeURIComponent(val))
+                        .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
+                        .then(data => {
+                            if (!data) return;
+                            // Only set customer name/phone if empty
+                            if (!customerName && data.full_name) customerNameElem.value = data.full_name || '';
+                            if (data.phone) document.getElementById('input_phone_number').value = data.phone || '';
+                            // Always set VIN, car make/model and vehicle id
+                            document.getElementById('input_vehicle_id').value = data.id;
+                            document.getElementById('input_vin').value = data.vin || '';
+                            document.getElementById('input_car_mark').value = data.car_mark || '';
+                            document.getElementById('input_mileage').value = data.mileage || '';
+                        }).catch(e=>{});
+                });
+            }
+
+            // Phone number blur for auto-fill
+            const phoneInput = document.getElementById('input_phone_number');
+            if (phoneInput) {
+                phoneInput.addEventListener('blur', () => {
+                    const val = phoneInput.value.trim();
+                    if (!val) return;
+
+                    // Only auto-fill if customer fields are empty
+                    const customerName = document.getElementById('input_customer_name').value.trim();
+                    const plateNumber = document.getElementById('input_plate_number').value.trim();
+                    const vehicleId = document.getElementById('input_vehicle_id').value;
+
+                    if (customerName || plateNumber || vehicleId) {
+                        return;
+                    }
+
+                    fetch('./admin/api_customers.php?phone=' + encodeURIComponent(val))
+                        .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
+                        .then(data => {
+                            if (!data) return;
+                            document.getElementById('input_customer_name').value = data.full_name || '';
+                            document.getElementById('input_plate_number').value = data.plate_number || '';
+                            document.getElementById('input_vehicle_id').value = data.id;
+                        }).catch(e=>{});
+                });
+            }
         });
 
         // Fetch item suggestions
@@ -832,13 +936,26 @@ if (!isset($_SESSION['user_id'])) {
                         return;
                     }
 
-                    box.innerHTML = items.map(item => `
-                        <div class="suggestion-item" onclick="selectItem(this, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                            <div style="font-weight: 600;">${item.name}</div>
-                            <div style="font-size: 0.8rem; color: #666;">${item.description || ''}</div>
-                            <div style="font-size: 0.8rem; color: #10b981;">${item.suggested_price || item.default_price} ₾</div>
-                        </div>
-                    `).join('');
+                    box.innerHTML = items.map(item => {
+                        const vehicleVal = document.getElementById('input_car_mark').value.trim();
+                        const priceToShow = item.suggested_price > 0 ? item.suggested_price : item.default_price;
+                        const priceIndicator = vehicleVal ? (item.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : '';
+
+                        return `
+                            <div class="suggestion-item" onclick="selectItem(this, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1">
+                                        <div class="font-medium text-sm">${item.name}</div>
+                                        <div class="text-xs text-gray-600">${item.description || ''}${item.vehicle_make_model ? ` — <span class="text-gray-500">${item.vehicle_make_model}</span>` : ''}</div>
+                                    </div>
+                                    <div class="text-right ml-3">
+                                        <div class="text-sm font-medium text-blue-600">${priceToShow ? priceToShow + ' ₾' : ''}</div>
+                                        ${priceIndicator}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
                     box.style.display = 'block';
                 })
                 .catch(() => box.style.display = 'none');
@@ -847,18 +964,45 @@ if (!isset($_SESSION['user_id'])) {
         // Select item from suggestions
         function selectItem(el, item) {
             const card = el.closest('.item-card');
-            card.querySelector('.item-name-input').value = item.name;
+            const input = card.querySelector('.item-name-input');
+            input.value = item.name;
 
-            if (item.type === 'part') {
-                card.querySelector('.item-price-part').value = item.suggested_price || item.default_price || 0;
-            } else if (item.type === 'labor') {
-                card.querySelector('.item-price-svc').value = item.suggested_price || item.default_price || 0;
-            }
-
+            // Set DB metadata
             card.querySelector('.item-db-id').value = item.id || '';
             card.querySelector('.item-db-type').value = item.type || '';
             card.querySelector('.item-db-vehicle').value = item.vehicle_make_model || '';
             card.querySelector('.item-db-price-source').value = item.has_vehicle_price ? 'vehicle' : 'default';
+
+            // Fill appropriate price field
+            const priceToUse = (typeof item.suggested_price !== 'undefined' && item.suggested_price !== null) ? item.suggested_price : item.default_price;
+            if (item.type === 'part') {
+                const partInput = card.querySelector('.item-price-part');
+                if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
+                    partInput.value = priceToUse;
+                }
+            } else if (item.type === 'labor') {
+                const svcInput = card.querySelector('.item-price-svc');
+                if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
+                    svcInput.value = priceToUse;
+                }
+            }
+
+            // Add price source indicator
+            let badgeEl = card.querySelector('.price-source');
+            if (!badgeEl) {
+                badgeEl = document.createElement('div');
+                badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
+                input.parentNode.appendChild(badgeEl);
+            }
+
+            const vehicleVal = document.getElementById('input_car_mark').value.trim();
+            if (vehicleVal) {
+                badgeEl.textContent = item.has_vehicle_price ? 'Vehicle price' : 'Default price';
+                badgeEl.className = item.has_vehicle_price ? 'price-source text-xs text-green-700 mt-1' : 'price-source text-xs text-yellow-700 mt-1';
+            } else {
+                badgeEl.textContent = '';
+                badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
+            }
 
             el.closest('.suggestions-box').style.display = 'none';
             calculateTotals();
@@ -871,9 +1015,11 @@ if (!isset($_SESSION['user_id'])) {
             const box = input.nextElementSibling;
 
             if (query.length < 1) {
-                fetch('./admin/api_technicians.php')
+                // Show all technicians on focus
+                fetch('./admin/api_technicians.php?action=list')
                     .then(r => r.json())
-                    .then(items => {
+                    .then(data => {
+                        const items = data.technicians || [];
                         if (Array.isArray(items) && items.length > 0) {
                             box.innerHTML = items.map(item => `
                                 <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
