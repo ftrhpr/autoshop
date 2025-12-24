@@ -81,6 +81,7 @@ if ($loadId) {
                 'technician' => $inv['technician'] ?? '',
                 'technician_id' => isset($inv['technician_id']) ? (int)$inv['technician_id'] : 0,
                 'items' => $inv_items,
+                'oils' => !empty($inv['oils']) ? json_decode($inv['oils'], true) : [],
                 'images' => !empty($inv['images']) ? json_decode($inv['images'], true) : [],
                 'grand_total' => (float)$inv['grand_total'],
                 'parts_total' => (float)$inv['parts_total'],
@@ -1564,6 +1565,23 @@ if (!empty($serverInvoice)) {
                 // recalc totals if needed
                 calculateTotals();
             });
+
+            // Load oils
+            document.querySelectorAll('.oil-row').forEach(r => r.remove());
+            (inv.oils || []).forEach(ol => {
+                addOilRow();
+                const tr = document.querySelector('.oil-row:last-child'); if (!tr) return;
+                tr.querySelector('.oil-brand').value = ol.brand || '';
+                tr.querySelector('.oil-viscosity').value = ol.viscosity || '';
+                tr.querySelector('.oil-package').value = ol.package || '';
+                tr.querySelector('.oil-qty').value = ol.qty || 1;
+                tr.querySelector('.oil-price').value = ol.price || 0;
+                tr.querySelector('.oil-discount').value = (ol.discount !== undefined) ? ol.discount : 0;
+                // Update price display and totals
+                updateOilPrice(tr);
+                updateOilsTotal();
+            });
+
             // Apply any stored global discounts and refresh totals
             const pdElem = document.getElementById('input_parts_discount'); if (pdElem) pdElem.value = (inv.parts_discount_percent !== undefined) ? inv.parts_discount_percent : pdElem.value || 0;
             const sdElem = document.getElementById('input_service_discount'); if (sdElem) sdElem.value = (inv.service_discount_percent !== undefined) ? inv.service_discount_percent : sdElem.value || 0;
