@@ -203,15 +203,18 @@ endif; ?>
                         $rowsCount = count($items);
                         $needed = max(0, 15 - $rowsCount);
                         for ($j = 0; $j < $needed; $j++) {
+                            // Render full 10 cells to match table headers and preserve layout on print
                             echo "<tr>";
-                            echo "<td class=\"border border-black p-0.5 text-center text-white\">.</td>";
-                            echo "<td class=\"border border-black p-0.5\"></td>";
-                            echo "<td class=\"border border-black p-0.5\"></td>";
-                            echo "<td class=\"border border-black p-0.5\"></td>";
-                            echo "<td class=\"border border-black p-0.5 bg-gray-50 print:bg-gray-50\"></td>";
-                            echo "<td class=\"border border-black p-0.5\"></td>";
-                            echo "<td class=\"border border-black p-0.5 bg-gray-50 print:bg-gray-50\"></td>";
-                            echo "<td class=\"border border-black p-0.5\"></td>";
+                            echo "<td class=\"border border-black p-0.5 text-center text-white\">.</td>"; // #
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // name
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // qty
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // price part
+                            echo "<td class=\"border border-black p-0.5 bg-gray-50 print:bg-gray-50\"></td>"; // disc part
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // total part
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // price svc
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // disc svc
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // total svc
+                            echo "<td class=\"border border-black p-0.5\"></td>"; // technician
                             echo "</tr>";
                         }
 
