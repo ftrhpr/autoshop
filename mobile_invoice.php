@@ -529,6 +529,10 @@ if (!isset($_SESSION['user_id'])) {
                         <i class="fas fa-camera mr-1"></i>
                         Take Photo
                     </button>
+                    <button type="button" id="btn_multi_capture" class="btn-secondary" style="flex: 1;">
+                        <i class="fas fa-images mr-1"></i>
+                        Multi-Capture
+                    </button>
                     <button type="button" id="btn_upload_photo" class="btn-secondary" style="flex: 1;">
                         <i class="fas fa-upload mr-1"></i>
                         Upload
@@ -565,6 +569,22 @@ if (!isset($_SESSION['user_id'])) {
     <div id="toast" class="toast">
         <i class="fas fa-check-circle mr-2"></i>
         <span id="toast-message">Invoice saved successfully!</span>
+    </div>
+
+    <!-- Multi-Capture Modal -->
+    <div id="multi-capture-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50 flex flex-col items-center justify-center p-4">
+        <video id="video-stream" class="w-full h-full object-contain" autoplay playsinline></video>
+        <div class="absolute bottom-4 left-4 right-4 flex justify-center items-center gap-4">
+            <button id="capture-photo" class="bg-white text-blue-600 w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <i class="fas fa-camera"></i>
+            </button>
+            <button id="finish-multi-capture" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg">
+                Finish (<span id="capture-count">0</span>)
+            </button>
+        </div>
+        <button id="close-multi-capture" class="absolute top-4 right-4 text-white text-2xl">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 
     <script>
@@ -1077,6 +1097,62 @@ if (!isset($_SESSION['user_id'])) {
             document.getElementById('input_images').dispatchEvent(new Event('change'));
         }
 
+        // Multi-Capture Modal Logic
+        const multiCaptureModal = document.getElementById('multi-capture-modal');
+        const videoStream = document.getElementById('video-stream');
+        let stream = null;
+
+        function startMultiCapture() {
+            if (multiCaptureModal) multiCaptureModal.classList.remove('hidden');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(s => {
+                    stream = s;
+                    if (videoStream) videoStream.srcObject = stream;
+                })
+                .catch(err => {
+                    console.error("Error accessing camera: ", err);
+                    alert('Could not access the camera. Please ensure you have given permission.');
+                    stopVideoStream();
+                });
+            document.getElementById('capture-count').textContent = '0';
+        }
+
+        function stopVideoStream() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            if (multiCaptureModal) multiCaptureModal.classList.add('hidden');
+        }
+
+        function captureAndAddPhoto() {
+            if (!stream) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = videoStream.videoWidth;
+            canvas.height = videoStream.videoHeight;
+            canvas.getContext('2d').drawImage(videoStream, 0, 0);
+            canvas.toBlob(blob => {
+                const newFile = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                
+                const dt = new DataTransfer();
+                selectedFiles.forEach(f => dt.items.add(f));
+                dt.items.add(newFile);
+                
+                document.getElementById('input_images').files = dt.files;
+                document.getElementById('input_images').dispatchEvent(new Event('change'));
+
+                // Update count
+                document.getElementById('capture-count').textContent = selectedFiles.length;
+
+            }, 'image/jpeg', 0.9);
+        }
+
+        document.getElementById('btn_multi_capture')?.addEventListener('click', startMultiCapture);
+        document.getElementById('close-multi-capture')?.addEventListener('click', stopVideoStream);
+        document.getElementById('finish-multi-capture')?.addEventListener('click', stopVideoStream);
+        document.getElementById('capture-photo')?.addEventListener('click', captureAndAddPhoto);
+
+
         // Form preparation and validation
         function prepareData() {
             // Update hidden fields
@@ -1199,6 +1275,107 @@ if (!isset($_SESSION['user_id'])) {
 
         // Update progress on input changes
         document.addEventListener('input', updateProgress);
+
+        // Multi-capture functionality
+        let mediaRecorder;
+        let isRecording = false;
+        let capturedChunks = [];
+
+        document.getElementById('btn_multi_capture').addEventListener('click', async () => {
+            const modal = document.getElementById('multi-capture-modal');
+            modal.classList.remove('hidden');
+
+            // Start video stream
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const video = document.getElementById('video-stream');
+            video.srcObject = stream;
+
+            // Start media recorder
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (e) => {
+                if (isRecording) {
+                    capturedChunks.push(e.data);
+                }
+            };
+            mediaRecorder.onstop = () => {
+                isRecording = false;
+                // Create a blob from the captured chunks
+                const blob = new Blob(capturedChunks, { type: 'image/jpeg' });
+                const url = URL.createObjectURL(blob);
+
+                // Add the captured photo to the preview
+                addPhotoToPreview(url);
+
+                // Reset chunks for next capture
+                capturedChunks = [];
+            };
+
+            // Start recording
+            mediaRecorder.start();
+            isRecording = true;
+        });
+
+        document.getElementById('capture-photo').addEventListener('click', () => {
+            if (isRecording) {
+                mediaRecorder.stop();
+            } else {
+                mediaRecorder.start();
+            }
+        });
+
+        document.getElementById('finish-multi-capture').addEventListener('click', () => {
+            const modal = document.getElementById('multi-capture-modal');
+            modal.classList.add('hidden');
+
+            // Stop video stream
+            const stream = document.getElementById('video-stream').srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+
+            // Stop media recorder
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+        });
+
+        document.getElementById('close-multi-capture').addEventListener('click', () => {
+            const modal = document.getElementById('multi-capture-modal');
+            modal.classList.add('hidden');
+
+            // Stop video stream
+            const stream = document.getElementById('video-stream').srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+
+            // Stop media recorder
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+        });
+
+        function addPhotoToPreview(url) {
+            const preview = document.getElementById('photo-preview');
+            const div = document.createElement('div');
+            div.className = 'photo-item';
+            div.innerHTML = `
+                <img src="${url}" alt="Captured Photo">
+                <button type="button" class="photo-remove" onclick="removePhotoFromPreview(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            preview.appendChild(div);
+        }
+
+        function removePhotoFromPreview(button) {
+            const item = button.closest('.photo-item');
+            if (item) {
+                item.remove();
+            }
+        }
     </script>
 </body>
 </html>
