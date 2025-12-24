@@ -33,128 +33,113 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    //
-    // START NEW VEHICLE LOGIC
-    //
+    // Handle vehicle - find or create for existing customer
+    // DEBUG: log incoming items payload to help diagnose missing-created-items issue
+    error_log("save_invoice: raw POST keys: " . json_encode(array_keys($_POST)) . "\n");
+    error_log("save_invoice: parsed items: " . json_encode($items) . "\n");
 
-    // Find or create customer and vehicle
-    $customer_id = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
-    $vehicle_id = !empty($data['vehicle_id']) ? (int)$data['vehicle_id'] : null;
-    $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
-
-    // If vehicle was selected, re-fetch to ensure data consistency
-    if ($vehicle_id) {
-        $stmt = $pdo->prepare('SELECT v.id, v.customer_id FROM vehicles v WHERE v.id = ?');
+    $vehicle_id = null;
+    $was_selected = !empty($data['vehicle_id']);
+    if ($was_selected) {
+        $vehicle_id = (int)$data['vehicle_id'];
+        // Verify the vehicle still exists
+        $stmt = $pdo->prepare('SELECT v.id FROM vehicles v WHERE v.id = ? LIMIT 1');
         $stmt->execute([$vehicle_id]);
-        $vehicle = $stmt->fetch();
-        if ($vehicle) {
-            $customer_id = $vehicle['customer_id'];
-        } else {
-            // Selected vehicle not found, clear IDs to proceed with creation logic
-            $vehicle_id = null;
-            $customer_id = null;
+        $existing = $stmt->fetch();
+        if (!$existing) {
+            error_log("Selected vehicle ID $vehicle_id no longer exists");
+            throw new Exception('The selected vehicle no longer exists. Please select a different vehicle.');
         }
     }
 
-    // If no vehicle selected, try to find one by plate
-    if (!$vehicle_id && !empty($plateNumber)) {
-        $stmt = $pdo->prepare('SELECT v.id, v.customer_id FROM vehicles v WHERE v.plate_number = ? ORDER BY v.id DESC LIMIT 1');
-        $stmt->execute([$plateNumber]);
-        $vehicle = $stmt->fetch();
-        if ($vehicle) {
-            $vehicle_id = $vehicle['id'];
-            $customer_id = $vehicle['customer_id'];
-        }
-    }
+    // Now handle creation if needed
+    if ($vehicle_id === null) {
+        $plateNumber = strtoupper(trim($data['plate_number'] ?? ''));
+        $customer_id = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
 
-    // At this point, if we have a customer_id, ensure it's valid
-    if ($customer_id) {
-        $stmt = $pdo->prepare('SELECT id FROM customers WHERE id = ?');
-        $stmt->execute([$customer_id]);
-        if (!$stmt->fetch()) {
-            $customer_id = null; // Invalid customer ID, proceed to create
-        }
-    }
+        if (!empty($customer_id) && !empty($plateNumber)) {
+            // If a customer is explicitly selected, prefer adding the vehicle to that customer
+            $stmt = $pdo->prepare('SELECT v.id, v.customer_id FROM vehicles v WHERE v.plate_number = ? LIMIT 1');
+            $stmt->execute([$plateNumber]);
+            $existingVehicle = $stmt->fetch();
 
-    // If still no customer, find or create customer
-    if (!$customer_id) {
-        $customerName = trim($data['customer_name'] ?? '');
-        $phone = trim($data['phone_number'] ?? '');
+            if ($existingVehicle) {
+                $vehicle_id = $existingVehicle['id'];
+                error_log("Used existing vehicle ID $vehicle_id for plate $plateNumber");
 
-        if (!empty($customerName)) {
-            // Try to find customer by name and optionally phone
-            $sql = 'SELECT id FROM customers WHERE full_name = ?';
-            $params = [$customerName];
-            if (!empty($phone)) {
-                $sql .= ' AND phone = ?';
-                $params[] = $phone;
-            }
-            $sql .= ' LIMIT 1';
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            $existingCustomer = $stmt->fetch();
-
-            if ($existingCustomer) {
-                $customer_id = $existingCustomer['id'];
+                // Ensure customer main record kept in sync
+                $stmt = $pdo->prepare('UPDATE customers SET plate_number = ?, car_mark = ? WHERE id = ?');
+                $stmt->execute([$plateNumber, $data['car_mark'], $existingVehicle['customer_id']]);
             } else {
-                // Create new customer
-                $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone) VALUES (?, ?)');
-                $stmt->execute([$customerName, $phone]);
-                $customer_id = $pdo->lastInsertId();
+                // Add new vehicle for selected customer
+                $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
+                $stmt->execute([
+                    $customer_id,
+                    $plateNumber,
+                    $data['car_mark'],
+                    $data['vin'] ?? '',
+                    $data['mileage'] ?? ''
+                ]);
+                $vehicle_id = $pdo->lastInsertId();
+                error_log("Added new vehicle ID $vehicle_id for existing customer ID {$customer_id}, plate $plateNumber");
+
+                // Update customer record with latest vehicle info (backwards compatibility)
+                $stmt = $pdo->prepare('UPDATE customers SET plate_number = ?, car_mark = ? WHERE id = ?');
+                $stmt->execute([$plateNumber, $data['car_mark'], $customer_id]);
+
+                // Audit
+                $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
+                $stmt->execute([$_SESSION['user_id'], 'create_vehicle_from_invoice', "vehicle_id={$vehicle_id}, customer_id={$customer_id}, plate={$plateNumber}", $_SERVER['REMOTE_ADDR'] ?? '']);
+            }
+
+        } elseif (trim($data['customer_name']) !== '' && !empty($plateNumber)) {
+            // Backwards-compatible flow: find customer by name/phone then add vehicle
+            $stmt = $pdo->prepare('SELECT v.id, v.customer_id FROM vehicles v WHERE v.plate_number = ? LIMIT 1');
+            $stmt->execute([$plateNumber]);
+            $existingVehicle = $stmt->fetch();
+
+            if ($existingVehicle) {
+                // Use existing vehicle
+                $vehicle_id = $existingVehicle['id'];
+                error_log("Used existing vehicle ID $vehicle_id for plate $plateNumber");
+
+                // Ensure customer main record kept in sync with vehicle (plate/car)
+                $stmt = $pdo->prepare('UPDATE customers SET plate_number = ?, car_mark = ? WHERE id = ?');
+                $stmt->execute([$plateNumber, $data['car_mark'], $existingVehicle['customer_id']]);
+            } else {
+                // Find customer by name and phone
+                $stmt = $pdo->prepare('SELECT id FROM customers WHERE full_name = ? AND phone = ? LIMIT 1');
+                $stmt->execute([trim($data['customer_name']), trim($data['phone_number'])]);
+                $existingCustomer = $stmt->fetch();
+
+                if ($existingCustomer) {
+                    // Add new vehicle to existing customer
+                    $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
+                    $stmt->execute([
+                        $existingCustomer['id'],
+                        $plateNumber,
+                        $data['car_mark'],
+                        $data['vin'] ?? '',
+                        $data['mileage'] ?? ''
+                    ]);
+                    $vehicle_id = $pdo->lastInsertId();
+                    error_log("Added new vehicle ID $vehicle_id for existing customer ID {$existingCustomer['id']}, plate $plateNumber");
+
+                    // Update customer record with latest vehicle info (backwards compatibility)
+                    $stmt = $pdo->prepare('UPDATE customers SET plate_number = ?, car_mark = ? WHERE id = ?');
+                    $stmt->execute([$plateNumber, $data['car_mark'], $existingCustomer['id']]);
+
+                    // Audit log for vehicle created from invoice
+                    $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
+                    $stmt->execute([$_SESSION['user_id'], 'create_vehicle_from_invoice', "vehicle_id={$vehicle_id}, customer_id={$existingCustomer['id']}, plate={$plateNumber}", $_SERVER['REMOTE_ADDR'] ?? '']);
+                } else {
+                    throw new Exception('Customer not found. Please ensure the customer exists or contact admin to add the customer first.');
+                }
             }
         } else {
-            // Fallback for cases where customer name might be missing but we need a customer record
-            // This might happen in very old flows. Modern UI should prevent this.
-            $stmt = $pdo->prepare('INSERT INTO customers (full_name, phone) VALUES (?, ?)');
-            $stmt->execute(['Unknown Customer', '']);
-            $customer_id = $pdo->lastInsertId();
-            error_log("Warning: Created a placeholder 'Unknown Customer' due to missing customer name in invoice submission.");
+            throw new Exception('Please select a vehicle or provide customer name, phone, and plate number.');
         }
     }
-
-    // Now, handle the vehicle
-    if (!$vehicle_id && !empty($plateNumber) && $customer_id) {
-        // We have a customer but didn't find a vehicle by plate, so create one and attach it
-        $stmt = $pdo->prepare('INSERT INTO vehicles (customer_id, plate_number, car_mark, vin, mileage) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([
-            $customer_id,
-            $plateNumber,
-            $data['car_mark'] ?? '',
-            $data['vin'] ?? '',
-            $data['mileage'] ?? ''
-        ]);
-        $vehicle_id = $pdo->lastInsertId();
-
-        // Audit vehicle creation
-        $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, details, ip) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$_SESSION['user_id'], 'create_vehicle_from_invoice', "vehicle_id={$vehicle_id}, customer_id={$customer_id}, plate={$plateNumber}", $_SERVER['REMOTE_ADDR'] ?? '']);
-
-    } else if ($vehicle_id) {
-        // If vehicle exists, update its details
-        $stmt = $pdo->prepare('UPDATE vehicles SET car_mark = ?, vin = ?, mileage = ? WHERE id = ?');
-        $stmt->execute([
-            $data['car_mark'] ?? '',
-            $data['vin'] ?? '',
-            $data['mileage'] ?? '',
-            $vehicle_id
-        ]);
-    }
-
-    // Final check for a valid vehicle_id
-    if (!$vehicle_id) {
-        // If we reach here, it means we couldn't create or find a vehicle, which is a problem.
-        // This could happen if a plate number was not provided for a new customer.
-        // The UI should prevent this, but we add a server-side check.
-        if (empty($plateNumber)) {
-             throw new Exception('A plate number is required for new invoices if a vehicle is not selected.');
-        } else {
-             throw new Exception('Could not find or create a vehicle. Please check customer and vehicle details.');
-        }
-    }
-
-    //
-    // END NEW VEHICLE LOGIC
-    //
 
     // If we have a vehicle id, resolve customer/vehicle fields from DB for consistency
     if (!empty($vehicle_id)) {

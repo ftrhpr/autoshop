@@ -405,7 +405,6 @@ if (!isset($_SESSION['user_id'])) {
                         Make/Model
                     </label>
                     <input type="text" id="input_car_mark" class="input-field" placeholder="Toyota Camry">
-                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
@@ -414,7 +413,6 @@ if (!isset($_SESSION['user_id'])) {
                         VIN
                     </label>
                     <input type="text" id="input_vin" class="input-field" placeholder="Vehicle VIN">
-                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
@@ -637,7 +635,7 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                     <div class="price-input">
                         <label class="price-label">Technician</label>
-                        <input type="text" class="input-field item-tech" placeholder="Name">
+                        <input type="text" class="input-field item-tech" placeholder="Name" oninput="fetchTechnicianSuggestions(this)">
                         <div class="suggestions-box" style="display: none;"></div>
                     </div>
                 </div>
@@ -651,20 +649,6 @@ if (!isset($_SESSION['user_id'])) {
 
             container.appendChild(itemCard);
             updateProgress();
-
-            // Attach technician typeahead to the new field
-            const techInput = itemCard.querySelector('.item-tech');
-            if (techInput) {
-                attachTypeahead(
-                    techInput,
-                    'api_technicians_search.php?q=',
-                    t => t.name,
-                    (item) => {
-                        techInput.value = item.name;
-                        itemCard.querySelector('.item-tech-id').value = item.id;
-                    }
-                );
-            }
         }
 
         // Remove item function
@@ -875,26 +859,6 @@ if (!isset($_SESSION['user_id'])) {
                 }
             );
 
-            // Car Make/Model suggestions
-            attachTypeahead(
-                document.getElementById('input_car_mark'),
-                './admin/api_customers.php?car_mark_q=',
-                mark => mark,
-                (mark) => {
-                    document.getElementById('input_car_mark').value = mark;
-                }
-            );
-
-            // VIN suggestions
-            attachTypeahead(
-                document.getElementById('input_vin'),
-                './admin/api_customers.php?vin_q=',
-                vin => vin,
-                (vin) => {
-                    document.getElementById('input_vin').value = vin;
-                }
-            );
-
             // Add blur events for smart auto-fill
             const plateInput = document.getElementById('input_plate_number');
             if (plateInput) {
@@ -1043,6 +1007,54 @@ if (!isset($_SESSION['user_id'])) {
             el.closest('.suggestions-box').style.display = 'none';
             calculateTotals();
             updateProgress();
+        }
+
+        // Fetch technician suggestions
+        function fetchTechnicianSuggestions(input) {
+            const query = input.value.trim();
+            const box = input.nextElementSibling;
+
+            if (query.length < 1) {
+                // Show all technicians on focus
+                fetch('./admin/api_technicians.php?action=list')
+                    .then(r => r.json())
+                    .then(data => {
+                        const items = data.technicians || [];
+                        if (Array.isArray(items) && items.length > 0) {
+                            box.innerHTML = items.map(item => `
+                                <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
+                                    ${item.name}
+                                </div>
+                            `).join('');
+                            box.style.display = 'block';
+                        }
+                    });
+                return;
+            }
+
+            fetch(`api_technicians_search.php?q=${encodeURIComponent(query)}`)
+                .then(r => r.json())
+                .then(items => {
+                    if (Array.isArray(items) && items.length > 0) {
+                        box.innerHTML = items.map(item => `
+                            <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
+                                ${item.name}
+                            </div>
+                        `).join('');
+                        box.style.display = 'block';
+                    } else {
+                        box.style.display = 'none';
+                    }
+                })
+                .catch(() => box.style.display = 'none');
+        }
+
+        // Select technician
+        function selectTechnician(el, name, id) {
+            const card = el.closest('.item-card');
+            card.querySelector('.item-tech').value = name;
+            card.querySelector('.item-tech-id').value = id;
+            el.closest('.suggestions-box').style.display = 'none';
         }
 
         // Photo handling

@@ -72,40 +72,6 @@ if ($customer_vehicles) {
     exit;
 }
 
-$car_mark_q = $_GET['car_mark_q'] ?? null;
-
-if ($car_mark_q !== null) {
-    if (trim($car_mark_q) === '') {
-        // Return most common car marks when no query
-        $stmt = $pdo->prepare('SELECT car_mark, COUNT(*) as count FROM vehicles WHERE car_mark != "" GROUP BY car_mark ORDER BY count DESC LIMIT 20');
-        $stmt->execute();
-        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
-    } else {
-        $stmt = $pdo->prepare('SELECT DISTINCT car_mark FROM vehicles WHERE car_mark LIKE ? AND car_mark != "" ORDER BY car_mark LIMIT 20');
-        $stmt->execute(["%$car_mark_q%"]);
-        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    }
-    echo json_encode($rows);
-    exit;
-}
-
-$vin_q = $_GET['vin_q'] ?? null;
-
-if ($vin_q !== null) {
-    if (trim($vin_q) === '') {
-        // Return recent VINs when no query
-        $stmt = $pdo->prepare('SELECT vin FROM vehicles WHERE vin != "" ORDER BY created_at DESC LIMIT 20');
-        $stmt->execute();
-        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    } else {
-        $stmt = $pdo->prepare('SELECT DISTINCT vin FROM vehicles WHERE vin LIKE ? AND vin != "" ORDER BY vin LIMIT 20');
-        $stmt->execute(["%$vin_q%"]);
-        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    }
-    echo json_encode($rows);
-    exit;
-}
-
 if ($phone) {
     $stmt = $pdo->prepare('SELECT v.id, c.full_name, c.phone, c.email, c.notes, v.plate_number, v.car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id WHERE c.phone = ? LIMIT 1');
     $stmt->execute([trim($phone)]);
