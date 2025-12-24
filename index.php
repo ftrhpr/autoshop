@@ -630,16 +630,35 @@ if (!empty($serverInvoice)) {
                 box.style.maxHeight = '220px';
                 box.style.overflow = 'auto';
                 box.style.position = 'absolute';
-                box.style.zIndex = '9999';
+                // Use very large z-index so the suggestions always appear above other UI elements
+                box.style.zIndex = '2147483647';
                 box.style.display = 'none';
                 box.style.boxSizing = 'border-box';
+                box.style.boxShadow = '0 10px 20px rgba(0,0,0,0.15)';
+                box.style.backgroundColor = '#fff';
+                box.style.pointerEvents = 'auto';
                 document.body.appendChild(box);
 
                 const updatePos = () => {
                     const r = input.getBoundingClientRect();
+                    const viewportH = window.innerHeight || document.documentElement.clientHeight;
+                    const spaceBelow = viewportH - r.bottom;
+                    const spaceAbove = r.top;
+
+                    // Default placement below the input
+                    let top = r.bottom + window.scrollY;
+                    let maxH = Math.min(220, Math.max(80, spaceBelow - 10));
+
+                    // If there's not enough space below and more space above, place it above the input
+                    if (spaceBelow < 120 && spaceAbove > spaceBelow) {
+                        maxH = Math.min(220, Math.max(80, spaceAbove - 10));
+                        top = r.top + window.scrollY - maxH;
+                    }
+
                     box.style.left = (r.left + window.scrollX) + 'px';
-                    box.style.top = (r.bottom + window.scrollY) + 'px';
+                    box.style.top = top + 'px';
                     box.style.width = r.width + 'px';
+                    box.style.maxHeight = maxH + 'px';
                 };
 
                 let scrollHandler = () => updatePos();
