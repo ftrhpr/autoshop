@@ -796,7 +796,7 @@ if (!isset($_SESSION['user_id'])) {
             });
 
             document.addEventListener('click', (e) => {
-                if (!input.contains(e.target) && !box.contains(e.target)) {
+                if (box && !input.contains(e.target) && !box.contains(e.target)) {
                     box.style.display = 'none';
                 }
             });
