@@ -3,6 +3,11 @@
 // If $invoice is set, render server-side values; otherwise render placeholders for client-side JS to fill.
 $server = isset($invoice) && is_array($invoice);
 $serverItems = isset($items) && is_array($items);
+// Ensure technician display name is always defined to avoid warnings when previewing
+$tech_name = '';
+if ($server) {
+    $tech_name = isset($invoice['technician']) ? $invoice['technician'] : '';
+}
 function esc($s){ return htmlspecialchars((string)$s); }
 ?>
 <div class="w-full overflow-x-auto pb-8 print:pb-0 print:overflow-visible flex justify-center bg-gray-200/50 p-4 rounded-lg print:bg-white print:p-0">
