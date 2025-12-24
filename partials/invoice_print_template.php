@@ -101,7 +101,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
                     <div class="border-b border-black px-2 h-6 flex items-center" id="out_service_manager"></div>
                 <?php endif; ?>
 
-
+            </div>
         </div>
 
         <!-- Customer Notes -->
