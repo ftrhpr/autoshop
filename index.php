@@ -557,11 +557,7 @@ foreach ($oilPrices as $price) {
                         <div id="review-content" class="space-y-4">
                             <!-- Review content will be populated by JS -->
                         </div>
-                        <div class="mt-6 flex items-center gap-4">
-                            <div class="flex items-center gap-2 mr-auto">
-                                <input type="checkbox" id="checkbox_debug_echo" class="form-checkbox h-4 w-4 text-indigo-600" />
-                                <label for="checkbox_debug_echo" class="text-sm text-gray-600">Debug (return parsed payload)</label>
-                            </div>
+                        <div class="mt-6 flex gap-4">
                             <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"><?php echo $isEdit ? 'Update Invoice' : 'Save Invoice'; ?></button>
                             <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><?php echo $isEdit ? 'Update & Print' : 'Save & Print'; ?></button>
                         </div>
@@ -571,8 +567,6 @@ foreach ($oilPrices as $price) {
                 <!-- Hidden inputs for service manager -->
                 <input type="hidden" id="input_service_manager_id" name="service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
                 <input type="hidden" id="input_vehicle_id" name="vehicle_id">
-                <!-- Debug flag: set when user checks Debug checkbox -->
-                <input type="hidden" id="input_debug_echo" name="debug_echo" value="">
             </form>
         </div>
 
@@ -2062,6 +2056,36 @@ if (!empty($serverInvoice)) {
                 }
             });
 
+            // Validate oil rows: ensure there are no partially filled rows; highlight and prevent save if so
+            // Clear previous highlights
+            document.querySelectorAll('.oil-row').forEach(r => {
+                r.querySelectorAll('.oil-brand, .oil-viscosity, .oil-package, .oil-qty, .oil-discount').forEach(el => el.style.border = '');
+            });
+
+            const incompleteRows = [];
+            document.querySelectorAll('.oil-row').forEach((row) => {
+                const brand = (row.querySelector('.oil-brand')?.value || '').toString().trim();
+                const viscosity = (row.querySelector('.oil-viscosity')?.value || '').toString().trim();
+                const packageType = (row.querySelector('.oil-package')?.value || '').toString().trim();
+                const qtyVal = (row.querySelector('.oil-qty')?.value || '').toString().trim();
+                const discountVal = (row.querySelector('.oil-discount')?.value || '').toString().trim();
+
+                const anyFilled = brand || viscosity || packageType || qtyVal !== '' || discountVal !== '';
+                const allRequired = brand && viscosity && packageType;
+                const qtyNum = parseInt(qtyVal) || 0;
+
+                if (anyFilled && (!allRequired || qtyNum < 1)) {
+                    incompleteRows.push(row);
+                }
+            });
+
+            if (incompleteRows.length > 0) {
+                incompleteRows[0].scrollIntoView({behavior: 'smooth', block: 'center'});
+                incompleteRows.forEach(r => r.querySelectorAll('.oil-brand, .oil-viscosity, .oil-package, .oil-qty, .oil-discount').forEach(el => el.style.border = '2px solid #ef4444'));
+                alert('Please complete or remove incomplete oil rows before saving.');
+                return false;
+            }
+
             // Add JSON wrapper for oils (preferred payload)
             if (oilsForJson.length > 0) {
                 const jsonInput = document.createElement('input');
@@ -2070,17 +2094,6 @@ if (!empty($serverInvoice)) {
                 jsonInput.className = 'prepared-input';
                 jsonInput.value = JSON.stringify(oilsForJson);
                 form.appendChild(jsonInput);
-                console.log('prepareData: oilsForJson', oilsForJson);
-                console.log('prepareData: oils_json length', jsonInput.value.length, 'preview', jsonInput.value.substring(0,200));
-            } else {
-                console.log('prepareData: no oils present');
-            }
-
-            // Set debug hidden input based on checkbox
-            const debugCheckbox = document.getElementById('checkbox_debug_echo');
-            const debugInput = document.getElementById('input_debug_echo');
-            if (debugInput) {
-                debugInput.value = (debugCheckbox && debugCheckbox.checked) ? '1' : '';
             }
 
             return true;

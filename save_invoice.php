@@ -7,15 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $data = $_POST;
-    // Debug: log top-level POST summary
-    error_log('save_invoice: POST count=' . count($data) . ' keys=' . json_encode(array_keys($data)) . "\n");
-    if (isset($data['oils_json'])) {
-        $len = strlen($data['oils_json']);
-        error_log('save_invoice: oils_json present, length=' . $len . ' preview=' . substr($data['oils_json'], 0, 200) . "\n");
-    } else {
-        error_log('save_invoice: oils_json not present in POST' . "\n");
-    }
+    $data = $_POST; // production: reduce verbose debug logging
     $existing_id = isset($data['existing_invoice_id']) ? (int)$data['existing_invoice_id'] : null;
 
     // Process items
@@ -66,12 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } else {
         // Legacy parsing for compatibility
-        // Collect raw oil_* POST entries for debugging
+        // Collect raw oil_* POST entries (legacy support) - no verbose logging in production
         $oil_post_entries = [];
         foreach ($data as $k => $v) {
             if (strpos($k, 'oil_') === 0) $oil_post_entries[$k] = $v;
         }
-        if (!empty($oil_post_entries)) error_log("save_invoice: raw POST oil entries: " . json_encode($oil_post_entries) . "\n");
 
         for ($i = 0; isset($data["oil_brand_$i"]); $i++) {
             $brand_id = trim($data["oil_brand_$i"] ?? '');
@@ -97,8 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
-        // DEBUG: log raw oil data
-        error_log("save_invoice: raw processed oils (legacy): " . json_encode($oils) . "\n");
+        // Legacy parsed oils (no verbose logging in production)
     }
 
     // Normalize / deduplicate oils by brand + viscosity + package + discount (sum qtys)
@@ -128,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    error_log("save_invoice: normalized oils to save: " . json_encode($oils) . "\n");
+    // normalized oils computed (production: not logged)
 
     // Handle vehicle - find or create for existing customer
     // DEBUG: log incoming items payload to help diagnose missing-created-items issue
@@ -978,27 +968,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['created_items'] = $created_items;
     }
 
-    // DEBUG: Log final items that were saved into invoice
-    error_log("save_invoice: final items saved with invoice {$invoice_id}: " . json_encode($items));
-
-    // If debug echo requested, return parsed payload to the client for inspection (no redirect)
-    if (!empty($data['debug_echo'])) {
-        $debug_oil_posts = [];
-        foreach ($data as $k => $v) {
-            if (strpos($k, 'oil_') === 0 || $k === 'oils_json') $debug_oil_posts[$k] = $v;
-        }
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'success' => true,
-            'invoice_id' => isset($invoice_id) ? $invoice_id : null,
-            'existing_id' => isset($existing_id) ? $existing_id : null,
-            'items' => $items,
-            'oils' => $oils,
-            'debug_oil_posts' => $debug_oil_posts,
-            'post_keys' => array_values(array_keys($data))
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
+    // Final processing complete — enqueue created items into session when present
+    // (production: minimal logging)
 
     // Redirect based on flag
     if (!empty($data['print_after_save'])) {
