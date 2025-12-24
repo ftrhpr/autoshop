@@ -698,8 +698,13 @@ if (!empty($serverInvoice)) {
                         fetch('./admin/api_customers.php?customer_id=' + encodeURIComponent(it.id))
                             .then(r => r.json())
                             .then(cust => {
-                                // no change here
-                            });
+                                if (!cust || !Array.isArray(cust.vehicles) || cust.vehicles.length === 0) return;
+                                const first = cust.vehicles[0];
+                                plateField.value = first.plate_number || '';
+                                const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = first.vin || '';
+                                const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = first.mileage || '';
+                                const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = first.id || '';
+                            }).catch(()=>{});
                     }
                 });
             }
@@ -715,13 +720,7 @@ if (!empty($serverInvoice)) {
                 input.addEventListener('input', ()=>{ if (tr && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
                 input.dataset.typeaheadAttached = '1';
             });
-                                if (!cust || !Array.isArray(cust.vehicles) || cust.vehicles.length === 0) return;
-                                const first = cust.vehicles[0];
-                                plateField.value = first.plate_number || '';
-                                const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = first.vin || '';
-                                const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = first.mileage || '';
-                                const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = first.id || '';
-                            }).catch(()=>{});
+
                     }
                 });
             }
