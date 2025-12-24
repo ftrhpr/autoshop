@@ -297,12 +297,12 @@ if ($loadId) {
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">Car Make/Model <span class="text-xs text-gray-500"> <button type="button" title="Format: 'Make Model' - e.g., 'Toyota Corolla'" class="ml-1 text-gray-400 hover:text-gray-600">ℹ️</button></span></label>
-                                <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
-                            </div>
-                            <div>
                                 <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2">Plate Number</label>
                                 <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                            </div>
+                            <div>
+                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">Car Make/Model <span class="text-xs text-gray-500"> <button type="button" title="Format: 'Make Model' - e.g., 'Toyota Corolla'" class="ml-1 text-gray-400 hover:text-gray-600">ℹ️</button></span></label>
+                                <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
 
                             <div>
@@ -669,17 +669,22 @@ if (!empty($serverInvoice)) {
                     if (!q) { box.innerHTML = ''; box.style.display = 'none'; return; }
                     try {
                         updatePos();
-                        console.log('Searching for:', q);
+                        // console.log('Searching for:', q);
                         const res = await fetch(endpoint + encodeURIComponent(q));
                         if (!res.ok) { 
-                            console.log('Response not ok:', res.status);
+                            // console.log('Response not ok:', res.status);
                             box.innerHTML = ''; box.style.display = 'none'; return; 
                         }
                         const list = await res.json();
-                        console.log('Results:', list);
-                        if (!list.success || !Array.isArray(list.technicians)) { box.innerHTML = ''; box.style.display = 'none'; return; }
-                        const items = list.technicians;
-                        box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                        // Accept multiple payload shapes: raw array, wrapper {success:true, technicians:[]}, or generic rows array
+                        let items = [];
+                        if (Array.isArray(list)) items = list;
+                        else if (list && Array.isArray(list.technicians)) items = list.technicians;
+                        else if (list && Array.isArray(list.rows)) items = list.rows;
+                        else if (list && Array.isArray(list.customers)) items = list.customers;
+
+                        if (!Array.isArray(items) || items.length === 0) { box.innerHTML = ''; box.style.display = 'none'; return; }
+                        box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id || item.customer_id || ''}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
                         box.style.display = 'block';
                         box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
                             const item = JSON.parse(el.getAttribute('data-json'));
@@ -702,9 +707,14 @@ if (!empty($serverInvoice)) {
                         const res = await fetch(endpoint);
                         if (!res.ok) return;
                         const list = await res.json();
-                        if (!list.success || !Array.isArray(list.technicians)) return;
-                        const items = list.technicians;
-                        box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                        // Accept array or wrapper shapes
+                        let items = [];
+                        if (Array.isArray(list)) items = list;
+                        else if (list && Array.isArray(list.technicians)) items = list.technicians;
+                        else if (list && Array.isArray(list.rows)) items = list.rows;
+                        else if (list && Array.isArray(list.customers)) items = list.customers;
+                        if (!Array.isArray(items) || items.length === 0) return;
+                        box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id || item.customer_id || ''}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
                         box.style.display = 'block';
                         box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
                             const item = JSON.parse(el.getAttribute('data-json'));
@@ -777,16 +787,18 @@ if (!empty($serverInvoice)) {
             // Attach plate number typeahead
             const pn = document.getElementById('input_plate_number');
             if (pn) {
-                attachTypeahead(pn, './admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}` , (it) => {
+                attachTypeahead(pn, './admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}${c.car_mark ? ' — ' + c.car_mark : ''}${c.vin ? ' — VIN:'+c.vin : ''}` , (it) => {
                     pn.value = it.plate_number || '';
                     document.getElementById('input_customer_name').value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
-                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id;
+                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id || '';
                     const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.customer_id || '';
                     // Populate VIN, make/model, and mileage if present
                     const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = it.vin || '';
                     const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = it.car_mark || '';
                     const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = it.mileage || '';
+                    // When selecting a plate, also focus the customer name for quick edits
+                    const customerNameElem = document.getElementById('input_customer_name'); if (customerNameElem) customerNameElem.focus();
                 });
 
                 // Auto-fill on blur if exact plate match
