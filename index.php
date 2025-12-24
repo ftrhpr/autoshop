@@ -54,7 +54,6 @@ if ($loadId) {
         $inv = $stmt->fetch();
         if ($inv) {
             $inv_items = json_decode($inv['items'], true) ?: [];
-            $inv_oils = json_decode($inv['oils'], true) ?: [];
             $inv_customer = null;
             if (!empty($inv['vehicle_id'])) {
                 $s = $pdo->prepare('SELECT v.*, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.id = ? LIMIT 1');
@@ -81,7 +80,6 @@ if ($loadId) {
                 'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
                 'technician' => $inv['technician'] ?? '',
                 'technician_id' => isset($inv['technician_id']) ? (int)$inv['technician_id'] : 0,
-                'oils' => $inv_oils,
                 'items' => $inv_items,
                 'images' => !empty($inv['images']) ? json_decode($inv['images'], true) : [],
                 'grand_total' => (float)$inv['grand_total'],
@@ -102,12 +100,6 @@ if ($loadId) {
         $invoiceNotFound = true;
     }
 }
-
-// Get oil data for the form
-$oilBrands = $pdo->query('SELECT * FROM oil_brands ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
-$oilViscosities = $pdo->query('SELECT * FROM oil_viscosities ORDER BY viscosity')->fetchAll(PDO::FETCH_ASSOC);
-$oilPrices = $pdo->query('SELECT * FROM oil_prices ORDER BY brand_id, viscosity_id, package_type')->fetchAll(PDO::FETCH_ASSOC);
-
 ?>
 <!DOCTYPE html>
 <html lang="ka">
@@ -320,7 +312,6 @@ $oilPrices = $pdo->query('SELECT * FROM oil_prices ORDER BY brand_id, viscosity_
                     <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="vehicle">Vehicle</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">Customer</button>
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="oils">Oils</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="items">Items</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="photos">Photos</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="review">Review</button>
@@ -398,48 +389,6 @@ $oilPrices = $pdo->query('SELECT * FROM oil_prices ORDER BY brand_id, viscosity_
                         <div class="mt-6 flex justify-between">
                             <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
                             <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-content hidden" id="oils-tab">
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
-                            <svg class="h-6 w-6 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            Engine Oils
-                        </h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm bg-white rounded-lg overflow-hidden shadow-sm min-w-[800px]">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left">#</th>
-                                        <th class="px-4 py-3 text-left">Brand</th>
-                                        <th class="px-4 py-3 text-left">Viscosity</th>
-                                        <th class="px-4 py-3 text-left">Package</th>
-                                        <th class="px-4 py-3 text-center">Quantity</th>
-                                        <th class="px-4 py-3 text-right">Unit Price</th>
-                                        <th class="px-4 py-3 text-right">Disc %</th>
-                                        <th class="px-4 py-3 text-right">Total</th>
-                                        <th class="px-4 py-3 text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="oils-table-body" class="divide-y divide-gray-100">
-                                    <!-- Oil rows will be added here -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-4 flex justify-between items-center">
-                            <button type="button" onclick="addOilRow()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Add Oil
-                            </button>
-                            <div class="text-lg font-semibold">
-                                Total: <span id="oils-total">0.00</span> ₾
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -644,16 +593,10 @@ if (!empty($serverInvoice)) {
     <script>
         // Store items state
         let rowCount = 0;
-        let oilRowCount = 0;
 
         // Global defaults for service manager (prefill with current logged in user)
         let smDefault = <?php echo json_encode($_SESSION['username'] ?? ''); ?>;
         let smDefaultId = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
-
-        // Oil data
-        let oilBrands = <?php echo json_encode($oilBrands); ?>;
-        let oilViscosities = <?php echo json_encode($oilViscosities); ?>;
-        let oilPrices = <?php echo json_encode($oilPrices); ?>;
 
         // Function to update image count (defined globally)
         function updateImageCount() {
@@ -1378,7 +1321,6 @@ if (!empty($serverInvoice)) {
             const mileage = document.getElementById('input_mileage').value || 'Not specified';
 
             const totals = calculateTotals();
-            const oilsTotal = parseFloat(document.getElementById('oils-total').textContent.replace(' ₾', '')) || 0;
 
             reviewContent.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1403,8 +1345,7 @@ if (!empty($serverInvoice)) {
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p><strong>Parts Total:</strong> ${totals.partTotal > 0 ? totals.partTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
                             <p><strong>Service Total:</strong> ${totals.svcTotal > 0 ? totals.svcTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
-                            ${oilsTotal > 0 ? `<p><strong>Oils Total:</strong> ${oilsTotal.toFixed(2)} ₾</p>` : ''}
-                            <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${(totals.grandTotal + oilsTotal).toFixed(2)} ₾</p>
+                            <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${totals.grandTotal > 0 ? totals.grandTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
                         </div>
 
                         <div class="bg-blue-50 p-4 rounded-lg">
@@ -1558,21 +1499,6 @@ if (!empty($serverInvoice)) {
                 // recalc totals if needed
                 calculateTotals();
             });
-
-            // Load oils
-            document.querySelectorAll('.oil-row').forEach(r => r.remove());
-            (inv.oils || []).forEach(ol => {
-                addOilRow();
-                const tr = document.querySelector('.oil-row:last-child'); if (!tr) return;
-                tr.querySelector('.oil-brand').value = ol.brand_id || '';
-                tr.querySelector('.oil-viscosity').value = ol.viscosity_id || '';
-                tr.querySelector('.oil-package').value = ol.package_type || '';
-                tr.querySelector('.oil-qty').value = ol.qty || 1;
-                tr.querySelector('.oil-discount').value = (ol.discount !== undefined) ? ol.discount : 0;
-                // Update price and total
-                updateOilPrice(tr);
-            });
-
             // Apply any stored global discounts and refresh totals
             const pdElem = document.getElementById('input_parts_discount'); if (pdElem) pdElem.value = (inv.parts_discount_percent !== undefined) ? inv.parts_discount_percent : pdElem.value || 0;
             const sdElem = document.getElementById('input_service_discount'); if (sdElem) sdElem.value = (inv.service_discount_percent !== undefined) ? inv.service_discount_percent : sdElem.value || 0;
@@ -1626,116 +1552,9 @@ if (!empty($serverInvoice)) {
             document.getElementById('display_service_total').innerText = finalSvcTotal > 0 ? finalSvcTotal.toFixed(2) + ' ₾' : '';
             document.getElementById('display_grand_total').innerText = grandTotal > 0 ? grandTotal.toFixed(2) + ' ₾' : '';
 
-            updateReviewContent(); // Update review tab when totals change
             return { partTotal: finalPartTotal, svcTotal: finalSvcTotal, grandTotal };
-        }
 
-        // Oil functions
-        function addOilRow() {
-            oilRowCount++;
-            const tbody = document.getElementById('oils-table-body');
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-gray-50 oil-row";
-            tr.id = `oil-row-${oilRowCount}`;
-            tr.innerHTML = `
-                <td class="px-4 py-3 font-medium text-center text-gray-400 oil-row-number">${oilRowCount}</td>
-                <td class="px-4 py-3">
-                    <select class="oil-brand w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
-                        <option value="">Select Brand</option>
-                        ${oilBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
-                    </select>
-                </td>
-                <td class="px-4 py-3">
-                    <select class="oil-viscosity w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
-                        <option value="">Select Viscosity</option>
-                        ${oilViscosities.map(v => `<option value="${v.id}">${v.viscosity}</option>`).join('')}
-                    </select>
-                </td>
-                <td class="px-4 py-3">
-                    <select class="oil-package w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="updateOilPrice(this.closest('tr'))">
-                        <option value="">Package Type</option>
-                        <option value="canned">Canned</option>
-                        <option value="5lt">5 Liter</option>
-                        <option value="4lt">4 Liter</option>
-                        <option value="1lt">1 Liter</option>
-                    </select>
-                </td>
-                <td class="px-4 py-3">
-                    <input type="number" min="1" value="1" class="oil-qty w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
-                </td>
-                <td class="px-4 py-3 text-right">
-                    <span class="oil-price">0.00 ₾</span>
-                </td>
-                <td class="px-4 py-3">
-                    <input type="number" min="0" max="100" value="0" class="oil-discount w-full border border-gray-300 rounded-md p-2 text-sm" oninput="updateOilPrice(this.closest('tr'))">
-                </td>
-                <td class="px-4 py-3 text-right">
-                    <span class="oil-total font-semibold">0.00 ₾</span>
-                </td>
-                <td class="px-4 py-3 text-center">
-                    <button onclick="removeOilRow(${oilRowCount})" class="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-            updateOilPrice(tr);
-            updateOilsTotal();
-        }
-
-        function updateOilPrice(row) {
-            const brandId = row.querySelector('.oil-brand').value;
-            const viscosityId = row.querySelector('.oil-viscosity').value;
-            const packageType = row.querySelector('.oil-package').value;
-            const qty = parseFloat(row.querySelector('.oil-qty').value) || 0;
-            const discount = parseFloat(row.querySelector('.oil-discount').value) || 0;
-
-            let unitPrice = 0;
-            if (brandId && viscosityId && packageType) {
-                const price = oilPrices.find(p => p.brand_id == brandId && p.viscosity_id == viscosityId && p.package_type == packageType);
-                if (price) {
-                    unitPrice = parseFloat(price.price);
-                }
-            }
-
-            const discountedPrice = unitPrice * (1 - discount / 100);
-            const total = discountedPrice * qty;
-
-            row.querySelector('.oil-price').textContent = unitPrice.toFixed(2) + ' ₾';
-            row.querySelector('.oil-total').textContent = total.toFixed(2) + ' ₾';
-
-            updateOilsTotal();
-        }
-
-        function updateOilsTotal() {
-            let total = 0;
-            document.querySelectorAll('.oil-row').forEach(row => {
-                const totalText = row.querySelector('.oil-total').textContent;
-                const amount = parseFloat(totalText.replace(' ₾', '')) || 0;
-                total += amount;
-            });
-            document.getElementById('oils-total').textContent = total.toFixed(2) + ' ₾';
-            updateReviewContent(); // Update review tab when oils total changes
-        }
-
-        function removeOilRow(id) {
-            const row = document.getElementById(`oil-row-${id}`);
-            if (row) {
-                row.remove();
-                updateOilsTotal();
-                renumberOilRows();
-            }
-        }
-
-        function renumberOilRows() {
-            let count = 1;
-            document.querySelectorAll('.oil-row').forEach(row => {
-                row.querySelector('.oil-row-number').textContent = count;
-                count++;
-            });
-            oilRowCount = count - 1;
+            return { partTotal, svcTotal, grandTotal };
         }
 
         function updatePreviewData() {
@@ -1982,26 +1801,6 @@ if (!empty($serverInvoice)) {
                     index++;
                 }
             });
-
-            // Add hidden for oils
-            let oilIndex = 0;
-            document.querySelectorAll('.oil-row').forEach(row => {
-                const brandId = row.querySelector('.oil-brand').value;
-                const viscosityId = row.querySelector('.oil-viscosity').value;
-                const packageType = row.querySelector('.oil-package').value;
-                const qty = row.querySelector('.oil-qty').value;
-                const discount = row.querySelector('.oil-discount').value;
-
-                if (brandId && viscosityId && packageType) {
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_brand_id_${oilIndex}" value="${brandId}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_viscosity_id_${oilIndex}" value="${viscosityId}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_package_type_${oilIndex}" value="${packageType}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_qty_${oilIndex}" value="${qty}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_discount_${oilIndex}" value="${discount}">`);
-                    oilIndex++;
-                }
-            });
-
             return true;
         }
 

@@ -36,7 +36,6 @@ CREATE TABLE invoices (
     plate_number VARCHAR(20),
     mileage VARCHAR(50),
     items JSON, -- Store items as JSON array
-    oils JSON, -- Store oils as JSON array
     parts_total DECIMAL(10,2) DEFAULT 0,
     service_total DECIMAL(10,2) DEFAULT 0,
     grand_total DECIMAL(10,2) DEFAULT 0,
@@ -130,32 +129,4 @@ CREATE TABLE parts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX (name)
-);
-
--- Oil management tables
-CREATE TABLE oil_brands (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE oil_viscosities (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    viscosity VARCHAR(50) NOT NULL UNIQUE,
-    description VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE oil_prices (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    brand_id INT NOT NULL,
-    viscosity_id INT NOT NULL,
-    package_type ENUM('canned', '5lt', '4lt', '1lt') NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    created_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (brand_id) REFERENCES oil_brands(id) ON DELETE CASCADE,
-    FOREIGN KEY (viscosity_id) REFERENCES oil_viscosities(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-    UNIQUE KEY unique_oil_price (brand_id, viscosity_id, package_type)
 );
