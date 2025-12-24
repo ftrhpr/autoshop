@@ -198,8 +198,13 @@ endif; ?>
                             $name = trim($it['name'] ?? '');
                             $qty = isset($it['qty']) ? (float)$it['qty'] : 0;
                             $pPart = isset($it['price_part']) ? (float)$it['price_part'] : 0;
+                            $dPart = isset($it['discount_part']) ? (float)$it['discount_part'] : 0.0;
                             $pSvc = isset($it['price_svc']) ? (float)$it['price_svc'] : 0;
+                            $dSvc = isset($it['discount_svc']) ? (float)$it['discount_svc'] : 0.0;
                             $tech = $it['tech'] ?? '';
+
+                            $linePart = $qty * $pPart * max(0, (1 - $dPart / 100.0));
+                            $lineSvc = $qty * $pSvc * max(0, (1 - $dSvc / 100.0));
 
                             $displayQty = $qty;
                             $displayPPart = $pPart > 0 ? number_format($pPart,2) : '';
