@@ -286,8 +286,9 @@ if (!isset($_SESSION['user_id'])) {
 
         .fab-container {
             position: fixed;
-            bottom: 1.5rem;
+            top: 50%;
             right: 1.5rem;
+            transform: translateY(-50%);
             display: flex;
             flex-direction: column-reverse;
             gap: 0.75rem;
