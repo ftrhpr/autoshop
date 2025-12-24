@@ -94,6 +94,10 @@ foreach ($oilPrices as $price) {
     <!-- Tailwind CSS -->
     <link href="./dist/output.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Georgian Fonts -->
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
 
     <style>
         /* Mobile-first responsive design */
@@ -101,6 +105,11 @@ foreach ($oilPrices as $price) {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+        }
+
+        /* Georgian fonts for headers */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'BPG Arial', 'BPG Arial Caps', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         .mobile-container {
