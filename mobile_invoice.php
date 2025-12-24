@@ -994,10 +994,14 @@ foreach ($oilPrices as $price) {
             const reviewContainer = document.getElementById('review-container');
             const items = [];
             document.querySelectorAll('.item-card').forEach(card => {
-                const name = card.querySelector('.item-name-input').value.trim();
-                const qty = card.querySelector('.item-qty').value;
-                const partPrice = card.querySelector('.item-price-part').value;
-                const svcPrice = card.querySelector('.item-price-svc').value;
+                const nameEl = card.querySelector('.item-name-input');
+                const qtyEl = card.querySelector('.item-qty');
+                const partEl = card.querySelector('.item-price-part');
+                const svcEl = card.querySelector('.item-price-svc');
+                const name = nameEl ? nameEl.value.trim() : '';
+                const qty = qtyEl ? qtyEl.value : '1';
+                const partPrice = partEl ? partEl.value : '0';
+                const svcPrice = svcEl ? svcEl.value : '0';
                 if (name) {
                     items.push(name + ' (Qty: ' + qty + ') - Part: ' + partPrice + '₾, Svc: ' + svcPrice + '₾');
                 }
@@ -1006,13 +1010,21 @@ foreach ($oilPrices as $price) {
             const itemsHtml = items.length ? items.map(item => '<div class="review-item"><span>-</span> <span>' + item + '</span></div>').join('') : '<div class="review-item"><span>No items added.</span></div>';
             const oilsTotalText = document.getElementById('display_oils_total') ? document.getElementById('display_oils_total').textContent : '0 ₾';
 
+            const plate = document.getElementById('input_plate_number') ? document.getElementById('input_plate_number').value : '';
+            const carMark = document.getElementById('input_car_mark') ? (document.getElementById('input_car_mark').value || 'N/A') : 'N/A';
+            const customerName = document.getElementById('input_customer_name') ? document.getElementById('input_customer_name').value : '';
+            const phone = document.getElementById('input_phone_number') ? (document.getElementById('input_phone_number').value || 'N/A') : 'N/A';
+            const partsTotal = document.getElementById('display_parts_total') ? document.getElementById('display_parts_total').textContent : '0 ₾';
+            const serviceTotal = document.getElementById('display_service_total') ? document.getElementById('display_service_total').textContent : '0 ₾';
+            const grandTotal = document.getElementById('display_grand_total') ? document.getElementById('display_grand_total').textContent : '0 ₾';
+
             reviewContainer.innerHTML = '' +
                 '<div class="review-section">' +
                     '<div class="review-title">Vehicle & Customer</div>' +
-                    '<div class="review-item"><span>Plate Number:</span> <span>' + document.getElementById('input_plate_number').value + '</span></div>' +
-                    '<div class="review-item"><span>Make/Model:</span> <span>' + (document.getElementById('input_car_mark').value || 'N/A') + '</span></div>' +
-                    '<div class="review-item"><span>Customer:</span> <span>' + document.getElementById('input_customer_name').value + '</span></div>' +
-                    '<div class="review-item"><span>Phone:</span> <span>' + (document.getElementById('input_phone_number').value || 'N/A') + '</span></div>' +
+                    '<div class="review-item"><span>Plate Number:</span> <span>' + plate + '</span></div>' +
+                    '<div class="review-item"><span>Make/Model:</span> <span>' + carMark + '</span></div>' +
+                    '<div class="review-item"><span>Customer:</span> <span>' + customerName + '</span></div>' +
+                    '<div class="review-item"><span>Phone:</span> <span>' + phone + '</span></div>' +
                 '</div>' +
                 '<div class="review-section">' +
                     '<div class="review-title">Items</div>' +
@@ -1020,10 +1032,10 @@ foreach ($oilPrices as $price) {
                 '</div>' +
                 '<div class="review-section">' +
                     '<div class="review-title">Totals</div>' +
-                    '<div class="review-item"><span>Parts Total:</span> <span>' + document.getElementById('display_parts_total').textContent + '</span></div>' +
-                    '<div class="review-item"><span>Service Total:</span> <span>' + document.getElementById('display_service_total').textContent + '</span></div>' +
+                    '<div class="review-item"><span>Parts Total:</span> <span>' + partsTotal + '</span></div>' +
+                    '<div class="review-item"><span>Service Total:</span> <span>' + serviceTotal + '</span></div>' +
                     '<div class="review-item"><span>Oils Total:</span> <span>' + oilsTotalText + '</span></div>' +
-                    '<div class="review-item grand-total"><span>Grand Total:</span> <span>' + document.getElementById('display_grand_total').textContent + '</span></div>' +
+                    '<div class="review-item grand-total"><span>Grand Total:</span> <span>' + grandTotal + '</span></div>' +
                 '</div>' +
                 '<div class="review-section">' +
                     '<div class="review-title">Photos</div>' +
@@ -1330,17 +1342,24 @@ foreach ($oilPrices as $price) {
 
             // Check basic fields
             ['input_plate_number', 'input_customer_name', 'input_service_manager'].forEach(id => {
-                if (document.getElementById(id).value.trim()) filledFields++;
+                const el = document.getElementById(id);
+                if (el && el.value && el.value.trim()) filledFields++;
             });
 
             // Check items
             document.querySelectorAll('.item-card').forEach(card => {
-                if (card.querySelector('.item-name-input').value.trim()) filledFields++;
-                if (card.querySelector('.item-price-part').value > 0 || card.querySelector('.item-price-svc').value > 0) filledFields++;
+                const nameEl = card.querySelector('.item-name-input');
+                if (nameEl && nameEl.value && nameEl.value.trim()) filledFields++;
+                const partEl = card.querySelector('.item-price-part');
+                const svcEl = card.querySelector('.item-price-svc');
+                const partVal = partEl ? parseFloat(partEl.value) : 0;
+                const svcVal = svcEl ? parseFloat(svcEl.value) : 0;
+                if (partVal > 0 || svcVal > 0) filledFields++;
             });
 
             const progress = Math.min((filledFields / totalPossible) * 100, 100);
-            document.getElementById('progress-bar').style.width = progress + '%';
+            const bar = document.getElementById('progress-bar');
+            if (bar) bar.style.width = progress + '%';
         }
 
         // Typeahead functionality (simplified version)
@@ -1543,7 +1562,8 @@ foreach ($oilPrices as $price) {
                 return;
             }
 
-            const vehicle = document.getElementById('input_car_mark').value.trim();
+            const carMarkEl = document.getElementById('input_car_mark');
+            const vehicle = carMarkEl && carMarkEl.value ? carMarkEl.value.trim() : '';
             const params = new URLSearchParams({ q: query });
             if (vehicle) params.set('vehicle', vehicle);
 
@@ -1557,9 +1577,10 @@ foreach ($oilPrices as $price) {
                     }
 
                     box.innerHTML = items.map(item => {
-                        const vehicleVal = document.getElementById('input_car_mark').value.trim();
+                        const carMarkEl2 = document.getElementById('input_car_mark');
+                        const vehicleVal = carMarkEl2 && carMarkEl2.value ? carMarkEl2.value.trim() : '';
                         const priceToShow = item.suggested_price > 0 ? item.suggested_price : item.default_price;
-                        const priceIndicator = vehicleVal ? (item.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : '';
+                        const priceIndicator = vehicleVal ? (item.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : ''; 
 
                         return `
                             <div class="suggestion-item" onclick="selectItem(this, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
@@ -1698,37 +1719,51 @@ foreach ($oilPrices as $price) {
 
         // Form preparation and validation
         function prepareData() {
-            // Update hidden fields
-            document.getElementById('hidden_creation_date').value = document.getElementById('input_creation_date').value;
-            document.getElementById('hidden_service_manager').value = document.getElementById('input_service_manager').value;
-            document.getElementById('hidden_customer_name').value = document.getElementById('input_customer_name').value;
-            document.getElementById('hidden_phone_number').value = document.getElementById('input_phone_number').value;
-            document.getElementById('hidden_car_mark').value = document.getElementById('input_car_mark').value;
-            document.getElementById('hidden_plate_number').value = document.getElementById('input_plate_number').value;
-            document.getElementById('hidden_vin').value = document.getElementById('input_vin').value;
-            document.getElementById('input_vehicle_id').value = document.getElementById('input_vehicle_id').value; // This is a self-assignment, but harmless. Correcting to ensure it targets an existing ID. More importantly, the *next* line is what we're fixing. The original error was on a now-deleted line. Let's ensure the whole function is correct.
-            document.getElementById('hidden_customer_id').value = document.getElementById('hidden_customer_id').value;
+            // Update hidden fields safely
+            const in_creation = document.getElementById('input_creation_date'); if (in_creation) document.getElementById('hidden_creation_date').value = in_creation.value;
+            const in_sm = document.getElementById('input_service_manager'); if (in_sm) document.getElementById('hidden_service_manager').value = in_sm.value;
+            const in_cust = document.getElementById('input_customer_name'); if (in_cust) document.getElementById('hidden_customer_name').value = in_cust.value;
+            const in_phone = document.getElementById('input_phone_number'); if (in_phone) document.getElementById('hidden_phone_number').value = in_phone.value;
+            const in_car = document.getElementById('input_car_mark'); if (in_car) document.getElementById('hidden_car_mark').value = in_car.value;
+            const in_plate = document.getElementById('input_plate_number'); if (in_plate) document.getElementById('hidden_plate_number').value = in_plate.value;
+            const in_vin = document.getElementById('input_vin'); if (in_vin) document.getElementById('hidden_vin').value = in_vin.value;
+            const in_vehicle_id = document.getElementById('input_vehicle_id'); if (in_vehicle_id) in_vehicle_id.value = in_vehicle_id.value; // keep as-is if present
+            const in_hidden_cust = document.getElementById('hidden_customer_id'); if (in_hidden_cust) in_hidden_cust.value = in_hidden_cust.value;
 
-            const mileageValue = document.getElementById('input_mileage').value;
-            const mileageUnit = document.getElementById('mileage_unit').value;
-            document.getElementById('hidden_mileage').value = `${mileageValue} ${mileageUnit}`;
+            const mi = document.getElementById('input_mileage'); const mu = document.getElementById('mileage_unit');
+            const mileageValue = mi ? mi.value : '';
+            const mileageUnit = mu ? mu.value : '';
+            const hiddenMileageEl = document.getElementById('hidden_mileage'); if (hiddenMileageEl) hiddenMileageEl.value = `${mileageValue} ${mileageUnit}`;
 
             // Prepare items data
             const items = [];
             document.querySelectorAll('.item-card').forEach((card, index) => {
+                const nameEl = card.querySelector('.item-name-input');
+                const qtyEl = card.querySelector('.item-qty');
+                const partEl = card.querySelector('.item-price-part');
+                const discPartEl = card.querySelector('.item-discount-part');
+                const svcEl = card.querySelector('.item-price-svc');
+                const discSvcEl = card.querySelector('.item-discount-svc');
+                const techEl = card.querySelector('.item-tech');
+                const techIdEl = card.querySelector('.item-tech-id');
+                const dbIdEl = card.querySelector('.item-db-id');
+                const dbTypeEl = card.querySelector('.item-db-type');
+                const dbVehicleEl = card.querySelector('.item-db-vehicle');
+                const dbPriceSourceEl = card.querySelector('.item-db-price-source');
+
                 const item = {
-                    name: card.querySelector('.item-name-input').value.trim(),
-                    qty: parseFloat(card.querySelector('.item-qty').value) || 1,
-                    price_part: parseFloat(card.querySelector('.item-price-part').value) || 0,
-                    discount_part: parseFloat(card.querySelector('.item-discount-part').value) || 0,
-                    price_svc: parseFloat(card.querySelector('.item-price-svc').value) || 0,
-                    discount_svc: parseFloat(card.querySelector('.item-discount-svc').value) || 0,
-                    technician: card.querySelector('.item-tech').value.trim(),
-                    tech_id: card.querySelector('.item-tech-id').value || null,
-                    db_id: card.querySelector('.item-db-id').value,
-                    db_type: card.querySelector('.item-db-type').value,
-                    db_vehicle: card.querySelector('.item-db-vehicle').value,
-                    db_price_source: card.querySelector('.item-db-price-source').value
+                    name: nameEl ? nameEl.value.trim() : '',
+                    qty: qtyEl ? parseFloat(qtyEl.value) || 1 : 1,
+                    price_part: partEl ? parseFloat(partEl.value) || 0 : 0,
+                    discount_part: discPartEl ? parseFloat(discPartEl.value) || 0 : 0,
+                    price_svc: svcEl ? parseFloat(svcEl.value) || 0 : 0,
+                    discount_svc: discSvcEl ? parseFloat(discSvcEl.value) || 0 : 0,
+                    technician: techEl ? techEl.value.trim() : '',
+                    tech_id: techIdEl ? techIdEl.value || null : null,
+                    db_id: dbIdEl ? dbIdEl.value : '',
+                    db_type: dbTypeEl ? dbTypeEl.value : '',
+                    db_vehicle: dbVehicleEl ? dbVehicleEl.value : '',
+                    db_price_source: dbPriceSourceEl ? dbPriceSourceEl.value : ''
                 };
 
                 if (item.name || item.price_part > 0 || item.price_svc > 0) {
