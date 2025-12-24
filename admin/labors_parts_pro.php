@@ -53,6 +53,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$id]);
                 $success = ucfirst($type) . ' deleted';
             }
+            // Oil-specific actions
+            elseif ($action === 'add_brand') {
+                $name = trim($_POST['brand_name'] ?? '');
+                if ($name === '') throw new Exception('Brand name is required');
+                $stmt = $pdo->prepare("INSERT INTO oil_brands (name) VALUES (?)");
+                $stmt->execute([$name]);
+                $success = 'Oil brand added';
+            } elseif ($action === 'add_viscosity') {
+                $viscosity = trim($_POST['viscosity'] ?? '');
+                $description = trim($_POST['description'] ?? '');
+                if ($viscosity === '') throw new Exception('Viscosity is required');
+                $stmt = $pdo->prepare("INSERT INTO oil_viscosities (viscosity, description) VALUES (?, ?)");
+                $stmt->execute([$viscosity, $description]);
+                $success = 'Oil viscosity added';
+            } elseif ($action === 'add_price') {
+                $brand_id = (int)($_POST['brand_id'] ?? 0);
+                $viscosity_id = (int)($_POST['viscosity_id'] ?? 0);
+                $package_type = $_POST['package_type'] ?? '';
+                $price = (float)($_POST['price'] ?? 0);
+                if ($brand_id <= 0 || $viscosity_id <= 0 || !$package_type || $price <= 0) {
+                    throw new Exception('All fields are required');
+                }
+                $stmt = $pdo->prepare("INSERT INTO oil_prices (brand_id, viscosity_id, package_type, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price)");
+                $stmt->execute([$brand_id, $viscosity_id, $package_type, $price, $_SESSION['user_id']]);
+                $success = 'Oil price set';
+            } elseif ($action === 'delete_brand') {
+                $id = (int)($_POST['id'] ?? 0);
+                if ($id <= 0) throw new Exception('Invalid brand id');
+                $stmt = $pdo->prepare("DELETE FROM oil_brands WHERE id = ?");
+                $stmt->execute([$id]);
+                $success = 'Oil brand deleted';
+            } elseif ($action === 'delete_viscosity') {
+                $id = (int)($_POST['id'] ?? 0);
+                if ($id <= 0) throw new Exception('Invalid viscosity id');
+                $stmt = $pdo->prepare("DELETE FROM oil_viscosities WHERE id = ?");
+                $stmt->execute([$id]);
+                $success = 'Oil viscosity deleted';
+            } elseif ($action === 'delete_price') {
+                $brand_id = (int)($_POST['brand_id'] ?? 0);
+                $viscosity_id = (int)($_POST['viscosity_id'] ?? 0);
+                $package_type = $_POST['package_type'] ?? '';
+                if ($brand_id <= 0 || $viscosity_id <= 0 || !$package_type) {
+                    throw new Exception('Invalid price parameters');
+                }
+                $stmt = $pdo->prepare("DELETE FROM oil_prices WHERE brand_id = ? AND viscosity_id = ? AND package_type = ?");
+                $stmt->execute([$brand_id, $viscosity_id, $package_type]);
+                $success = 'Oil price deleted';
+            }
         } catch (Exception $e) {
             error_log('labors_parts_pro.php - action error: ' . $e->getMessage());
             $errors[] = $e->getMessage();
@@ -61,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Listing params
-$type = in_array($_GET['type'] ?? 'part', ['part','labor']) ? $_GET['type'] : 'part';
+$type = in_array($_GET['type'] ?? 'part', ['part','labor','oil']) ? $_GET['type'] : 'part';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $q = trim($_GET['q'] ?? '');
@@ -105,6 +153,24 @@ if (!empty($rows)) {
     }
 }
 
+// Fetch oil data if type is oil
+$oilBrands = [];
+$oilViscosities = [];
+$oilPrices = [];
+if ($type === 'oil') {
+    $oilBrands = $pdo->query("SELECT * FROM oil_brands ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    $oilViscosities = $pdo->query("SELECT * FROM oil_viscosities ORDER BY viscosity")->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fetch oil prices with brand and viscosity names
+    $oilPrices = $pdo->query("
+        SELECT op.*, ob.name as brand_name, ov.viscosity as viscosity_name, ov.description as viscosity_description
+        FROM oil_prices op
+        JOIN oil_brands ob ON op.brand_id = ob.id
+        JOIN oil_viscosities ov ON op.viscosity_id = ov.id
+        ORDER BY ob.name, ov.viscosity, op.package_type
+    ")->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // helper for pagination links
 function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$p}" . ($q?('&q='.urlencode($q)):''); }
 
@@ -126,6 +192,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
 
             <a href="labors_parts_pro.php?type=part" class="px-3 py-2 bg-blue-600 text-white rounded">Parts</a>
             <a href="labors_parts_pro.php?type=labor" class="px-3 py-2 bg-blue-600 text-white rounded">Labors</a>
+            <a href="labors_parts_pro.php?type=oil" class="px-3 py-2 bg-green-600 text-white rounded">Oils</a>
         </div>
     </div>
 
@@ -143,13 +210,22 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
     </form>
 
     <div class="mb-4 flex items-center justify-between">
-        <div class="text-sm text-gray-600">Showing <?php echo count($rows); ?> of <?php echo $total; ?> <?php echo $type === 'part' ? 'parts' : 'labors'; ?></div>
+        <div class="text-sm text-gray-600">
+            <?php if ($type === 'oil'): ?>
+                Managing <?php echo count($oilBrands); ?> brands, <?php echo count($oilViscosities); ?> viscosities, <?php echo count($oilPrices); ?> prices
+            <?php else: ?>
+                Showing <?php echo count($rows); ?> of <?php echo $total; ?> <?php echo $type === 'part' ? 'parts' : 'labors'; ?>
+            <?php endif; ?>
+        </div>
         <div class="space-x-2">
             <a href="?type=<?php echo $type; ?>" class="px-3 py-2 bg-gray-100 rounded">Refresh</a>
+            <?php if ($type !== 'oil'): ?>
             <a href="api_labors_parts.php?action=export&type=<?php echo $type === 'part' ? 'parts' : 'labors'; ?>" class="px-3 py-2 bg-gray-100 rounded">Export CSV</a>
+            <?php endif; ?>
         </div>
     </div>
 
+    <?php if ($type !== 'oil'): ?>
     <!-- Quick Add -->
     <form method="post" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
         <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
@@ -175,6 +251,10 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
             </div>
         </div>
     </form>
+    <?php endif; ?>
+
+<?php if ($type !== 'oil'): ?>
+    <!-- Parts/Labors Table -->
 
     <div class="bg-white rounded shadow overflow-auto">
         <table class="min-w-full text-sm">
@@ -230,6 +310,138 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
         <?php endfor; ?>
     </div>
     <?php endif; ?>
+
+<?php elseif ($type === 'oil'): ?>
+    <!-- Oil Management Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Oil Brands -->
+        <div class="bg-white rounded shadow p-4">
+            <h3 class="text-lg font-semibold mb-4 text-green-700">Oil Brands</h3>
+
+            <!-- Add Brand Form -->
+            <form method="post" class="mb-4">
+                <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
+                <input type="hidden" name="action" value="add_brand">
+                <div class="flex gap-2">
+                    <input type="text" name="brand_name" placeholder="Brand name" required class="flex-1 border p-2 rounded text-sm">
+                    <button class="px-3 py-2 bg-green-600 text-white rounded text-sm">Add</button>
+                </div>
+            </form>
+
+            <!-- Brands List -->
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+                <?php foreach ($oilBrands as $brand): ?>
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span class="text-sm font-medium"><?php echo h($brand['name']); ?></span>
+                    <form method="post" class="inline" onsubmit="return confirm('Delete brand?');">
+                        <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
+                        <input type="hidden" name="action" value="delete_brand">
+                        <input type="hidden" name="id" value="<?php echo (int)$brand['id']; ?>">
+                        <button class="text-red-600 text-sm">×</button>
+                    </form>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Oil Viscosities -->
+        <div class="bg-white rounded shadow p-4">
+            <h3 class="text-lg font-semibold mb-4 text-blue-700">Oil Viscosities</h3>
+
+            <!-- Add Viscosity Form -->
+            <form method="post" class="mb-4">
+                <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
+                <input type="hidden" name="action" value="add_viscosity">
+                <div class="space-y-2">
+                    <input type="text" name="viscosity" placeholder="Viscosity (e.g. 5W-30)" required class="w-full border p-2 rounded text-sm">
+                    <input type="text" name="description" placeholder="Description (optional)" class="w-full border p-2 rounded text-sm">
+                    <button class="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm">Add Viscosity</button>
+                </div>
+            </form>
+
+            <!-- Viscosities List -->
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+                <?php foreach ($oilViscosities as $viscosity): ?>
+                <div class="p-2 bg-gray-50 rounded">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium"><?php echo h($viscosity['viscosity']); ?></span>
+                        <form method="post" class="inline" onsubmit="return confirm('Delete viscosity?');">
+                            <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
+                            <input type="hidden" name="action" value="delete_viscosity">
+                            <input type="hidden" name="id" value="<?php echo (int)$viscosity['id']; ?>">
+                            <button class="text-red-600 text-sm">×</button>
+                        </form>
+                    </div>
+                    <?php if ($viscosity['description']): ?>
+                    <div class="text-xs text-gray-600 mt-1"><?php echo h($viscosity['description']); ?></div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Oil Prices -->
+        <div class="bg-white rounded shadow p-4">
+            <h3 class="text-lg font-semibold mb-4 text-purple-700">Oil Prices</h3>
+
+            <!-- Add Price Form -->
+            <form method="post" class="mb-4">
+                <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
+                <input type="hidden" name="action" value="add_price">
+                <div class="space-y-2">
+                    <select name="brand_id" required class="w-full border p-2 rounded text-sm">
+                        <option value="">Select Brand</option>
+                        <?php foreach ($oilBrands as $brand): ?>
+                        <option value="<?php echo (int)$brand['id']; ?>"><?php echo h($brand['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <select name="viscosity_id" required class="w-full border p-2 rounded text-sm">
+                        <option value="">Select Viscosity</option>
+                        <?php foreach ($oilViscosities as $viscosity): ?>
+                        <option value="<?php echo (int)$viscosity['id']; ?>"><?php echo h($viscosity['viscosity']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <select name="package_type" required class="w-full border p-2 rounded text-sm">
+                        <option value="">Select Package</option>
+                        <option value="canned">Canned</option>
+                        <option value="1lt">1 Liter</option>
+                        <option value="4lt">4 Liter</option>
+                        <option value="5lt">5 Liter</option>
+                    </select>
+                    <input type="number" name="price" step="0.01" placeholder="Price (₾)" required class="w-full border p-2 rounded text-sm">
+                    <button class="w-full px-3 py-2 bg-purple-600 text-white rounded text-sm">Set Price</button>
+                </div>
+            </form>
+
+            <!-- Prices List -->
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+                <?php foreach ($oilPrices as $price): ?>
+                <div class="p-2 bg-gray-50 rounded">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm">
+                            <span class="font-medium"><?php echo h($price['brand_name']); ?></span>
+                            <span class="text-gray-600"><?php echo h($price['viscosity_name']); ?></span>
+                            <span class="text-xs bg-gray-200 px-1 rounded"><?php echo h($price['package_type']); ?></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium"><?php echo number_format($price['price'], 2); ?> ₾</span>
+                            <form method="post" class="inline" onsubmit="return confirm('Delete price?');">
+                                <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="action" value="delete_price">
+                                <input type="hidden" name="brand_id" value="<?php echo (int)$price['brand_id']; ?>">
+                                <input type="hidden" name="viscosity_id" value="<?php echo (int)$price['viscosity_id']; ?>">
+                                <input type="hidden" name="package_type" value="<?php echo h($price['package_type']); ?>">
+                                <button class="text-red-600 text-sm">×</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+<?php endif; ?>
 
     <!-- Add / Edit modal -->
     <div id="edit-modal" class="modal" style="display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:60;">
