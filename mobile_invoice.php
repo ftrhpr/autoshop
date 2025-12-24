@@ -965,6 +965,15 @@ foreach ($oilPrices as $price) {
                 });
                 updatePhotoPreview();
 
+                // Set oils
+                const oils = <?php echo json_encode($serverInvoice['oils'] ?? []); ?>;
+                if (Array.isArray(oils) && oils.length > 0) {
+                    // ensure container cleared
+                    document.getElementById('oils-container').innerHTML = '';
+                    oilCount = 0;
+                    oils.forEach(o => addOil(o));
+                }
+
                 calculateTotals();
                 updateStep();
             <?php endif; ?>
@@ -1145,9 +1154,41 @@ foreach ($oilPrices as $price) {
                 itemCard.querySelector('.item-tech').value = existingItem.technician;
             }
 
-            // ---------------------------------
-            // Oil functions (mobile)
-            // ---------------------------------
+                // (Oil functions moved to top-level scope)
+                itemCard.querySelector('.item-db-id').value = existingItem.db_id || '';
+                itemCard.querySelector('.item-db-type').value = existingItem.db_type || '';
+                itemCard.querySelector('.item-db-vehicle').value = existingItem.db_vehicle || '';
+                itemCard.querySelector('.item-db-price-source').value = existingItem.has_vehicle_price ? 'vehicle' : 'default';
+
+                // Fill appropriate price field
+                const priceToUse = (typeof existingItem.suggested_price !== 'undefined' && existingItem.suggested_price !== null) ? existingItem.suggested_price : existingItem.default_price;
+                if (existingItem.type === 'part') {
+                    const partInput = itemCard.querySelector('.item-price-part');
+                    if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
+                        partInput.value = priceToUse;
+                    }
+                } else if (existingItem.type === 'labor') {
+                    const svcInput = itemCard.querySelector('.item-price-svc');
+                    if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
+                        svcInput.value = priceToUse;
+                    }
+                }
+            }
+
+            updateProgress();
+        }
+
+        // Remove item function
+        function removeItem(id) {
+            const item = document.getElementById(`item-${id}`);
+            if (item) {
+                item.remove();
+                calculateTotals();
+                updateProgress();
+            }
+        }
+
+// Oil functions (moved here to top-level scope)
             function addOil(existingOil = null) {
                 oilCount++;
                 const container = document.getElementById('oils-container');
@@ -1257,41 +1298,7 @@ foreach ($oilPrices as $price) {
                 if (card) { card.remove(); updateOilsTotal(); }
             }
 
-                // Set DB metadata
-                itemCard.querySelector('.item-db-id').value = existingItem.db_id || '';
-                itemCard.querySelector('.item-db-type').value = existingItem.db_type || '';
-                itemCard.querySelector('.item-db-vehicle').value = existingItem.db_vehicle || '';
-                itemCard.querySelector('.item-db-price-source').value = existingItem.has_vehicle_price ? 'vehicle' : 'default';
-
-                // Fill appropriate price field
-                const priceToUse = (typeof existingItem.suggested_price !== 'undefined' && existingItem.suggested_price !== null) ? existingItem.suggested_price : existingItem.default_price;
-                if (existingItem.type === 'part') {
-                    const partInput = itemCard.querySelector('.item-price-part');
-                    if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
-                        partInput.value = priceToUse;
-                    }
-                } else if (existingItem.type === 'labor') {
-                    const svcInput = itemCard.querySelector('.item-price-svc');
-                    if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
-                        svcInput.value = priceToUse;
-                    }
-                }
-            }
-
-            updateProgress();
-        }
-
-        // Remove item function
-        function removeItem(id) {
-            const item = document.getElementById(`item-${id}`);
-            if (item) {
-                item.remove();
-                calculateTotals();
-                updateProgress();
-            }
-        }
-
-        // Calculate totals
+            // Calculate totals
         function calculateTotals() {
             let partsTotal = 0;
             let serviceTotal = 0;
@@ -1763,6 +1770,9 @@ foreach ($oilPrices as $price) {
                 }
             });
 
+            // Remove previously added prepared hidden inputs to avoid duplicates
+            document.getElementById('mobile-invoice-form').querySelectorAll('.prepared-input').forEach(el => el.remove());
+
             // Add items as hidden inputs
             items.forEach((item, index) => {
                 const fields = {
@@ -1783,10 +1793,35 @@ foreach ($oilPrices as $price) {
                 Object.keys(fields).forEach(key => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
+                    input.className = 'prepared-input';
                     input.name = key + index;
                     input.value = fields[key];
                     document.getElementById('mobile-invoice-form').appendChild(input);
                 });
+            });
+
+            // Add hidden for oils (remove previous ones first)
+            document.getElementById('mobile-invoice-form').querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
+            let oilIndex = 0;
+            document.querySelectorAll('.oil-card').forEach(card => {
+                const brand = card.querySelector('.oil-brand')?.value || '';
+                const viscosity = card.querySelector('.oil-viscosity')?.value || '';
+                const packageType = card.querySelector('.oil-package')?.value || '';
+                const qty = card.querySelector('.oil-qty')?.value || '1';
+                const discount = card.querySelector('.oil-discount')?.value || '0';
+                if (brand && viscosity && packageType) {
+                    ['brand','viscosity','package','qty','discount'].forEach((k, i) => {
+                        const nameMap = ['oil_brand_','oil_viscosity_','oil_package_','oil_qty_','oil_discount_'];
+                        const val = [brand, viscosity, packageType, qty, discount][i];
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.className = 'prepared-input';
+                        input.name = nameMap[i] + oilIndex;
+                        input.value = val;
+                        document.getElementById('mobile-invoice-form').appendChild(input);
+                    });
+                    oilIndex++;
+                }
             });
 
             return true;
