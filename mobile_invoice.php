@@ -15,6 +15,61 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
+
+// Support loading a saved invoice into the editor for editing
+$serverInvoice = null;
+if (isset($_GET['edit_id'])) {
+    $loadId = (int)$_GET['edit_id'];
+    try {
+        if (!isset($pdo)) {
+            throw new Exception("Database connection not available");
+        }
+        $stmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ? LIMIT 1');
+        $stmt->execute([$loadId]);
+        $inv = $stmt->fetch();
+        if ($inv) {
+            $inv_items = json_decode($inv['items'], true) ?: [];
+            $inv_customer = null;
+            if (!empty($inv['vehicle_id'])) {
+                $s = $pdo->prepare('SELECT v.*, c.full_name, c.phone, c.email, c.notes FROM vehicles v JOIN customers c ON v.customer_id = c.id WHERE v.id = ? LIMIT 1');
+                $s->execute([(int)$inv['vehicle_id']]);
+                $inv_customer = $s->fetch();
+            }
+            $sm_username = '';
+            if (!empty($inv['service_manager_id'])) {
+                $s = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+                $s->execute([(int)$inv['service_manager_id']]);
+                $sm = $s->fetch();
+                if ($sm) $sm_username = $sm['username'];
+            }
+            $serverInvoice = [
+                'id' => (int)$inv['id'],
+                'creation_date' => $inv['creation_date'],
+                'customer_name' => $inv['customer_name'],
+                'phone' => $inv['phone'],
+                'car_mark' => $inv['car_mark'],
+                'plate_number' => $inv['plate_number'],
+                'vin' => $inv['vin'] ?? '',
+                'mileage' => $inv['mileage'],
+                'service_manager' => $inv['service_manager'],
+                'service_manager_id' => isset($inv['service_manager_id']) ? (int)$inv['service_manager_id'] : 0,
+                'technician' => $inv['technician'] ?? '',
+                'technician_id' => isset($inv['technician_id']) ? (int)$inv['technician_id'] : 0,
+                'items' => $inv_items,
+                'images' => !empty($inv['images']) ? json_decode($inv['images'], true) : [],
+                'grand_total' => (float)$inv['grand_total'],
+                'parts_total' => (float)$inv['parts_total'],
+                'service_total' => (float)$inv['service_total'],
+                'parts_discount_percent' => isset($inv['parts_discount_percent']) ? (float)$inv['parts_discount_percent'] : 0.0,
+                'service_discount_percent' => isset($inv['service_discount_percent']) ? (float)$inv['service_discount_percent'] : 0.0,
+            ];
+            if ($inv_customer) $serverInvoice['customer'] = $inv_customer;
+            if (!empty($sm_username)) $serverInvoice['service_manager_username'] = $sm_username;
+        }
+    } catch (Exception $e) {
+        error_log("Database error loading invoice $loadId for mobile edit: " . $e->getMessage());
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ka">
@@ -740,6 +795,12 @@ if (!isset($_SESSION['user_id'])) {
         <span id="toast-message">Invoice saved successfully!</span>
     </div>
 
+    <?php if (!empty($serverInvoice)): ?>
+    <script>
+        window.serverInvoice = <?php echo json_encode($serverInvoice, JSON_UNESCAPED_UNICODE); ?>;
+    </script>
+    <?php endif; ?>
+
     <script>
         // Global variables
         let itemCount = 0;
@@ -766,6 +827,11 @@ if (!isset($_SESSION['user_id'])) {
                 smIdInput.value = '<?php echo (int)($_SESSION['user_id'] ?? 0); ?>';
             }
 
+            // Load server invoice if in edit mode
+            if (window.serverInvoice) {
+                loadServerInvoice(window.serverInvoice);
+            }
+
             // Multi-step form logic
             const nextBtns = document.querySelectorAll('.next-btn');
             const prevBtns = document.querySelectorAll('.prev-btn');
@@ -789,6 +855,36 @@ if (!isset($_SESSION['user_id'])) {
                     }
                 });
             });
+
+            // Pre-fill form with serverInvoice data if available
+            <?php if (!empty($serverInvoice)): ?>
+                document.getElementById('input_plate_number').value = "<?php echo addslashes($serverInvoice['plate_number']); ?>";
+                document.getElementById('input_car_mark').value = "<?php echo addslashes($serverInvoice['car_mark']); ?>";
+                document.getElementById('input_vin').value = "<?php echo addslashes($serverInvoice['vin']); ?>";
+                document.getElementById('input_mileage').value = "<?php echo addslashes($serverInvoice['mileage']); ?>";
+                document.getElementById('input_customer_name').value = "<?php echo addslashes($serverInvoice['customer_name']); ?>";
+                document.getElementById('input_phone_number').value = "<?php echo addslashes($serverInvoice['phone']); ?>";
+                document.getElementById('input_service_manager').value = "<?php echo addslashes($serverInvoice['service_manager']); ?>";
+                document.getElementById('input_service_manager_id').value = "<?php echo (int)$serverInvoice['service_manager_id']; ?>";
+                document.getElementById('input_vehicle_id').value = "<?php echo (int)$serverInvoice['vehicle_id']; ?>";
+
+                // Set items
+                const items = <?php echo json_encode($serverInvoice['items'] ?? []); ?>;
+                items.forEach(item => {
+                    addItem(item);
+                });
+
+                // Set images
+                const images = <?php echo json_encode($serverInvoice['images'] ?? []); ?>;
+                images.forEach(img => {
+                    const file = new File([img.blob], img.name, { type: img.type });
+                    selectedFiles.push(file);
+                });
+                updatePhotoPreview();
+
+                calculateTotals();
+                updateStep();
+            <?php endif; ?>
         });
 
         function updateStep() {
@@ -877,7 +973,7 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         // Add item function
-        function addItem() {
+        function addItem(existingItem = null) {
             itemCount++;
             const container = document.getElementById('items-container');
 
@@ -954,6 +1050,37 @@ if (!isset($_SESSION['user_id'])) {
             techInput.addEventListener('input', () => {
                 if (techIdInput) techIdInput.value = '';
             });
+
+            // If editing an existing item, populate the fields
+            if (existingItem) {
+                itemCard.querySelector('.item-name-input').value = existingItem.name;
+                itemCard.querySelector('.item-qty').value = existingItem.qty;
+                itemCard.querySelector('.item-price-part').value = existingItem.price_part;
+                itemCard.querySelector('.item-discount-part').value = existingItem.discount_part;
+                itemCard.querySelector('.item-price-svc').value = existingItem.price_svc;
+                itemCard.querySelector('.item-discount-svc').value = existingItem.discount_svc;
+                itemCard.querySelector('.item-tech').value = existingItem.technician;
+
+                // Set DB metadata
+                itemCard.querySelector('.item-db-id').value = existingItem.db_id || '';
+                itemCard.querySelector('.item-db-type').value = existingItem.db_type || '';
+                itemCard.querySelector('.item-db-vehicle').value = existingItem.db_vehicle || '';
+                itemCard.querySelector('.item-db-price-source').value = existingItem.has_vehicle_price ? 'vehicle' : 'default';
+
+                // Fill appropriate price field
+                const priceToUse = (typeof existingItem.suggested_price !== 'undefined' && existingItem.suggested_price !== null) ? existingItem.suggested_price : existingItem.default_price;
+                if (existingItem.type === 'part') {
+                    const partInput = itemCard.querySelector('.item-price-part');
+                    if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
+                        partInput.value = priceToUse;
+                    }
+                } else if (existingItem.type === 'labor') {
+                    const svcInput = itemCard.querySelector('.item-price-svc');
+                    if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
+                        svcInput.value = priceToUse;
+                    }
+                }
+            }
 
             updateProgress();
         }
@@ -1506,6 +1633,92 @@ if (!isset($_SESSION['user_id'])) {
 
         // Update progress on input changes
         document.addEventListener('input', updateProgress);
+
+        function loadServerInvoice(inv) {
+            // Populate basic fields
+            document.getElementById('input_plate_number').value = inv.plate_number || '';
+            document.getElementById('input_car_mark').value = inv.car_mark || '';
+            document.getElementById('input_vin').value = inv.vin || '';
+            document.getElementById('input_mileage').value = inv.mileage || '';
+            document.getElementById('input_creation_date').value = inv.creation_date ? inv.creation_date.replace(' ', 'T').substring(0, 16) : '';
+            document.getElementById('input_customer_name').value = inv.customer_name || '';
+            document.getElementById('input_phone_number').value = inv.phone || '';
+            document.getElementById('input_service_manager').value = inv.service_manager || inv.service_manager_username || '';
+            document.getElementById('input_service_manager_id').value = inv.service_manager_id || '';
+            document.getElementById('input_vehicle_id').value = inv.customer ? inv.customer.id : (inv.vehicle_id || '');
+            document.getElementById('hidden_customer_id').value = inv.customer ? inv.customer.customer_id : '';
+            
+            // Add existing invoice ID to form
+            const form = document.getElementById('mobile-invoice-form');
+            const existingIdInput = document.createElement('input');
+            existingIdInput.type = 'hidden';
+            existingIdInput.name = 'existing_invoice_id';
+            existingIdInput.value = inv.id;
+            form.appendChild(existingIdInput);
+
+            // Populate items
+            const itemsContainer = document.getElementById('items-container');
+            itemsContainer.innerHTML = ''; // Clear initial empty rows
+            itemCount = 0;
+            if (inv.items && inv.items.length > 0) {
+                inv.items.forEach(item => {
+                    addItem();
+                    const card = document.getElementById(`item-${itemCount}`);
+                    if (card) {
+                        card.querySelector('.item-name-input').value = item.name || '';
+                        card.querySelector('.item-qty').value = item.qty || 1;
+                        card.querySelector('.item-price-part').value = item.price_part || 0;
+                        card.querySelector('.item-discount-part').value = item.discount_part || 0;
+                        card.querySelector('.item-price-svc').value = item.price_svc || 0;
+                        card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
+                        card.querySelector('.item-tech').value = item.tech || '';
+                        card.querySelector('.item-tech-id').value = item.tech_id || '';
+                    }
+                });
+            } else {
+                 for(let i = 0; i < 3; i++) addItem(); // Add empty rows if no items
+            }
+
+            // Populate photos
+            if (inv.images && Array.isArray(inv.images) && inv.images.length > 0) {
+                const preview = document.getElementById('photo-preview');
+                preview.innerHTML = '';
+                inv.images.forEach((src, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'photo-item';
+                    div.innerHTML = `
+                        <img src="${src}" alt="Photo ${index + 1}">
+                        <button type="button" class="photo-remove" onclick="removeExistingPhoto(this, ${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    preview.appendChild(div);
+                });
+            }
+
+            // Populate discounts and calculate totals
+            document.getElementById('input_parts_discount').value = inv.parts_discount_percent || 0;
+            document.getElementById('input_service_discount').value = inv.service_discount_percent || 0;
+            calculateTotals();
+        }
+
+        function removeExistingPhoto(btn, index) {
+            if (confirm('Are you sure you want to remove this existing image?')) {
+                btn.parentElement.remove();
+                
+                let deletedImagesInput = document.querySelector('input[name="deleted_images_json"]');
+                if (!deletedImagesInput) {
+                    deletedImagesInput = document.createElement('input');
+                    deletedImagesInput.type = 'hidden';
+                    deletedImagesInput.name = 'deleted_images_json';
+                    document.getElementById('mobile-invoice-form').appendChild(deletedImagesInput);
+                }
+                
+                let deleted = deletedImagesInput.value ? JSON.parse(deletedImagesInput.value) : [];
+                deleted.push(index);
+                deletedImagesInput.value = JSON.stringify(deleted);
+            }
+        }
     </script>
 </body>
 </html>
