@@ -1260,6 +1260,9 @@ foreach ($oilPrices as $price) {
 
                 container.appendChild(card);
 
+                // Update totals to include the new oil (even with 0 value)
+                calculateTotals();
+
                 // If editing, populate
                 if (existingOil) {
                     card.querySelector('.oil-brand').value = existingOil.brand_id || '';
