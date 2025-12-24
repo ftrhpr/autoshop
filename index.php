@@ -859,11 +859,6 @@ if (!empty($serverInvoice)) {
             let selectedFiles = [];
             let isMultiCaptureMode = false;
 
-            function updateImageCount() {
-                const count = imgPreview.querySelectorAll('.relative.inline-block').length;
-                imageCount.textContent = `${count} image${count !== 1 ? 's' : ''}`;
-            }
-
             if (imgInput && imgPreview) {
                 // Click helpers for separate buttons
                 const btnTake = document.getElementById('btn_take_photo');
@@ -1169,8 +1164,12 @@ if (!empty($serverInvoice)) {
 
             // Function to update image count
             function updateImageCount() {
-                const count = imgPreview.querySelectorAll('.relative.inline-block').length;
-                imageCount.textContent = `${count} image${count !== 1 ? 's' : ''}`;
+                const imgPreview = document.getElementById('input_images_preview');
+                const imageCount = document.getElementById('image_count');
+                if (imgPreview && imageCount) {
+                    const count = imgPreview.querySelectorAll('.relative.inline-block').length;
+                    imageCount.textContent = `${count} image${count !== 1 ? 's' : ''}`;
+                }
             }
 
             // If server supplied invoice data, populate and optionally print
