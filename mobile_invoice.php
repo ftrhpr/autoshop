@@ -739,158 +739,118 @@ if (!isset($_SESSION['user_id'])) {
             document.getElementById('progress-bar').style.width = progress + '%';
         }
 
-        // Typeahead functionality
-        function debounce(fn, wait=250) {
-            let t;
-            return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
-        }
-
+        // Typeahead functionality (simplified version)
         function attachTypeahead(input, endpoint, formatItem, onSelect) {
-            const box = document.createElement('div');
-            box.className = 'bg-white border rounded shadow';
-            box.style.maxHeight = '220px';
-            box.style.overflow = 'auto';
-            box.style.position = 'absolute';
-            // Use very large z-index so the suggestions always appear above other UI elements
-            box.style.zIndex = '2147483647';
-            box.style.display = 'none';
-            box.style.boxSizing = 'border-box';
-            box.style.boxShadow = '0 10px 20px rgba(0,0,0,0.15)';
-            box.style.backgroundColor = '#fff';
-            box.style.pointerEvents = 'auto';
-            document.body.appendChild(box);
+            const box = input.nextElementSibling;
+            let debounceTimer;
 
-            const updatePos = () => {
-                const r = input.getBoundingClientRect();
-                const viewportH = window.innerHeight || document.documentElement.clientHeight;
-                const spaceBelow = viewportH - r.bottom;
-                const spaceAbove = r.top;
-
-                // Default placement below the input
-                let top = r.bottom + window.scrollY;
-                let maxH = Math.min(220, Math.max(80, spaceBelow - 10));
-
-                // If there's not enough space below and more space above, place it above the input
-                if (spaceBelow < 120 && spaceAbove > spaceBelow) {
-                    maxH = Math.min(220, Math.max(80, spaceAbove - 10));
-                    top = r.top + window.scrollY - maxH;
-                }
-
-                box.style.left = (r.left + window.scrollX) + 'px';
-                box.style.top = top + 'px';
-                box.style.width = r.width + 'px';
-                box.style.maxHeight = maxH + 'px';
-            };
-
-            let scrollHandler = () => updatePos();
-            let resizeHandler = () => updatePos();
-
-            input.addEventListener('input', debounce(async () => {
-                const q = input.value.trim();
-                if (!q) { box.innerHTML = ''; box.style.display = 'none'; return; }
-                try {
-                    updatePos();
-                    // console.log('Searching for:', q);
-                    const res = await fetch(endpoint + encodeURIComponent(q));
-                    if (!res.ok) {
-                        // console.log('Response not ok:', res.status);
-                        box.innerHTML = ''; box.style.display = 'none'; return;
-                    }
-                    const list = await res.json();
-                    // Accept multiple payload shapes: raw array, wrapper {success:true, technicians:[]}, or generic rows array
-                    let items = [];
-                    if (Array.isArray(list)) items = list;
-                    else if (list && Array.isArray(list.technicians)) items = list.technicians;
-                    else if (list && Array.isArray(list.rows)) items = list.rows;
-                    else if (list && Array.isArray(list.customers)) items = list.customers;
-
-                    if (!Array.isArray(items) || items.length === 0) { box.innerHTML = ''; box.style.display = 'none'; return; }
-                    box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id || item.customer_id || ''}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
-                    box.style.display = 'block';
-                    box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
-                        const item = JSON.parse(el.getAttribute('data-json'));
-                        onSelect(item);
-                        box.innerHTML = '';
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(async () => {
+                    const q = input.value.trim();
+                    if (!q) {
                         box.style.display = 'none';
-                    }));
-                    window.addEventListener('scroll', scrollHandler, true);
-                    window.addEventListener('resize', resizeHandler);
-                } catch (e) {
-                    console.log('Error:', e);
-                    box.innerHTML = '';
-                    box.style.display = 'none';
-                }
-            }));
+                        return;
+                    }
 
+                    try {
+                        const res = await fetch(endpoint + encodeURIComponent(q));
+                        if (!res.ok) return;
+
+                        const list = await res.json();
+                        let items = Array.isArray(list) ? list : (list.technicians || list.rows || list.customers || []);
+
+                        if (items.length === 0) {
+                            box.style.display = 'none';
+                            return;
+                        }
+
+                        box.innerHTML = items.map(item => `<div class="suggestion-item">${formatItem(item)}</div>`).join('');
+                        box.style.display = 'block';
+
+                        box.querySelectorAll('.suggestion-item').forEach((el, index) => {
+                            el.addEventListener('click', () => {
+                                onSelect(items[index]);
+                                box.style.display = 'none';
+                            });
+                        });
+
+                    } catch (e) {
+                        box.style.display = 'none';
+                    }
+                }, 300);
+            });
+
+            // Show all suggestions on focus
             input.addEventListener('focus', async () => {
                 try {
-                    updatePos();
                     const res = await fetch(endpoint);
                     if (!res.ok) return;
+
                     const list = await res.json();
-                    // Accept array or wrapper shapes
-                    let items = [];
-                    if (Array.isArray(list)) items = list;
-                    else if (list && Array.isArray(list.technicians)) items = list.technicians;
-                    else if (list && Array.isArray(list.rows)) items = list.rows;
-                    else if (list && Array.isArray(list.customers)) items = list.customers;
-                    if (!Array.isArray(items) || items.length === 0) return;
-                    box.innerHTML = items.map(item => `<div class="px-3 py-2 cursor-pointer hover:bg-gray-100" data-id="${item.id || item.customer_id || ''}" data-json='${JSON.stringify(item).replace(/'/g, "\\'") }'>${formatItem(item)}</div>`).join('');
+                    let items = Array.isArray(list) ? list : (list.technicians || list.rows || list.customers || []);
+
+                    if (items.length === 0) return;
+
+                    box.innerHTML = items.map(item => `<div class="suggestion-item">${formatItem(item)}</div>`).join('');
                     box.style.display = 'block';
-                    box.querySelectorAll('div').forEach(el => el.addEventListener('click', () => {
-                        const item = JSON.parse(el.getAttribute('data-json'));
-                        onSelect(item);
-                        box.innerHTML = '';
-                        box.style.display = 'none';
-                    }));
-                    window.addEventListener('scroll', scrollHandler, true);
-                    window.addEventListener('resize', resizeHandler);
+
+                    box.querySelectorAll('.suggestion-item').forEach((el, index) => {
+                        el.addEventListener('click', () => {
+                            onSelect(items[index]);
+                            box.style.display = 'none';
+                        });
+                    });
+
                 } catch (e) {
-                    box.innerHTML = '';
                     box.style.display = 'none';
                 }
             });
 
-            document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) { box.innerHTML = ''; box.style.display = 'none'; window.removeEventListener('scroll', scrollHandler, true); window.removeEventListener('resize', resizeHandler); } });
-            
-            // make available globally in case other inline scripts run before this definition (defensive)
-            try{ window.attachTypeahead = attachTypeahead; }catch(e){}
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !box.contains(e.target)) {
+                    box.style.display = 'none';
+                }
+            });
         }
 
         // Attach typeaheads
         document.addEventListener('DOMContentLoaded', () => {
             // Plate number
-            const pn = document.getElementById('input_plate_number');
-            if (pn) {
-                attachTypeahead(pn, 'admin/api_customers.php?q=', c => `${c.plate_number} — ${c.full_name}${c.car_mark ? ' — ' + c.car_mark : ''}${c.vin ? ' — VIN:'+c.vin : ''}` , (it) => {
-                    pn.value = it.plate_number || '';
-                    document.getElementById('input_customer_name').value = it.full_name || '';
-                    document.getElementById('input_phone_number').value = it.phone || '';
-                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id || '';
-                    const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.customer_id || '';
-                    // Populate VIN, make/model, and mileage if present
-                    const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = it.vin || '';
-                    const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = it.car_mark || '';
-                    const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = it.mileage || '';
-                    // When selecting a plate, also focus the customer name for quick edits
+            attachTypeahead(
+                document.getElementById('input_plate_number'),
+                './admin/api_customers.php?q=',
+                c => `${c.plate_number} — ${c.full_name}${c.car_mark ? ' — ' + c.car_mark : ''}${c.vin ? ' — VIN:'+c.vin : ''}`,
+                (item) => {
+                    document.getElementById('input_plate_number').value = item.plate_number || '';
+                    document.getElementById('input_customer_name').value = item.full_name || '';
+                    document.getElementById('input_phone_number').value = item.phone || '';
+                    document.getElementById('input_car_mark').value = item.car_mark || '';
+                    document.getElementById('input_vin').value = item.vin || '';
+                    document.getElementById('input_mileage').value = item.mileage || '';
+                    document.getElementById('input_vehicle_id').value = item.id || '';
+                    document.getElementById('input_customer_id').value = item.customer_id || '';
+                    // Focus customer name for quick edits
                     document.getElementById('input_customer_name').focus();
-                });
-            }
+                }
+            );
 
             // Customer name
-            const cn = document.getElementById('input_customer_name');
-            if (cn) {
-                attachTypeahead(cn, 'admin/api_customers.php?customer_q=', c => `${c.full_name} — ${c.phone || ''}` , (it) => {
-                    cn.value = it.full_name || '';
-                    document.getElementById('input_phone_number').value = it.phone || '';
-                    const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.id;
-                    // clear any previously selected vehicle id
-                    const vid = document.getElementById('input_vehicle_id'); if (vid) vid.value = '';
+            attachTypeahead(
+                document.getElementById('input_customer_name'),
+                './admin/api_customers.php?customer_q=',
+                c => `${c.full_name} — ${c.phone || ''}`,
+                (item) => {
+                    document.getElementById('input_customer_name').value = item.full_name || '';
+                    document.getElementById('input_phone_number').value = item.phone || '';
+                    document.getElementById('input_customer_id').value = item.id;
+                    // Clear vehicle id
+                    document.getElementById('input_vehicle_id').value = '';
 
-                    // If the plate field is empty, try to autofill from the customer's most recent vehicle
+                    // Autofill from customer's most recent vehicle if plate is empty
                     const plateField = document.getElementById('input_plate_number');
                     if (plateField && (!plateField.value || plateField.value.trim() === '')) {
-                        fetch('admin/api_customers.php?customer_id=' + encodeURIComponent(it.id))
+                        fetch('./admin/api_customers.php?customer_id=' + encodeURIComponent(item.id))
                             .then(r => r.json())
                             .then(cust => {
                                 if (!cust || !Array.isArray(cust.vehicles) || cust.vehicles.length === 0) return;
@@ -905,18 +865,20 @@ if (!isset($_SESSION['user_id'])) {
             );
 
             // Service manager
-            const sm = document.getElementById('input_service_manager');
-            if (sm) {
-                attachTypeahead(sm, 'admin/api_users.php?q=', u => u.username, (it) => {
-                    sm.value = it.username;
-                    const hid = document.getElementById('input_service_manager_id'); if (hid) hid.value = it.id;
-                });
-            }
+            attachTypeahead(
+                document.getElementById('input_service_manager'),
+                './admin/api_users.php?q=',
+                u => u.username,
+                (item) => {
+                    document.getElementById('input_service_manager').value = item.username;
+                    document.getElementById('input_service_manager_id').value = item.id;
+                }
+            );
 
             // Car Make/Model suggestions
             attachTypeahead(
                 document.getElementById('input_car_mark'),
-                'admin/api_customers.php?car_mark_q=',
+                './admin/api_customers.php?car_mark_q=',
                 mark => mark,
                 (mark) => {
                     document.getElementById('input_car_mark').value = mark;
@@ -926,7 +888,7 @@ if (!isset($_SESSION['user_id'])) {
             // VIN suggestions
             attachTypeahead(
                 document.getElementById('input_vin'),
-                'admin/api_customers.php?vin_q=',
+                './admin/api_customers.php?vin_q=',
                 vin => vin,
                 (vin) => {
                     document.getElementById('input_vin').value = vin;
@@ -943,7 +905,7 @@ if (!isset($_SESSION['user_id'])) {
                     const customerNameElem = document.getElementById('input_customer_name');
                     const customerName = customerNameElem.value.trim();
 
-                    fetch('admin/api_customers.php?plate=' + encodeURIComponent(val))
+                    fetch('./admin/api_customers.php?plate=' + encodeURIComponent(val))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
@@ -975,7 +937,7 @@ if (!isset($_SESSION['user_id'])) {
                         return;
                     }
 
-                    fetch('admin/api_customers.php?phone=' + encodeURIComponent(val))
+                    fetch('./admin/api_customers.php?phone=' + encodeURIComponent(val))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;

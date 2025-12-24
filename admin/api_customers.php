@@ -52,12 +52,6 @@ if ($q) {
     exit;
 }
 
-// If no specific query, return recent vehicles
-$stmt = $pdo->query('SELECT v.id, c.full_name, c.phone, v.plate_number, v.car_mark, v.vin, v.mileage FROM customers c JOIN vehicles v ON c.id = v.customer_id ORDER BY v.created_at DESC LIMIT 20');
-$rows = $stmt->fetchAll();
-echo json_encode($rows);
-exit;
-
 $customer_q = $_GET['customer_q'] ?? null;
 
 if ($customer_q) {
