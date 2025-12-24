@@ -42,28 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     if (!empty($oil_post_entries)) error_log("save_invoice: raw POST oil entries: " . json_encode($oil_post_entries) . "\n");
 
-    // If no per-field oil_* entries were provided, but a JSON fallback exists, decode it and use that
-    if (empty($oil_post_entries) && !empty($data['hidden_oils_json'])) {
-        $decoded = json_decode($data['hidden_oils_json'], true);
-        if (is_array($decoded)) {
-            error_log("save_invoice: using hidden_oils_json fallback with " . count($decoded) . " items\n");
-            foreach ($decoded as $i => $o) {
-                $brand_id = isset($o['brand_id']) ? (int)$o['brand_id'] : '';
-                $viscosity_id = isset($o['viscosity_id']) ? (int)$o['viscosity_id'] : '';
-                $package_type = isset($o['package_type']) ? $o['package_type'] : '';
-                $qty = isset($o['qty']) && is_numeric($o['qty']) ? max(1, (int)$o['qty']) : 1;
-                $discount = isset($o['discount']) && is_numeric($o['discount']) ? floatval($o['discount']) : 0.0;
-                if ($brand_id && $viscosity_id && $package_type) {
-                    $oils[] = ['brand_id' => $brand_id, 'viscosity_id' => $viscosity_id, 'package_type' => $package_type, 'qty' => $qty, 'discount' => $discount];
-                } else {
-                    error_log("save_invoice: skipping incomplete fallback oil index {$i}: " . json_encode($o) . "\n");
-                }
-            }
-        } else {
-            error_log("save_invoice: hidden_oils_json exists but failed to decode: " . substr($data['hidden_oils_json'],0,200) . "\n");
-        }
-    }
-
     for ($i = 0; isset($data["oil_brand_$i"]); $i++) {
         $brand_id = trim($data["oil_brand_$i"] ?? '');
         $viscosity_id = trim($data["oil_viscosity_$i"] ?? '');
@@ -90,29 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // DEBUG: log raw oil data
     error_log("save_invoice: raw processed oils: " . json_encode($oils) . "\n");
-
-    // If a JSON fallback exists as well, merge it in (helps when some clients send JSON instead of per-field entries)
-    if (!empty($data['hidden_oils_json'])) {
-        $decoded = json_decode($data['hidden_oils_json'], true);
-        if (is_array($decoded)) {
-            error_log("save_invoice: merging hidden_oils_json fallback with " . count($decoded) . " items\n");
-            foreach ($decoded as $di => $do) {
-                $b = isset($do['brand_id']) ? (int)$do['brand_id'] : null;
-                $v = isset($do['viscosity_id']) ? (int)$do['viscosity_id'] : null;
-                $p = isset($do['package_type']) ? $do['package_type'] : '';
-                $q = isset($do['qty']) && is_numeric($do['qty']) ? max(1, (int)$do['qty']) : 1;
-                $disc = isset($do['discount']) && is_numeric($do['discount']) ? floatval($do['discount']) : 0.0;
-                if ($b && $v && $p !== '') {
-                    $oils[] = ['brand_id' => $b, 'viscosity_id' => $v, 'package_type' => $p, 'qty' => $q, 'discount' => $disc];
-                } else {
-                    error_log("save_invoice: skipping invalid entry in hidden_oils_json index {$di}: " . json_encode($do) . "\n");
-                }
-            }
-            error_log("save_invoice: combined oils before normalization: " . json_encode($oils) . "\n");
-        } else {
-            error_log("save_invoice: hidden_oils_json failed to decode or not an array: " . substr($data['hidden_oils_json'],0,200) . "\n");
-        }
-    }
 
     // Normalize / deduplicate oils by brand + viscosity + package + discount (sum qtys)
     $normalized = [];
