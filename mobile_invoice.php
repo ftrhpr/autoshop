@@ -457,7 +457,10 @@ if (!isset($_SESSION['user_id'])) {
     </div>
 
     <div class="mobile-container">
-        <header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; text-align: center;">
+        <header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; text-align: center; position: relative;">
+            <a href="manager.php" class="absolute top-4 right-4 text-white text-xl p-2 rounded-full hover:bg-white/20 transition-colors">
+                <i class="fas fa-list-ul"></i>
+            </a>
             <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
                 <i class="fas fa-file-invoice-dollar mr-2"></i>
                 Mobile Invoice Creator

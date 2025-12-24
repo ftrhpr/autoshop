@@ -11,6 +11,18 @@ $currentDate = date('Y-m-d\TH:i');
 
 require 'config.php';
 
+// Detect mobile device and redirect to mobile-friendly page
+function isMobileDevice() {
+    return preg_match("/(android|avantgo|blackberry|bolt|boost|cricket|docomo|fone|hiptop|mini|mobi|palm|phone|pie|tablet|up\.browser|up\.link|webos|wos)/i", $_SERVER["HTTP_USER_AGENT"]);
+}
+
+// If mobile, and not editing/printing an existing invoice, redirect to mobile version
+if (isMobileDevice() && !isset($_GET['edit_id']) && !isset($_GET['print_id'])) {
+    header('Location: mobile_invoice.php');
+    exit;
+}
+
+
 if (!isset($_SESSION['user_id'])) {
     // For debugging, show a simple error instead of redirect
     if (isset($_GET['debug'])) {
@@ -2044,7 +2056,6 @@ if (!empty($serverInvoice)) {
             </div>
         </div>
     </div>
-
 
 
 </body>
