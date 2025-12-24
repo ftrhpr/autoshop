@@ -245,7 +245,59 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Ensure invoice items that reference DB entries exist in the parts/labors tables; if not, create them and attach vehicle make/model
     $vehicleMake = trim($data['car_mark'] ?? '');
-    $created_items = [];
+    // Ensure item_price_usage table exists to track historical price usage (used for suggesting most frequently used price)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS item_price_usage (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        item_type VARCHAR(10) NOT NULL,
+        item_id INT NOT NULL,
+        vehicle_make_model VARCHAR(255) DEFAULT NULL,
+        price DECIMAL(12,2) NOT NULL,
+        usage_count INT NOT NULL DEFAULT 0,
+        last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY u_item_vehicle_price (item_type, item_id, vehicle_make_model, price)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Helper: find most-used price for an item + vehicle (falls back to null if not found)
+    $findVehiclePriceUsage = function($itemType, $itemId, $vehicleStr) use ($pdo) {
+        $vLower = strtolower(trim($vehicleStr));
+        if ($vLower === '') return false;
+
+        // Exact match first
+        $up = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+        $up->execute([$itemType, $itemId, $vLower]);
+        $r = $up->fetch(PDO::FETCH_ASSOC);
+        if ($r) return $r;
+
+        // Containing full string
+        $up2 = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+        $up2->execute([$itemType, $itemId, "%{$vLower}%"]);
+        $r = $up2->fetch(PDO::FETCH_ASSOC);
+        if ($r) return $r;
+
+        // Token OR matching
+        $tokens = preg_split('/\s+/', $vLower);
+        foreach ($tokens as $t) {
+            $t = trim($t); if ($t === '') continue;
+            $upTok = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+            $upTok->execute([$itemType, $itemId, "%{$t}%"]);
+            $r = $upTok->fetch(PDO::FETCH_ASSOC);
+            if ($r) return $r;
+        }
+
+        // Token AND matching
+        $ands = [];
+        $params = [$itemType, $itemId];
+        foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+        if (!empty($ands)) {
+            $sql = 'SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY usage_count DESC, last_used_at DESC LIMIT 1';
+            $s2 = $pdo->prepare($sql);
+            $s2->execute($params);
+            $r = $s2->fetch(PDO::FETCH_ASSOC);
+            if ($r) return $r;
+        }
+
+        return false;
+    };    $created_items = [];
     foreach ($items as $idx => &$it) {
         $name = trim($it['name'] ?? '');
         if ($name === '') continue;
@@ -270,13 +322,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (empty($it['price_svc']) && $it['db_type'] === 'labor') $it['price_svc'] = $defaultPrice;
 
             if ($vehicleMake !== '') {
-                // Smart lookup for vehicle price
+                // Smart lookup for vehicle price - prefer most-used historical price first
                 $pv = false;
                 $vLower = strtolower(trim($vehicleMake));
 
-                $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
-                $pvStmt->execute([$it['db_type'], $it['db_id'], $vLower]);
-                $pv = $pvStmt->fetch();
+n                // Try historical usage-derived price first (if any)
+                if (is_callable($findVehiclePriceUsage)) {
+                    $pv = $findVehiclePriceUsage($it['db_type'], $it['db_id'], $vehicleMake);
+                    if ($pv) {
+                        if (empty($it[$priceField]) || floatval($it[$priceField]) == floatval($pv['price'])) {
+                            $it[$priceField] = $pv['price'];
+                            $it['db_vehicle'] = $pv['vehicle_make_model'];
+                        } // else: invoice overrides historical suggestion and will update/create item_prices below
+                    }
+                }
+
+n                // Fallback to configured per-vehicle item_prices if no historical suggestion found
+                if (!$pv) {
+                    $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
+                    $pvStmt->execute([$it['db_type'], $it['db_id'], $vLower]);
+                    $pv = $pvStmt->fetch();
 
                 if (!$pv) {
                     $pvStmt2 = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1');
@@ -358,13 +423,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // If vehicle provided, check item_prices for existing vehicle price and use it; otherwise, if invoice contains price, create price entry
                     if ($vehicleMake !== '') {
-                        // Smart lookup: try exact match first, then token-based matching (e.g., 'Corolla' matches 'Toyota Corolla')
+                        // Smart lookup: try historical most-used price first, then exact/token matching against item_prices
                         $pv = false;
                         $vLower = strtolower(trim($vehicleMake));
 
-                        $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
-                        $pvStmt->execute(['part', $it['db_id'], $vLower]);
-                        $pv = $pvStmt->fetch();
+n                        if (is_callable($findVehiclePriceUsage)) {
+                            $pv = $findVehiclePriceUsage('part', $it['db_id'], $vehicleMake);
+                            if ($pv) {
+                                if (empty($it['price_part']) || floatval($it['price_part']) == floatval($pv['price'])) {
+                                    $it['price_part'] = $pv['price'];
+                                    $it['db_vehicle'] = $pv['vehicle_make_model'];
+                                }
+                            }
+                        }
+
+                        if (!$pv) {
+                            $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
+                            $pvStmt->execute(['part', $it['db_id'], $vLower]);
+                            $pv = $pvStmt->fetch();
 
                         if (!$pv) {
                             // Try containing full string
@@ -504,13 +580,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // vehicle-specific price logic
                     if ($vehicleMake !== '') {
-                        // Smart lookup: try exact match first, then token-based matching (e.g., 'Corolla' matches 'Toyota Corolla')
+                        // Smart lookup: try historical most-used price first, then exact/token matching against item_prices
                         $pv = false;
                         $vLower = strtolower(trim($vehicleMake));
 
-                        $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
-                        $pvStmt->execute(['labor', $it['db_id'], $vLower]);
-                        $pv = $pvStmt->fetch();
+n                        if (is_callable($findVehiclePriceUsage)) {
+                            $pv = $findVehiclePriceUsage('labor', $it['db_id'], $vehicleMake);
+                            if ($pv) {
+                                if (empty($it['price_svc']) || floatval($it['price_svc']) == floatval($pv['price'])) {
+                                    $it['price_svc'] = $pv['price'];
+                                    $it['db_vehicle'] = $pv['vehicle_make_model'];
+                                }
+                            }
+                        }
+
+n                        if (!$pv) {
+                            // Smart lookup: try exact match first, then token-based matching (e.g., 'Corolla' matches 'Toyota Corolla')
+                            $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
+                            $pvStmt->execute(['labor', $it['db_id'], $vLower]);
+                            $pv = $pvStmt->fetch();
 
                         if (!$pv) {
                             // Try containing full string
@@ -883,6 +971,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
     }
+    // Record historical usage of prices for items (increment most-used counts)
+    try {
+        foreach ($items as $it) {
+            if (empty($it['db_id']) || empty($it['db_type'])) continue;
+            $priceField = $it['db_type'] === 'part' ? 'price_part' : 'price_svc';
+            $priceVal = isset($it[$priceField]) ? floatval($it[$priceField]) : 0.0;
+            if ($priceVal <= 0) continue;
+
+            // Prefer attached db_vehicle if present, otherwise use invoice vehicleMake (can be blank/null)
+            $vehicleCanonical = !empty($it['db_vehicle']) ? trim($it['db_vehicle']) : ($vehicleMake !== '' ? trim($vehicleMake) : null);
+
+            $up = $pdo->prepare("INSERT INTO item_price_usage (item_type, item_id, vehicle_make_model, price, usage_count, last_used_at) VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE usage_count = usage_count + 1, last_used_at = CURRENT_TIMESTAMP");
+            $up->execute([$it['db_type'], $it['db_id'], $vehicleCanonical, $priceVal]);
+        }
+    } catch (Exception $e) {
+        error_log('save_invoice: failed to update item_price_usage: ' . $e->getMessage());
+    }
+
     if (!empty($_FILES['images'])) {
         $uploaded = $_FILES['images'];
         $stored = [];

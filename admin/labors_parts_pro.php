@@ -198,6 +198,7 @@ function pageUrl($type,$p,$q){ return "labors_parts_pro.php?type={$type}&page={$
             <a href="labors_parts_pro.php?type=part" class="px-3 py-2 bg-blue-600 text-white rounded">Parts</a>
             <a href="labors_parts_pro.php?type=labor" class="px-3 py-2 bg-blue-600 text-white rounded">Labors</a>
             <a href="labors_parts_pro.php?type=oil" class="px-3 py-2 bg-green-600 text-white rounded">Oils</a>
+            <a href="item_price_usage.php" class="px-3 py-2 bg-indigo-600 text-white rounded">Price Usage</a>
         </div>
     </div>
 

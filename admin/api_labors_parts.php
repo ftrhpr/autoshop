@@ -8,6 +8,23 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'mana
     exit;
 }
 
+// Ensure item_price_usage table exists (safe idempotent operation)
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS item_price_usage (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        item_type VARCHAR(10) NOT NULL,
+        item_id INT NOT NULL,
+        vehicle_make_model VARCHAR(255) DEFAULT NULL,
+        price DECIMAL(12,2) NOT NULL,
+        usage_count INT NOT NULL DEFAULT 0,
+        last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY u_item_vehicle_price (item_type, item_id, vehicle_make_model, price)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (Exception $e) {
+    // if table creation fails, we continue - usage suggestions will gracefully fallback
+    error_log('api_labors_parts: item_price_usage table check/create failed: ' . $e->getMessage());
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 try {
     if ($method === 'GET') {
@@ -47,6 +64,25 @@ try {
             exit;
         }
 
+        // Usage list for an item: ?action=usage_list&item_id=123&item_type=part|labor
+        if ($action === 'usage_list' && !empty($_GET['item_id'])) {
+            $itemId = (int)$_GET['item_id'];
+            $itemType = in_array($_GET['item_type'] ?? '', ['part','labor']) ? $_GET['item_type'] : null;
+            if (!$itemType) {
+                $stmt = $pdo->prepare("SELECT 'part' AS type FROM parts WHERE id = ? UNION SELECT 'labor' AS type FROM labors WHERE id = ? LIMIT 1");
+                $stmt->execute([$itemId, $itemId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row) $itemType = $row['type'];
+            }
+            if (!$itemType) { echo json_encode(['success' => true, 'data' => []]); exit; }
+            $ps = $pdo->prepare('SELECT id, vehicle_make_model, price, usage_count, last_used_at FROM item_price_usage WHERE item_type = ? AND item_id = ? ORDER BY usage_count DESC, last_used_at DESC');
+            $ps->execute([$itemType, $itemId]);
+            $rows = $ps->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $pdo->prepare('SELECT name FROM ' . ($itemType === 'part' ? 'parts' : 'labors') . ' WHERE id = ? LIMIT 1'); $stmt->execute([$itemId]); $it = $stmt->fetch(PDO::FETCH_ASSOC);
+            echo json_encode(['success' => true, 'data' => $rows, 'item' => $it]);
+            exit;
+        }
+
         // Autocomplete suggestions: ?q=term&vehicle=Make%20Model
         $q = trim($_GET['q'] ?? '');
         $vehicle = trim($_GET['vehicle'] ?? '');
@@ -83,14 +119,82 @@ try {
                 // Helper closure to find best vehicle price using smart matching
                 $findVehiclePrice = function($itemType, $itemId, $vehicleStr) use ($pdo) {
                     $vLower = strtolower(trim($vehicleStr));
-                    // Exact match
+
+                    // 1) Look into historical usage first (most frequently used price for that item + vehicle)
+                    if ($vLower !== '') {
+                        // Exact match, prefer highest usage_count
+                        $up = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+                        $up->execute([$itemType, $itemId, $vLower]);
+                        $r = $up->fetch(PDO::FETCH_ASSOC);
+                        if ($r) { $r['source'] = 'usage_vehicle'; return $r; }
+
+                        // Containing full string, prefer highest usage_count
+                        $up2 = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+                        $up2->execute([$itemType, $itemId, "%{$vLower}%"]);
+                        $r = $up2->fetch(PDO::FETCH_ASSOC);
+                        if ($r) { $r['source'] = 'usage_vehicle'; return $r; }
+
+                        // Token OR matching: check usage rows containing any token
+                        $tokens = preg_split('/\s+/', $vLower);
+                        foreach ($tokens as $t) {
+                            $t = trim($t); if ($t === '') continue;
+                            $upTok = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+                            $upTok->execute([$itemType, $itemId, "%{$t}%"]);
+                            $r = $upTok->fetch(PDO::FETCH_ASSOC);
+                            if ($r) { $r['source'] = 'usage_vehicle'; return $r; }
+                        }
+
+                        // Token AND matching (all tokens present)
+                        $ands = [];
+                        $params = [$itemType, $itemId];
+                        foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                        if (!empty($ands)) {
+                            $sql = 'SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY usage_count DESC, last_used_at DESC LIMIT 1';
+                            $s2 = $pdo->prepare($sql);
+                            $s2->execute($params);
+                            $r = $s2->fetch(PDO::FETCH_ASSOC);
+                            if ($r) return $r;
+                        }
+                    }
+
+                    // 2) Fall back to configured item_prices (existing behavior)
                     $s = $pdo->prepare("SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1");
                     $s->execute([$itemType, $itemId, $vLower]);
                     $row = $s->fetch(PDO::FETCH_ASSOC);
-                    if ($row) return $row;
+                    if ($row) { $row['source'] = 'item_price'; return $row; }
                     // Containing full string
                     $s = $pdo->prepare("SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1");
                     $s->execute([$itemType, $itemId, "%{$vLower}%"]);
+                    $row = $s->fetch(PDO::FETCH_ASSOC);
+                    if ($row) { $row['source'] = 'item_price'; return $row; }
+                    // Token OR matching: check if any token from typed value matches stored vehicle (e.g., typed 'Audi Q5' matches stored 'Q5')
+                    $tokens = preg_split('/\s+/', $vLower);
+                    foreach ($tokens as $t) {
+                        $t = trim($t); if ($t === '') continue;
+                        $s = $pdo->prepare("SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) LIKE ? ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1");
+                        $s->execute([$itemType, $itemId, "%{$t}%"]);
+                        $row = $s->fetch(PDO::FETCH_ASSOC);
+                        if ($row) return $row;
+                    }
+                    // Token AND matching (all words present)
+                    $ands = [];
+                    $params = [$itemType, $itemId];
+                    foreach ($tokens as $t) { if (trim($t) === '') continue; $ands[] = 'LOWER(vehicle_make_model) LIKE ?'; $params[] = "%{$t}%"; }
+                    if (!empty($ands)) {
+                        $sql = 'SELECT price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND ' . implode(' AND ', $ands) . ' ORDER BY LENGTH(vehicle_make_model) DESC LIMIT 1';
+                        $s = $pdo->prepare($sql);
+                        $s->execute($params);
+                        $row = $s->fetch(PDO::FETCH_ASSOC);
+                        if ($row) return $row;
+                    }
+
+                    // 3) Aggregate most-used price across vehicles (useful when vehicle isn't specified or no vehicle-specific match)
+                    $agg = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+                    $agg->execute([$itemType, $itemId]);
+                    $ar = $agg->fetch(PDO::FETCH_ASSOC);
+                    if ($ar) { $ar['source'] = 'usage_aggregate'; return $ar; }
+
+                    return false;
                     $row = $s->fetch(PDO::FETCH_ASSOC);
                     if ($row) return $row;
                     // Token OR matching: check if any token from typed value matches stored vehicle (e.g., typed 'Audi Q5' matches stored 'Q5')
@@ -122,9 +226,11 @@ try {
                         $l['suggested_price'] = (float)$pv['price'];
                         $l['has_vehicle_price'] = true;
                         $l['vehicle_make_model'] = $pv['vehicle_make_model'];
+                        $l['suggested_price_source'] = $pv['source'] ?? 'item_price';
                     } else {
                         $l['suggested_price'] = (float)$l['default_price'];
                         $l['has_vehicle_price'] = false;
+                        $l['suggested_price_source'] = 'default';
                     }
                 }
                 unset($l);
@@ -135,15 +241,46 @@ try {
                         $p['suggested_price'] = (float)$pv['price'];
                         $p['has_vehicle_price'] = true;
                         $p['vehicle_make_model'] = $pv['vehicle_make_model'];
+                        $p['suggested_price_source'] = $pv['source'] ?? 'item_price';
                     } else {
                         $p['suggested_price'] = (float)$p['default_price'];
                         $p['has_vehicle_price'] = false;
+                        $p['suggested_price_source'] = 'default';
                     }
                 }
                 unset($p);
             } else {
-                foreach ($labors as &$l) { $l['suggested_price'] = (float)$l['default_price']; $l['has_vehicle_price'] = false; } unset($l);
-                foreach ($parts as &$p) { $p['suggested_price'] = (float)$p['default_price']; $p['has_vehicle_price'] = false; } unset($p);
+                // No vehicle provided — prefer aggregate most-used price across vehicles if available, otherwise default price
+                foreach ($labors as &$l) {
+                    $ps = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+                    $ps->execute(['labor', $l['id']]);
+                    $ar = $ps->fetch(PDO::FETCH_ASSOC);
+                    if ($ar) {
+                        $l['suggested_price'] = (float)$ar['price'];
+                        $l['has_vehicle_price'] = true;
+                        $l['vehicle_make_model'] = $ar['vehicle_make_model'];
+                        $l['suggested_price_source'] = 'usage_aggregate';
+                    } else {
+                        $l['suggested_price'] = (float)$l['default_price'];
+                        $l['has_vehicle_price'] = false;
+                        $l['suggested_price_source'] = 'default';
+                    }
+                } unset($l);
+                foreach ($parts as &$p) {
+                    $ps = $pdo->prepare("SELECT price, vehicle_make_model FROM item_price_usage WHERE item_type = ? AND item_id = ? ORDER BY usage_count DESC, last_used_at DESC LIMIT 1");
+                    $ps->execute(['part', $p['id']]);
+                    $ar = $ps->fetch(PDO::FETCH_ASSOC);
+                    if ($ar) {
+                        $p['suggested_price'] = (float)$ar['price'];
+                        $p['has_vehicle_price'] = true;
+                        $p['vehicle_make_model'] = $ar['vehicle_make_model'];
+                        $p['suggested_price_source'] = 'usage_aggregate';
+                    } else {
+                        $p['suggested_price'] = (float)$p['default_price'];
+                        $p['has_vehicle_price'] = false;
+                        $p['suggested_price_source'] = 'default';
+                    }
+                } unset($p);
             }
 
             $results = array_merge($labors, $parts);
@@ -272,6 +409,28 @@ try {
             $id = (int)($data['id'] ?? 0);
             if ($id <= 0) throw new Exception('Invalid price id');
             $stmt = $pdo->prepare('DELETE FROM item_prices WHERE id = ?');
+            $stmt->execute([$id]);
+            echo json_encode(['success' => true]);
+            exit;
+        }
+
+        // Usage edit: adjust usage_count for a usage row
+        if ($op === 'usage_edit') {
+            $id = (int)($data['id'] ?? 0);
+            $usage_count = max(0, (int)($data['usage_count'] ?? 0));
+            if ($id <= 0) throw new Exception('Invalid usage id');
+            $stmt = $pdo->prepare('UPDATE item_price_usage SET usage_count = ?, last_used_at = CURRENT_TIMESTAMP WHERE id = ?');
+            $stmt->execute([$usage_count, $id]);
+            $row = $pdo->prepare('SELECT * FROM item_price_usage WHERE id = ? LIMIT 1'); $row->execute([$id]);
+            echo json_encode(['success' => true, 'data' => $row->fetch(PDO::FETCH_ASSOC)]);
+            exit;
+        }
+
+        // Usage delete: remove usage row
+        if ($op === 'usage_delete') {
+            $id = (int)($data['id'] ?? 0);
+            if ($id <= 0) throw new Exception('Invalid usage id');
+            $stmt = $pdo->prepare('DELETE FROM item_price_usage WHERE id = ?');
             $stmt->execute([$id]);
             echo json_encode(['success' => true]);
             exit;

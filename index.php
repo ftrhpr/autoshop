@@ -2160,7 +2160,18 @@ if (!empty($serverInvoice)) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
                     div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between items-center';
-                    div.innerHTML = `<div class="flex-1"><div class="font-medium">${suggestion.name}</div><div class="text-xs text-gray-600">${suggestion.description || ''}${suggestion.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${suggestion.vehicle_make_model}</span>` : ''}</div></div><div class="text-right ml-3"><div class="text-sm font-medium text-blue-600">${suggestion.suggested_price > 0 ? suggestion.suggested_price + ' ₾' : ''} ${suggestion.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : (vehicleVal ? '<div class="text-xs text-yellow-700">default price</div>' : '')}</div>` + (vehicleVal ? (suggestion.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : '') + `</div>`;
+                    // Determine label based on suggested_price_source and presence of vehicleVal
+                    let labelHtml = '';
+                    if (vehicleVal) {
+                        if (suggestion.suggested_price_source === 'usage_vehicle') labelHtml = '<div class="text-xs text-indigo-700">Most used (vehicle)</div>';
+                        else if (suggestion.suggested_price_source === 'item_price') labelHtml = '<div class="text-xs text-green-700">Vehicle price</div>';
+                        else if (suggestion.suggested_price_source === 'usage_aggregate') labelHtml = '<div class="text-xs text-indigo-700">Most used (global)</div>';
+                        else labelHtml = '<div class="text-xs text-yellow-700">Default price</div>';
+                    } else {
+                        if (suggestion.suggested_price_source === 'usage_aggregate') labelHtml = '<div class="text-xs text-indigo-700">Most used (global)</div>';
+                        else labelHtml = '';
+                    }
+                    div.innerHTML = `<div class="flex-1"><div class="font-medium">${suggestion.name}</div><div class="text-xs text-gray-600">${suggestion.description || ''}${suggestion.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${suggestion.vehicle_make_model}</span>` : ''}</div></div><div class="text-right ml-3"><div class="text-sm font-medium text-blue-600">${suggestion.suggested_price > 0 ? suggestion.suggested_price + ' ₾' : ''} ${labelHtml}</div></div>`;
                     div.addEventListener('click', () => {
                         input.value = suggestion.name;
                         const row = input.closest('tr');
@@ -2169,13 +2180,16 @@ if (!empty($serverInvoice)) {
                         if (suggestion.id) row.dataset.itemDbId = suggestion.id;
                         if (suggestion.type) row.dataset.itemDbType = suggestion.type;
                         if (suggestion.vehicle_make_model) row.dataset.itemDbVehicle = suggestion.vehicle_make_model;
-                        row.dataset.itemDbPriceSource = suggestion.has_vehicle_price ? 'vehicle' : 'default';
+                        // Map suggested_price_source to legacy server-friendly db price source (vehicle / default)
+                        const src = suggestion.suggested_price_source || (suggestion.has_vehicle_price ? 'item_price' : 'default');
+                        const dbSrc = (src === 'usage_vehicle' || src === 'item_price') ? 'vehicle' : 'default';
+                        row.dataset.itemDbPriceSource = dbSrc;
 
                         // Also set hidden inputs
                         if (suggestion.id) row.querySelector('.item-db-id').value = suggestion.id;
                         if (suggestion.type) row.querySelector('.item-db-type').value = suggestion.type;
                         if (suggestion.vehicle_make_model) row.querySelector('.item-db-vehicle').value = suggestion.vehicle_make_model;
-                        row.querySelector('.item-db-price-source').value = suggestion.has_vehicle_price ? 'vehicle' : 'default';
+                        row.querySelector('.item-db-price-source').value = dbSrc;
 
                         // Fill appropriate price field depending on type
                         const priceToUse = (typeof suggestion.suggested_price !== 'undefined' && suggestion.suggested_price !== null) ? suggestion.suggested_price : suggestion.default_price;
@@ -2195,11 +2209,25 @@ if (!empty($serverInvoice)) {
                         const badgeEl = row.querySelector('.price-source');
                         if (badgeEl) {
                             if (vehicleVal) {
-                                badgeEl.textContent = suggestion.has_vehicle_price ? 'Vehicle price' : 'Default price';
-                                badgeEl.className = suggestion.has_vehicle_price ? 'price-source text-xs text-green-700 mt-1' : 'price-source text-xs text-yellow-700 mt-1';
+                                const src = suggestion.suggested_price_source || (suggestion.has_vehicle_price ? 'item_price' : 'default');
+                                if (src === 'usage_vehicle') {
+                                    badgeEl.textContent = 'Most used (vehicle)';
+                                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
+                                } else if (src === 'item_price') {
+                                    badgeEl.textContent = 'Vehicle price';
+                                    badgeEl.className = 'price-source text-xs text-green-700 mt-1';
+                                } else {
+                                    badgeEl.textContent = 'Default price';
+                                    badgeEl.className = 'price-source text-xs text-yellow-700 mt-1';
+                                }
                             } else {
-                                badgeEl.textContent = '';
-                                badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
+                                if (suggestion.suggested_price_source === 'usage_aggregate') {
+                                    badgeEl.textContent = 'Most used (global)';
+                                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
+                                } else {
+                                    badgeEl.textContent = '';
+                                    badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
+                                }
                             }
                         }
 
@@ -2236,6 +2264,7 @@ if (!empty($serverInvoice)) {
                     // If we have suggestions, annotate text to show whether vehicle-specific price exists
                     currentSuggestions = currentSuggestions.map(s => {
                         s.suggested_price = (typeof s.suggested_price !== 'undefined') ? s.suggested_price : s.default_price;
+                        s.suggested_price_source = s.suggested_price_source || (s.has_vehicle_price ? 'item_price' : 'default');
                         return s;
                     });
                     if (currentInput) {
@@ -2317,20 +2346,30 @@ if (!empty($serverInvoice)) {
                 container.innerHTML = '<p class="text-gray-500 text-center py-4">No items found</p>';
                 return;
             }
-            container.innerHTML = results.map(item => `
-                <div class="border-b border-gray-200 p-3 hover:bg-gray-50 cursor-pointer" data-id="${item.id}" data-name="${item.name.replace(/"/g, '&quot;')}" data-type="${item.type}" data-price="${item.suggested_price || item.default_price || 0}" data-has-vehicle-price="${item.has_vehicle_price?1:0}" data-vehicle="${(item.vehicle_make_model||'').replace(/"/g,'&quot;')}" onclick="selectSearchItem(this)">
+            container.innerHTML = results.map(item => {
+                let labelHtml = '';
+                if (vehicleVal) {
+                    if (item.suggested_price_source === 'usage_vehicle') labelHtml = '<div class="text-xs text-indigo-700">Most used (vehicle)</div>';
+                    else if (item.suggested_price_source === 'item_price') labelHtml = '<div class="text-xs text-green-700">Vehicle price</div>';
+                    else labelHtml = '<div class="text-xs text-yellow-700">Default price</div>';
+                } else {
+                    if (item.suggested_price_source === 'usage_aggregate') labelHtml = '<div class="text-xs text-indigo-700">Most used (global)</div>';
+                    else labelHtml = '';
+                }
+                return `
+                <div class="border-b border-gray-200 p-3 hover:bg-gray-50 cursor-pointer" data-id="${item.id}" data-name="${item.name.replace(/"/g, '&quot;')}" data-type="${item.type}" data-price="${item.suggested_price || item.default_price || 0}" data-has-vehicle-price="${item.has_vehicle_price?1:0}" data-vehicle="${(item.vehicle_make_model||'').replace(/"/g,'&quot;')}" data-source="${item.suggested_price_source || ''}" onclick="selectSearchItem(this)">
                     <div class="flex justify-between items-center">
                         <div>
                             <div class="font-medium">${item.name}</div>
                             <div class="text-sm text-gray-600">${item.description || ''}${item.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${item.vehicle_make_model}</span>` : ''}</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-sm font-medium text-blue-600">${item.suggested_price > 0 ? item.suggested_price + ' ₾' : ''} ${item.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : (vehicleVal ? '<div class="text-xs text-yellow-700">default price</div>' : '')}</div>
+                            <div class="text-sm font-medium text-blue-600">${item.suggested_price > 0 ? item.suggested_price + ' ₾' : ''} ${labelHtml}</div>
                             <div class="text-xs text-gray-500 uppercase">${item.type}</div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function selectSearchItem(element) {
@@ -2340,10 +2379,11 @@ if (!empty($serverInvoice)) {
             const price = parseFloat(element.dataset.price) || 0;
             const vehicle = element.dataset.vehicle || '';
             const hasVehicle = element.dataset.hasVehiclePrice === '1';
-            selectItem(id, name, type, price, vehicle, hasVehicle);
+            const src = element.dataset.source || '';
+            selectItem(id, name, type, price, vehicle, hasVehicle, src);
         }
 
-        function selectItem(id, name, type, price, vehicle, hasVehicle) {
+        function selectItem(id, name, type, price, vehicle, hasVehicle, src) {
             if (currentSearchInput) {
                 currentSearchInput.value = name;
                 const row = currentSearchInput.closest('tr');
@@ -2352,13 +2392,16 @@ if (!empty($serverInvoice)) {
                 if (id) row.dataset.itemDbId = id;
                 if (type) row.dataset.itemDbType = type;
                 if (vehicle) row.dataset.itemDbVehicle = vehicle;
-                row.dataset.itemDbPriceSource = hasVehicle ? 'vehicle' : 'default';
+                // Map src (suggested_price_source) to legacy db price source for server ('vehicle'|'default')
+                const srcVal = src || (hasVehicle ? 'item_price' : 'default');
+                const dbSrc = (srcVal === 'usage_vehicle' || srcVal === 'item_price') ? 'vehicle' : 'default';
+                row.dataset.itemDbPriceSource = dbSrc;
 
-                // Also set hidden inputs
+n                // Also set hidden inputs
                 if (id) row.querySelector('.item-db-id').value = id;
                 if (type) row.querySelector('.item-db-type').value = type;
                 if (vehicle) row.querySelector('.item-db-vehicle').value = vehicle;
-                row.querySelector('.item-db-price-source').value = hasVehicle ? 'vehicle' : 'default';
+                row.querySelector('.item-db-price-source').value = dbSrc;
 
                 // Fill appropriate price field depending on type
                 if (type === 'part') {

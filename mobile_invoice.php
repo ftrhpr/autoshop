@@ -1582,11 +1582,20 @@ foreach ($oilPrices as $price) {
                         return;
                     }
 
+                    // Ensure suggested_price_source exists for each item (fallbacks)
+                    items = items.map(it => { it.suggested_price = (typeof it.suggested_price !== 'undefined') ? it.suggested_price : it.default_price; it.suggested_price_source = it.suggested_price_source || (it.has_vehicle_price ? 'item_price' : 'default'); return it; });
                     box.innerHTML = items.map(item => {
                         const carMarkEl2 = document.getElementById('input_car_mark');
                         const vehicleVal = carMarkEl2 && carMarkEl2.value ? carMarkEl2.value.trim() : '';
                         const priceToShow = item.suggested_price > 0 ? item.suggested_price : item.default_price;
-                        const priceIndicator = vehicleVal ? (item.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : ''; 
+                        let priceIndicator = '';
+                        if (vehicleVal) {
+                            if (item.suggested_price_source === 'usage_vehicle') priceIndicator = '<div class="text-xs text-indigo-700">Most used (vehicle)</div>';
+                            else if (item.suggested_price_source === 'item_price') priceIndicator = '<div class="text-xs text-green-700">vehicle price</div>';
+                            else priceIndicator = '<div class="text-xs text-yellow-700">default price</div>';
+                        } else {
+                            if (item.suggested_price_source === 'usage_aggregate') priceIndicator = '<div class="text-xs text-indigo-700">Most used (global)</div>';
+                        }
 
                         return `
                             <div class="suggestion-item" onclick="selectItem(this, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
@@ -1618,7 +1627,10 @@ foreach ($oilPrices as $price) {
             card.querySelector('.item-db-id').value = item.id || '';
             card.querySelector('.item-db-type').value = item.type || '';
             card.querySelector('.item-db-vehicle').value = item.vehicle_make_model || '';
-            card.querySelector('.item-db-price-source').value = item.has_vehicle_price ? 'vehicle' : 'default';
+            // Map suggested source to legacy server price source (vehicle/default)
+            const srcVal = item.suggested_price_source || (item.has_vehicle_price ? 'item_price' : 'default');
+            const dbSrc = (srcVal === 'usage_vehicle' || srcVal === 'item_price') ? 'vehicle' : 'default';
+            card.querySelector('.item-db-price-source').value = dbSrc;
 
             // Fill appropriate price field
             const priceToUse = (typeof item.suggested_price !== 'undefined' && item.suggested_price !== null) ? item.suggested_price : item.default_price;
@@ -1644,11 +1656,25 @@ foreach ($oilPrices as $price) {
 
             const vehicleVal = document.getElementById('input_car_mark').value.trim();
             if (vehicleVal) {
-                badgeEl.textContent = item.has_vehicle_price ? 'Vehicle price' : 'Default price';
-                badgeEl.className = item.has_vehicle_price ? 'price-source text-xs text-green-700 mt-1' : 'price-source text-xs text-yellow-700 mt-1';
+                const src = item.suggested_price_source || (item.has_vehicle_price ? 'item_price' : 'default');
+                if (src === 'usage_vehicle') {
+                    badgeEl.textContent = 'Most used (vehicle)';
+                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
+                } else if (src === 'item_price') {
+                    badgeEl.textContent = 'Vehicle price';
+                    badgeEl.className = 'price-source text-xs text-green-700 mt-1';
+                } else {
+                    badgeEl.textContent = 'Default price';
+                    badgeEl.className = 'price-source text-xs text-yellow-700 mt-1';
+                }
             } else {
-                badgeEl.textContent = '';
-                badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
+                if (item.suggested_price_source === 'usage_aggregate') {
+                    badgeEl.textContent = 'Most used (global)';
+                    badgeEl.className = 'price-source text-xs text-indigo-700 mt-1';
+                } else {
+                    badgeEl.textContent = '';
+                    badgeEl.className = 'price-source text-xs text-gray-500 mt-1';
+                }
             }
 
             el.closest('.suggestions-box').style.display = 'none';

@@ -25,6 +25,11 @@
             <p>Adds a column to track whether invoices have been opened in FINA system.</p>
             <button onclick="runMigration('fina')">Run Migration</button>
         </div>
+        <div class="migration pending" id="item-price-usage-migration">
+            <h3>Create item_price_usage table</h3>
+            <p>Creates a table to track most-used prices per item and vehicle for smarter price suggestions.</p>
+            <button onclick="runMigration('item_price_usage')">Run Migration</button>
+        </div>
     </div>
 
     <div id="results"></div>
@@ -41,6 +46,8 @@
                 let response;
                 if (type === 'fina') {
                     response = await fetch('migrate_add_fina_status.php');
+                } else if (type === 'item_price_usage') {
+                    response = await fetch('migrate_create_item_price_usage.php');
                 }
 
                 if (response.ok) {
