@@ -721,10 +721,6 @@ if (!empty($serverInvoice)) {
                 input.dataset.typeaheadAttached = '1';
             });
 
-                    }
-                });
-            }
-
             // Attach plate number typeahead
             const pn = document.getElementById('input_plate_number');
             if (pn) {
