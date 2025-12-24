@@ -1592,8 +1592,8 @@ foreach ($oilPrices as $price) {
                     }
 
                     // Ensure suggested_price_source exists for each item (fallbacks)
-                    items = items.map(it => { it.suggested_price = (typeof it.suggested_price !== 'undefined') ? it.suggested_price : it.default_price; it.suggested_price_source = it.suggested_price_source || (it.has_vehicle_price ? 'item_price' : 'default'); return it; });
-                    box.innerHTML = items.map(item => {
+                    const processedItems = items.map(it => { it.suggested_price = (typeof it.suggested_price !== 'undefined') ? it.suggested_price : it.default_price; it.suggested_price_source = it.suggested_price_source || (it.has_vehicle_price ? 'item_price' : 'default'); return it; });
+                    box.innerHTML = processedItems.map(item => {
                         const carMarkEl2 = document.getElementById('input_car_mark');
                         const vehicleVal = carMarkEl2 && carMarkEl2.value ? carMarkEl2.value.trim() : '';
                         const priceToShow = item.suggested_price > 0 ? item.suggested_price : item.default_price;
@@ -1607,7 +1607,7 @@ foreach ($oilPrices as $price) {
                         }
 
                         return `
-                            <div class="suggestion-item" onclick="selectItem(this, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                            <div class="suggestion-item">
                                 <div class="flex justify-between items-start">
                                     <div class="flex-1">
                                         <div class="font-medium text-sm">${item.name}</div>
@@ -1622,6 +1622,14 @@ foreach ($oilPrices as $price) {
                         `;
                     }).join('');
                     box.style.display = 'block';
+
+                    // Add click handlers
+                    box.querySelectorAll('.suggestion-item').forEach((el, index) => {
+                        el.addEventListener('click', () => {
+                            selectItem(el, processedItems[index]);
+                            box.style.display = 'none';
+                        });
+                    });
                 })
                 .catch(() => box.style.display = 'none');
         }
