@@ -56,8 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Normalize / deduplicate oils by brand + viscosity + package + discount (sum qtys)
     $normalized = [];
+    $raw_qty_map = [];
     foreach ($oils as $o) {
+        // Ensure qty is integer and at least 1 (defensive)
+        $o['qty'] = isset($o['qty']) ? max(1, (int)$o['qty']) : 1;
         $key = $o['brand_id'] . '_' . $o['viscosity_id'] . '_' . $o['package_type'] . '_' . $o['discount'];
+        if (!isset($raw_qty_map[$key])) $raw_qty_map[$key] = [];
+        $raw_qty_map[$key][] = $o['qty'];
+
         if (isset($normalized[$key])) {
             $normalized[$key]['qty'] += $o['qty'];
         } else {
@@ -65,6 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
     $oils = array_values($normalized);
+
+    // Additional sanity checks: if any normalized qty doesn't match sum of raw quantities, log warning
+    foreach ($oils as $k => $no) {
+        $key = $no['brand_id'] . '_' . $no['viscosity_id'] . '_' . $no['package_type'] . '_' . $no['discount'];
+        $sum = array_sum($raw_qty_map[$key] ?? []);
+        if ($sum !== (int)$no['qty']) {
+            error_log("save_invoice: WARNING: normalized qty mismatch for key={$key}: expected_sum={$sum} normalized_saved={$no['qty']} raw_list=" . json_encode($raw_qty_map[$key] ?? []) . "\n");
+        }
+    }
+
     error_log("save_invoice: normalized oils to save: " . json_encode($oils) . "\n");
 
     // Handle vehicle - find or create for existing customer
