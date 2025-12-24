@@ -10,19 +10,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = $_POST;
     $existing_id = isset($data['existing_invoice_id']) ? (int)$data['existing_invoice_id'] : null;
 
-    // Process items
+    // Basic server-side validation & sanitization
+    $errors = [];
+    $data['creation_date'] = trim($data['creation_date'] ?? '');
+    $data['customer_name'] = trim($data['customer_name'] ?? '');
+    $data['phone_number'] = trim($data['phone_number'] ?? '');
+    $data['plate_number'] = strtoupper(trim($data['plate_number'] ?? ''));
+    $data['car_mark'] = trim($data['car_mark'] ?? '');
+    $data['vin'] = trim($data['vin'] ?? '');
+    $data['mileage'] = trim($data['mileage'] ?? '');
+
+    if ($data['customer_name'] === '' && $data['plate_number'] === '') {
+        throw new Exception('Please provide a customer name or plate number.');
+    }
+
+    // Validate numeric totals if provided
+    if (isset($data['parts_total']) && !is_numeric($data['parts_total'])) $errors[] = 'Invalid parts total';
+    if (isset($data['service_total']) && !is_numeric($data['service_total'])) $errors[] = 'Invalid service total';
+    if (isset($data['grand_total']) && !is_numeric($data['grand_total'])) $errors[] = 'Invalid grand total';
+
+    // Gather items with validation
     $items = [];
     for ($i = 0; isset($data["item_name_$i"]); $i++) {
         $name = trim($data["item_name_$i"] ?? '');
         if ($name !== '') {
+            $qty = isset($data["item_qty_$i"]) ? (float)$data["item_qty_$i"] : 1;
+            $price_part = isset($data["item_price_part_$i"]) ? (float)$data["item_price_part_$i"] : 0.0;
+            $price_svc = isset($data["item_price_svc_$i"]) ? (float)$data["item_price_svc_$i"] : 0.0;
+            $discount_part = isset($data["item_discount_part_$i"]) ? floatval($data["item_discount_part_$i"]) : 0.0;
+            $discount_svc = isset($data["item_discount_svc_$i"]) ? floatval($data["item_discount_svc_$i"]) : 0.0;
+
+            // Basic sanitization and constraints
+            if ($qty <= 0) $qty = 1;
+            if ($price_part < 0) $price_part = 0.0;
+            if ($price_svc < 0) $price_svc = 0.0;
+            $discount_part = max(0, min(100, $discount_part));
+            $discount_svc = max(0, min(100, $discount_svc));
+
             $items[] = [
                 'name' => $name,
-                'qty' => $data["item_qty_$i"],
-                        'price_part' => $data["item_price_part_$i"],
-                'discount_part' => isset($data["item_discount_part_$i"]) ? floatval($data["item_discount_part_$i"]) : 0.0,
-                'price_svc' => $data["item_price_svc_$i"],
-                'discount_svc' => isset($data["item_discount_svc_$i"]) ? floatval($data["item_discount_svc_$i"]) : 0.0,
-                'tech' => $data["item_tech_$i"],
+                'qty' => $qty,
+                'price_part' => $price_part,
+                'discount_part' => $discount_part,
+                'price_svc' => $price_svc,
+                'discount_svc' => $discount_svc,
+                'tech' => trim($data["item_tech_$i"] ?? ''),
                 'tech_id' => isset($data["item_tech_id_$i"]) ? (int)$data["item_tech_id_$i"] : null,
                 // optional matched DB info from autocomplete
                 'db_id' => isset($data["item_db_id_$i"]) ? (int)$data["item_db_id_$i"] : null,
@@ -31,6 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'db_price_source' => isset($data["item_db_price_source_$i"]) ? $data["item_db_price_source_$i"] : null,
             ];
         }
+    }
+
+    if (!empty($errors)) {
+        throw new Exception(implode('; ', $errors));
     }
 
     // Handle vehicle - find or create for existing customer
