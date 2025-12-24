@@ -446,6 +446,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
                             $pvStmt->execute(['part', $it['db_id'], $vLower]);
                             $pv = $pvStmt->fetch();
+                        }
 
                         if (!$pv) {
                             // Try containing full string
@@ -604,6 +605,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $pvStmt = $pdo->prepare('SELECT id, price, vehicle_make_model FROM item_prices WHERE item_type = ? AND item_id = ? AND LOWER(vehicle_make_model) = ? LIMIT 1');
                             $pvStmt->execute(['labor', $it['db_id'], $vLower]);
                             $pv = $pvStmt->fetch();
+                        }
 
                         if (!$pv) {
                             // Try containing full string
