@@ -81,7 +81,14 @@ function esc($s){ return htmlspecialchars((string)$s); }
 
                 <div class="font-bold whitespace-nowrap">გარბენი:</div>
                 <?php if ($server): ?>
-                    <div class="border-b border-black px-2 h-6 flex items-center"><?php echo esc($invoice['mileage']); ?></div>
+                    <?php
+                    $mileage = $invoice['mileage'];
+                    // If mileage is just a number, assume km for backward compatibility
+                    if ($mileage && is_numeric($mileage)) {
+                        $mileage .= ' km';
+                    }
+                    ?>
+                    <div class="border-b border-black px-2 h-6 flex items-center"><?php echo esc($mileage); ?></div>
                 <?php else: ?>
                     <div class="border-b border-black px-2 h-6 flex items-center" id="out_mileage"></div>
                 <?php endif; ?>
