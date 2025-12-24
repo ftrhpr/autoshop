@@ -1994,6 +1994,24 @@ if (!empty($serverInvoice)) {
                     index++;
                 }
             });
+
+            // Add hidden for oils
+            let oilIndex = 0;
+            document.querySelectorAll('.oil-row').forEach(row => {
+                let brandId = row.querySelector('.oil-brand').value;
+                let viscosityId = row.querySelector('.oil-viscosity').value;
+                let packageType = row.querySelector('.oil-package').value;
+                
+                if (brandId && viscosityId && packageType) {
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_brand_${oilIndex}" value="${brandId}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_viscosity_${oilIndex}" value="${viscosityId}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_package_${oilIndex}" value="${packageType}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_qty_${oilIndex}" value="${row.querySelector('.oil-qty').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_discount_${oilIndex}" value="${row.querySelector('.oil-discount').value}">`);
+                    oilIndex++;
+                }
+            });
+
             return true;
         }
 

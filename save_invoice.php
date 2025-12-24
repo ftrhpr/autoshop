@@ -51,6 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    // DEBUG: log oil data
+    error_log("save_invoice: processed oils: " . json_encode($oils) . "\n");
+
     // Handle vehicle - find or create for existing customer
     // DEBUG: log incoming items payload to help diagnose missing-created-items issue
     error_log("save_invoice: raw POST keys: " . json_encode(array_keys($_POST)) . "\n");
@@ -658,6 +661,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     $grandTotal = $partsTotal + $serviceTotal;
 
+    // Calculate oil totals
+    $oilsTotal = 0.00;
+    foreach ($oils as $oil) {
+        // Get oil price from database
+        $stmt = $pdo->prepare("SELECT price FROM oil_prices WHERE brand_id = ? AND viscosity_id = ? AND package_type = ? LIMIT 1");
+        $stmt->execute([$oil['brand_id'], $oil['viscosity_id'], $oil['package_type']]);
+        $priceData = $stmt->fetch();
+        
+        if ($priceData) {
+            $unitPrice = (float)$priceData['price'];
+            $qty = (int)($oil['qty'] ?? 1);
+            $discount = isset($oil['discount']) ? floatval($oil['discount']) : 0.0;
+            $lineTotal = $qty * $unitPrice * max(0, (1 - $discount / 100.0));
+            $oilsTotal += $lineTotal;
+        }
+    }
+
     // Read posted global discounts (if any)
     $parts_discount_percent = isset($data['parts_discount_percent']) ? floatval($data['parts_discount_percent']) : 0.0;
     $service_discount_percent = isset($data['service_discount_percent']) ? floatval($data['service_discount_percent']) : 0.0;
@@ -665,7 +685,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Apply global discounts to calculated totals
     $calcPartsAfterGlobal = $partsTotal * max(0, (1 - $parts_discount_percent / 100.0));
     $calcServiceAfterGlobal = $serviceTotal * max(0, (1 - $service_discount_percent / 100.0));
-    $calcGrandAfterGlobal = $calcPartsAfterGlobal + $calcServiceAfterGlobal;
+    $calcOilsAfterGlobal = $oilsTotal; // Oils don't have global discounts applied
+    $calcGrandAfterGlobal = $calcPartsAfterGlobal + $calcServiceAfterGlobal + $calcOilsAfterGlobal;
 
     // Use calculated values if POST values are empty or invalid
     $providedPartsTotal = isset($data['parts_total']) && is_numeric($data['parts_total']) ? (float)$data['parts_total'] : null;
