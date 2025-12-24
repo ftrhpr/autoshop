@@ -13,7 +13,7 @@
 
 @font-face {
     font-family: 'BPG Arial Caps';
-@import url("//cdn.web-fonts.ge/fonts/bpg-arial-caps/css/bpg-arial-caps.min.css");
+    @import url("//cdn.web-fonts.ge/fonts/bpg-arial-caps/css/bpg-arial-caps.min.css");
 
     font-weight: normal;
     font-style: normal;
