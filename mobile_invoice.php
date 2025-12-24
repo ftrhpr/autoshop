@@ -573,9 +573,9 @@ foreach ($oilPrices as $price) {
         <header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; text-align: center; position: relative;">
             <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
                 <i class="fas fa-file-invoice-dollar mr-2"></i>
-                მობილური ინვოისის შექმნა
+                OTM Invoice v1.0
             </h1>
-            <p style="font-size: 0.9rem; opacity: 0.9;">შექმენით ინვოისები გზაში</p>
+            <p style="font-size: 0.9rem; opacity: 0.9;">გახსენი განაცხადი</p>
         </header>
 
         <!-- Progress Bar -->
