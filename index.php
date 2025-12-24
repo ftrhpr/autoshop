@@ -1381,8 +1381,11 @@ if (!empty($serverInvoice)) {
             const vin = document.getElementById('input_vin').value || 'Not specified';
             const mileage = document.getElementById('input_mileage').value || 'Not specified';
 
-            const totals = calculateTotals();
+            // Get current totals without recalculating to avoid infinite loop
+            const partTotal = parseFloat(document.getElementById('display_parts_total').innerText.replace(' ₾', '')) || 0;
+            const svcTotal = parseFloat(document.getElementById('display_service_total').innerText.replace(' ₾', '')) || 0;
             const oilsTotal = parseFloat(document.getElementById('oils-total').textContent.replace(' ₾', '')) || 0;
+            const grandTotal = parseFloat(document.getElementById('display_grand_total').innerText.replace(' ₾', '')) || 0;
 
             reviewContent.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1405,10 +1408,10 @@ if (!empty($serverInvoice)) {
                     <div class="space-y-4">
                         <h3 class="text-lg font-semibold text-gray-800">Invoice Summary</h3>
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p><strong>Parts Total:</strong> ${totals.partTotal > 0 ? totals.partTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
-                            <p><strong>Service Total:</strong> ${totals.svcTotal > 0 ? totals.svcTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
+                            <p><strong>Parts Total:</strong> ${partTotal > 0 ? partTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
+                            <p><strong>Service Total:</strong> ${svcTotal > 0 ? svcTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
                             ${oilsTotal > 0 ? `<p><strong>Oils Total:</strong> ${oilsTotal.toFixed(2)} ₾</p>` : ''}
-                            <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${(totals.grandTotal + oilsTotal).toFixed(2)} ₾</p>
+                            <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${grandTotal.toFixed(2)} ₾</p>
                         </div>
 
                         <div class="bg-blue-50 p-4 rounded-lg">

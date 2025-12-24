@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Oil Integration Fix</title>
+</head>
+<body>
+    <h1>Testing Oil Integration Fix</h1>
+    <p>The infinite recursion issue has been fixed by removing the circular dependency between <code>calculateTotals()</code> and <code>updateReviewContent()</code>.</p>
+
+    <h2>What was fixed:</h2>
+    <ul>
+        <li><code>updateReviewContent()</code> was calling <code>calculateTotals()</code></li>
+        <li><code>calculateTotals()</code> was calling <code>updateReviewContent()</code></li>
+        <li>This created infinite recursion causing "Maximum call stack size exceeded"</li>
+    </ul>
+
+    <h2>The fix:</h2>
+    <ul>
+        <li>Removed the call to <code>calculateTotals()</code> from <code>updateReviewContent()</code></li>
+        <li><code>updateReviewContent()</code> now reads current totals directly from DOM elements</li>
+        <li><code>calculateTotals()</code> still calls <code>updateReviewContent()</code> to update the review when totals change</li>
+        <li><code>updateOilsTotal()</code> calls <code>updateReviewContent()</code> when oils change</li>
+    </ul>
+
+    <p><strong>Test the fix:</strong> Try creating an invoice with oils in your autoshop system. The JavaScript error should be resolved.</p>
+</body>
+</html>
