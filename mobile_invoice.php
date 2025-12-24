@@ -376,7 +376,6 @@ if (!isset($_SESSION['user_id'])) {
             <input type="hidden" name="plate_number" id="hidden_plate_number">
             <input type="hidden" name="vin" id="hidden_vin">
             <input type="hidden" name="customer_id" id="hidden_customer_id">
-            <input type="hidden" name="vehicle_id" id="hidden_vehicle_id">
             <input type="hidden" name="mileage" id="hidden_mileage">
             <input type="hidden" name="parts_total" id="hidden_parts_total">
             <input type="hidden" name="service_total" id="hidden_service_total">
@@ -837,7 +836,7 @@ if (!isset($_SESSION['user_id'])) {
                     document.getElementById('input_vin').value = item.vin || '';
                     document.getElementById('input_mileage').value = item.mileage || '';
                     document.getElementById('input_vehicle_id').value = item.id || '';
-                    document.getElementById('input_customer_id').value = item.customer_id || '';
+                    document.getElementById('hidden_customer_id').value = item.customer_id || '';
                     // Focus customer name for quick edits
                     document.getElementById('input_customer_name').focus();
                 }
@@ -851,7 +850,7 @@ if (!isset($_SESSION['user_id'])) {
                 (item) => {
                     document.getElementById('input_customer_name').value = item.full_name || '';
                     document.getElementById('input_phone_number').value = item.phone || '';
-                    document.getElementById('input_customer_id').value = item.id;
+                    document.getElementById('hidden_customer_id').value = item.id;
                     // Clear vehicle id
                     document.getElementById('input_vehicle_id').value = '';
 
