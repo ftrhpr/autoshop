@@ -284,10 +284,19 @@ if (!isset($_SESSION['user_id'])) {
             font-size: 0.75rem;
         }
 
-        .fab {
+        .fab-container {
             position: fixed;
             bottom: 1.5rem;
             right: 1.5rem;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 0.75rem;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .fab {
+            position: relative;
             width: 3.5rem;
             height: 3.5rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -301,6 +310,12 @@ if (!isset($_SESSION['user_id'])) {
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
             transition: all 0.2s ease;
             z-index: 100;
+        }
+        .fab.fab-secondary {
+            background: #4b5563;
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.1rem;
         }
 
         .fab:hover {
@@ -458,9 +473,6 @@ if (!isset($_SESSION['user_id'])) {
 
     <div class="mobile-container">
         <header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; text-align: center; position: relative;">
-            <a href="manager.php" class="absolute top-4 right-4 text-white text-xl p-2 rounded-full hover:bg-white/20 transition-colors">
-                <i class="fas fa-list-ul"></i>
-            </a>
             <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
                 <i class="fas fa-file-invoice-dollar mr-2"></i>
                 Mobile Invoice Creator
@@ -499,7 +511,7 @@ if (!isset($_SESSION['user_id'])) {
             <input type="hidden" name="vehicle_id" id="input_vehicle_id">
 
             <!-- Step 1: Vehicle Section -->
-            <div class="form-step" data-step="1">
+            <div class="form-step active-step" data-step="1">
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-car"></i>
@@ -711,9 +723,14 @@ if (!isset($_SESSION['user_id'])) {
         </form>
     </div>
 
-    <!-- Floating Action Button for Quick Add Item -->
-    <div class="fab" onclick="addItem()">
-        <i class="fas fa-plus"></i>
+    <!-- Floating Action Button Group -->
+    <div class="fab-container">
+        <a href="manager.php" class="fab fab-secondary">
+            <i class="fas fa-list-ul"></i>
+        </a>
+        <div class="fab" onclick="addItem()">
+            <i class="fas fa-plus"></i>
+        </div>
     </div>
 
     <!-- Toast Notifications -->
