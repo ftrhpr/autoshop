@@ -300,6 +300,9 @@ $oilPrices = $pdo->query("
                 <?php endif; ?>
                 <input type="hidden" name="creation_date" id="hidden_creation_date">
                 <input type="hidden" name="service_manager" id="hidden_service_manager">
+                <input type="hidden" name="service_manager_id" id="input_service_manager_id">
+                <input type="hidden" name="technician" id="input_technician">
+                <input type="hidden" name="technician_id" id="input_technician_id">
                 <input type="hidden" name="customer_name" id="hidden_customer_name">
                 <input type="hidden" name="phone_number" id="hidden_phone_number">
                 <input type="hidden" name="car_mark" id="hidden_car_mark">
@@ -1479,6 +1482,9 @@ if (!empty($serverInvoice)) {
             }
             document.getElementById('input_service_manager').value = inv.service_manager || inv.service_manager_username || smDefault || '';
             if (document.getElementById('input_service_manager_id')) document.getElementById('input_service_manager_id').value = inv.service_manager_id || '';
+
+            if (document.getElementById('input_technician')) document.getElementById('input_technician').value = inv.technician || '';
+            if (document.getElementById('input_technician_id')) document.getElementById('input_technician_id').value = inv.technician_id || '';
 
             if (inv.customer_name) document.getElementById('input_customer_name').value = inv.customer_name;
             if (inv.phone) document.getElementById('input_phone_number').value = inv.phone;
