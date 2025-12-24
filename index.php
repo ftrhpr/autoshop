@@ -266,9 +266,6 @@ if ($loadId) {
                 <input type="hidden" name="service_total" id="hidden_service_total">
                 <input type="hidden" name="grand_total" id="hidden_grand_total">
                 <input type="hidden" name="print_after_save" id="print_after_save">
-                <!-- Technician selection hidden fields -->
-                <input type="hidden" name="technician" id="hidden_technician">
-                <input type="hidden" name="technician_id" id="hidden_technician_id">
                 <?php if ($serverInvoice): ?>
                 <input type="hidden" name="existing_invoice_id" id="existing_invoice_id" value="<?php echo $serverInvoice['id']; ?>">
                 <?php endif; ?>
@@ -384,10 +381,6 @@ if ($loadId) {
                             </svg>
                             Add Item
                         </button>
-                        <div class="mt-4 mb-4">
-                            <label for="input_technician" class="block text-sm font-medium text-gray-700 mb-2">Invoice Technician</label>
-                            <input type="text" id="input_technician" autocomplete="off" placeholder="Search technician by name..." class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition" aria-autocomplete="list" aria-controls="technician-suggestions">
-                        </div>
 
                         <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="bg-gray-50 p-4 rounded-lg">
@@ -711,18 +704,6 @@ if (!empty($serverInvoice)) {
                     const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = it.car_mark || '';
                     const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = it.mileage || '';
                 });
-
-                // Attach technician typeahead (search backend)
-                const techInput = document.getElementById('input_technician');
-                if (techInput) {
-                    attachTypeahead(techInput, 'api_technicians_search.php?q=', t => t.name, (it) => {
-                        techInput.value = it.name || '';
-                        const h = document.getElementById('hidden_technician'); if (h) h.value = it.name || '';
-                        const hid = document.getElementById('hidden_technician_id'); if (hid) hid.value = it.id || '';
-                    });
-                    // Clear stored technician id when user types custom text to avoid stale ids
-                    techInput.addEventListener('input', ()=>{ const hid = document.getElementById('hidden_technician_id'); if (hid) hid.value = ''; });
-                }
 
                 // Auto-fill on blur if exact plate match
                 pn.addEventListener('blur', () => {
@@ -1350,14 +1331,6 @@ if (!empty($serverInvoice)) {
                 if (it.tech_id) tr.dataset.itemTechId = it.tech_id;
             });
             calculateTotals();
-
-            // Set technician input and hidden fields
-            const techInput = document.getElementById('input_technician');
-            const hTech = document.getElementById('hidden_technician');
-            const hTechId = document.getElementById('hidden_technician_id');
-            if (techInput) {
-                techInput.value = inv.technician || '';
-            }
             if (hTech) hTech.value = inv.technician || '';
             if (hTechId) hTechId.value = inv.technician_id || '';
         }
