@@ -8,6 +8,14 @@ if (!isset($_SESSION['user_id'])) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = $_POST;
+    // Debug: log top-level POST summary
+    error_log('save_invoice: POST count=' . count($data) . ' keys=' . json_encode(array_keys($data)) . "\n");
+    if (isset($data['oils_json'])) {
+        $len = strlen($data['oils_json']);
+        error_log('save_invoice: oils_json present, length=' . $len . ' preview=' . substr($data['oils_json'], 0, 200) . "\n");
+    } else {
+        error_log('save_invoice: oils_json not present in POST' . "\n");
+    }
     $existing_id = isset($data['existing_invoice_id']) ? (int)$data['existing_invoice_id'] : null;
 
     // Process items

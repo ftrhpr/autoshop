@@ -1844,6 +1844,10 @@ foreach ($oilPrices as $price) {
                 jsonInput.className = 'prepared-input';
                 jsonInput.value = JSON.stringify(oilsForJson);
                 form.appendChild(jsonInput);
+                console.log('prepareData (mobile): oilsForJson', oilsForJson);
+                console.log('prepareData (mobile): oils_json length', jsonInput.value.length, 'preview', jsonInput.value.substring(0,200));
+            } else {
+                console.log('prepareData (mobile): no oils present');
             }
 
             return true;

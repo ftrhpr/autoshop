@@ -2064,6 +2064,10 @@ if (!empty($serverInvoice)) {
                 jsonInput.className = 'prepared-input';
                 jsonInput.value = JSON.stringify(oilsForJson);
                 form.appendChild(jsonInput);
+                console.log('prepareData: oilsForJson', oilsForJson);
+                console.log('prepareData: oils_json length', jsonInput.value.length, 'preview', jsonInput.value.substring(0,200));
+            } else {
+                console.log('prepareData: no oils present');
             }
 
             return true;
