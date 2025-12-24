@@ -639,19 +639,39 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                     <div class="price-input">
                         <label class="price-label">Technician</label>
-                        <input type="text" class="input-field item-tech" placeholder="Name" oninput="fetchTechnicianSuggestions(this)">
+                        <input type="text" class="input-field item-tech" placeholder="Name">
                         <div class="suggestions-box" style="display: none;"></div>
                     </div>
                 </div>
 
+                <input type="hidden" class="item-tech-id">
                 <input type="hidden" class="item-db-id">
                 <input type="hidden" class="item-db-type">
                 <input type="hidden" class="item-db-vehicle">
                 <input type="hidden" class="item-db-price-source">
-                <input type="hidden" class="item-tech-id">
             `;
 
             container.appendChild(itemCard);
+
+            // Attach typeahead to the new technician input
+            const techInput = itemCard.querySelector('.item-tech');
+            const techIdInput = itemCard.querySelector('.item-tech-id');
+
+            attachTypeahead(
+                techInput,
+                'api_technicians_search.php?q=',
+                (item) => item.name,
+                (item) => {
+                    techInput.value = item.name;
+                    if (techIdInput) techIdInput.value = item.id;
+                }
+            );
+
+            // Clear tech ID if user types a custom name
+            techInput.addEventListener('input', () => {
+                if (techIdInput) techIdInput.value = '';
+            });
+
             updateProgress();
         }
 
@@ -1011,54 +1031,6 @@ if (!isset($_SESSION['user_id'])) {
             el.closest('.suggestions-box').style.display = 'none';
             calculateTotals();
             updateProgress();
-        }
-
-        // Fetch technician suggestions
-        function fetchTechnicianSuggestions(input) {
-            const query = input.value.trim();
-            const box = input.nextElementSibling;
-
-            if (query.length < 1) {
-                // Show all technicians on focus
-                fetch('./admin/api_technicians.php?action=list')
-                    .then(r => r.json())
-                    .then(data => {
-                        const items = data.technicians || [];
-                        if (Array.isArray(items) && items.length > 0) {
-                            box.innerHTML = items.map(item => `
-                                <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
-                                    ${item.name}
-                                </div>
-                            `).join('');
-                            box.style.display = 'block';
-                        }
-                    });
-                return;
-            }
-
-            fetch(`api_technicians_search.php?q=${encodeURIComponent(query)}`)
-                .then(r => r.json())
-                .then(items => {
-                    if (Array.isArray(items) && items.length > 0) {
-                        box.innerHTML = items.map(item => `
-                            <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
-                                ${item.name}
-                            </div>
-                        `).join('');
-                        box.style.display = 'block';
-                    } else {
-                        box.style.display = 'none';
-                    }
-                })
-                .catch(() => box.style.display = 'none');
-        }
-
-        // Select technician
-        function selectTechnician(el, name, id) {
-            const card = el.closest('.item-card');
-            card.querySelector('.item-tech').value = name;
-            card.querySelector('.item-tech-id').value = id;
-            el.closest('.suggestions-box').style.display = 'none';
         }
 
         // Photo handling
