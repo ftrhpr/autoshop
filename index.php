@@ -1363,8 +1363,6 @@ if (!empty($serverInvoice)) {
                 if (it.tech_id) tr.dataset.itemTechId = it.tech_id;
             });
             calculateTotals();
-            if (hTech) hTech.value = inv.technician || '';
-            if (hTechId) hTechId.value = inv.technician_id || '';
         }
 
         function removeRow(id) {
@@ -1587,9 +1585,10 @@ if (!empty($serverInvoice)) {
             document.getElementById('hidden_service_total').value = serviceTotal.toFixed(2);
             document.getElementById('hidden_grand_total').value = grandTotal.toFixed(2);
 
-            // Copy technician selection into hidden fields (support typeahead input)
+            // Copy technician selection into hidden fields (if present; optional)
             const techInput = document.getElementById('input_technician');
-            document.getElementById('hidden_technician').value = techInput ? techInput.value : '';
+            const hiddenTech = document.getElementById('hidden_technician');
+            if (hiddenTech) hiddenTech.value = techInput ? techInput.value : '';
             // technician_id is set when user selects from suggestions; keep existing value if set
             const hidTechId = document.getElementById('hidden_technician_id');
             if (hidTechId && !hidTechId.value) hidTechId.value = '';
