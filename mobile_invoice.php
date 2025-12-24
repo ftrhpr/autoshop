@@ -939,49 +939,8 @@ foreach ($oilPrices as $price) {
                 });
             });
 
-            // Pre-fill form with serverInvoice data if available
-            <?php if (!empty($serverInvoice)): ?>
-            (function(){
-                const sv = <?php echo json_encode($serverInvoice, JSON_UNESCAPED_UNICODE); ?>;
-                if (sv.plate_number) document.getElementById('input_plate_number').value = sv.plate_number;
-                if (sv.car_mark) document.getElementById('input_car_mark').value = sv.car_mark;
-                if (sv.vin) document.getElementById('input_vin').value = sv.vin;
-                if (sv.mileage) document.getElementById('input_mileage').value = sv.mileage;
-                if (sv.customer_name) document.getElementById('input_customer_name').value = sv.customer_name;
-                if (sv.phone) document.getElementById('input_phone_number').value = sv.phone;
-                if (sv.service_manager) document.getElementById('input_service_manager').value = sv.service_manager;
-                if (sv.service_manager_id) document.getElementById('input_service_manager_id').value = sv.service_manager_id;
-                if (sv.vehicle_id) document.getElementById('input_vehicle_id').value = sv.vehicle_id;
-
-                // Items
-                if (Array.isArray(sv.items)) {
-                    sv.items.forEach(it => addItem(it));
-                }
-
-                // Images
-                if (Array.isArray(sv.images)) {
-                    sv.images.forEach(img => {
-                        try {
-                            const file = new File([img.blob], img.name, { type: img.type });
-                            selectedFiles.push(file);
-                        } catch(e) {
-                            // ignore if File construction fails
-                        }
-                    });
-                    updatePhotoPreview();
-                }
-
-                // Oils
-                if (Array.isArray(sv.oils) && sv.oils.length > 0) {
-                    document.getElementById('oils-container').innerHTML = '';
-                    oilCount = 0;
-                    sv.oils.forEach(o => addOil(o));
-                }
-
-                calculateTotals();
-                updateStep();
-            })();
-            <?php endif; ?>
+            // Pre-fill form with serverInvoice data if available (handled by loadServerInvoice if present)
+            // If a server invoice is provided, loadServerInvoice(window.serverInvoice) will populate fields, items, images and oils.
         });
 
         function updateStep() {
@@ -1970,6 +1929,12 @@ foreach ($oilPrices as $price) {
                     `;
                     preview.appendChild(div);
                 });
+            }
+
+            // Populate oils
+            document.querySelectorAll('.oil-card').forEach(c => c.remove());
+            if (inv.oils && Array.isArray(inv.oils) && inv.oils.length > 0) {
+                inv.oils.forEach(o => addOil(o));
             }
 
             // Populate discounts and calculate totals
