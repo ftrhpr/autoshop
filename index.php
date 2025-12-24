@@ -558,6 +558,16 @@ if (!empty($serverInvoice)) {
         let smDefault = <?php echo json_encode($_SESSION['username'] ?? ''); ?>;
         let smDefaultId = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
 
+        // Function to update image count (defined globally)
+        function updateImageCount() {
+            const imgPreview = document.getElementById('input_images_preview');
+            const imageCount = document.getElementById('image_count');
+            if (imgPreview && imageCount) {
+                const count = imgPreview.querySelectorAll('.relative.inline-block').length;
+                imageCount.textContent = `${count} image${count !== 1 ? 's' : ''}`;
+            }
+        }
+
         // Initialize with 4 rows
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -1160,16 +1170,6 @@ if (!empty($serverInvoice)) {
                 };
 
                 tempInput.click();
-            }
-
-            // Function to update image count
-            function updateImageCount() {
-                const imgPreview = document.getElementById('input_images_preview');
-                const imageCount = document.getElementById('image_count');
-                if (imgPreview && imageCount) {
-                    const count = imgPreview.querySelectorAll('.relative.inline-block').length;
-                    imageCount.textContent = `${count} image${count !== 1 ? 's' : ''}`;
-                }
             }
 
             // If server supplied invoice data, populate and optionally print
@@ -1781,7 +1781,7 @@ if (!empty($serverInvoice)) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
                     div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between items-center';
-                    div.innerHTML = `<div class="flex-1"><div class="font-medium">${suggestion.name}</div><div class="text-xs text-gray-600">${suggestion.description || ''}${suggestion.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${suggestion.vehicle_make_model}</span>` : ''}</div></div><div class="text-right ml-3"><div class="text-sm font-medium text-blue-600">${suggestion.suggested_price > 0 ? suggestion.suggested_price + ' ₾' : ''}</div>` + (vehicleVal ? (suggestion.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : '') + `</div>`;
+                    div.innerHTML = `<div class="flex-1"><div class="font-medium">${suggestion.name}</div><div class="text-xs text-gray-600">${suggestion.description || ''}${suggestion.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${suggestion.vehicle_make_model}</span>` : ''}</div></div><div class="text-right ml-3"><div class="text-sm font-medium text-blue-600">${suggestion.suggested_price > 0 ? suggestion.suggested_price + ' ₾' : ''} ${suggestion.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : (vehicleVal ? '<div class="text-xs text-yellow-700">default price</div>' : '')}</div>` + (vehicleVal ? (suggestion.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : '<div class="text-xs text-yellow-700">default price</div>') : '') + `</div>`;
                     div.addEventListener('click', () => {
                         input.value = suggestion.name;
                         const row = input.closest('tr');
