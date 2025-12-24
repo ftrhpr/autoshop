@@ -2015,6 +2015,7 @@ if (!empty($serverInvoice)) {
 
             // Add hidden for oils (defensive: skip malformed rows)
             let oilIndex = 0;
+            const oilCards = [];
             document.querySelectorAll('.oil-row').forEach(row => {
                 const brandEl = row.querySelector('.oil-brand');
                 const viscosityEl = row.querySelector('.oil-viscosity');
@@ -2040,9 +2041,17 @@ if (!empty($serverInvoice)) {
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_package_${oilIndex}" value="${packageType}">`);
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_qty_${oilIndex}" value="${qtyVal || '1'}">`);
                     form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_discount_${oilIndex}" value="${discountVal || '0'}">`);
+                    oilCards.push({ brand_id: parseInt(brandId)||null, viscosity_id: parseInt(viscosityId)||null, package_type: packageType, qty: parseInt(qtyVal)||1, discount: parseFloat(discountVal)||0 });
                     oilIndex++;
                 }
             });
+
+            // Also include a JSON fallback of the oil list
+            const existingHidden = form.querySelector('input[name="hidden_oils_json"]');
+            if (existingHidden) existingHidden.remove();
+            if (oilCards.length > 0) {
+                form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="hidden_oils_json" value='${JSON.stringify(oilCards)}'>`);
+            }
 
             return true;
         }
