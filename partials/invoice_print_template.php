@@ -140,7 +140,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
     $service_discount_percent = isset($invoice['service_discount_percent']) ? (float)$invoice['service_discount_percent'] : 0.0;
     $computedPartsAfterGlobal = $computedParts * max(0, (1 - $parts_discount_percent / 100.0));
     $computedSvcAfterGlobal = $computedSvc * max(0, (1 - $service_discount_percent / 100.0));
-    $computedGrand = $computedPartsAfterGlobal + $computedSvcAfterGlobal + (isset($oilsTotal) ? $oilsTotal : 0);
+    $computedGrand = $computedPartsAfterGlobal + $computedSvcAfterGlobal;
 endif; ?>
             <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse border border-black min-w-[600px]">
                 <thead>
@@ -197,8 +197,48 @@ endif; ?>
                             echo "</tr>";
                         }
 
+                        // Add oils as service items
+                        if ($server && !empty($oils)) {
+                            foreach ($oils as $oil) {
+                                $brand = trim($oil['brand'] ?? '');
+                                $viscosity = trim($oil['viscosity'] ?? '');
+                                $package = trim($oil['package'] ?? '');
+                                $qty = isset($oil['qty']) ? (float)$oil['qty'] : 0;
+                                $price = isset($oil['price']) ? (float)$oil['price'] : 0;
+                                $discount = isset($oil['discount']) ? (float)$oil['discount'] : 0.0;
+
+                                $oilName = $brand;
+                                if (!empty($viscosity)) $oilName .= ' ' . $viscosity;
+                                if (!empty($package)) $oilName .= ' (' . $package . ')';
+
+                                $lineTotal = $qty * $price * max(0, (1 - $discount / 100.0));
+
+                                $displayQty = $qty;
+                                $displayPPart = ''; // Oils are service items
+                                $displayPartDisc = '';
+                                $displayTotalPart = '';
+                                $displayPSvc = $price > 0 ? number_format($price, 2) : '';
+                                $displaySvcDisc = $discount > 0 ? number_format($discount, 2) . '%' : '';
+                                $displayTotalSvc = $lineTotal > 0 ? number_format($lineTotal, 2) : '';
+                                $displayTech = ''; // No technician for oils
+
+                                echo "<tr>";
+                                echo "<td class=\"border border-black p-0.5 text-center\">" . $i++ . "</td>";
+                                echo "<td class=\"border border-black p-0.5\">" . esc($oilName) . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-center\">" . $displayQty . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPPart . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPartDisc . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalPart . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPSvc . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displaySvcDisc . "</td>";
+                                echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalSvc . "</td>";
+                                echo "<td class=\"border border-black p-0.5\">" . $displayTech . "</td>";
+                                echo "</tr>";
+                            }
+                        }
+
                         // Fill empty rows up to 15 to fit one page
-                        $rowsCount = count($items);
+                        $rowsCount = count($items) + count($oils);
                         $needed = max(0, 15 - $rowsCount);
                         for ($j = 0; $j < $needed; $j++) {
                             echo "<tr>";
@@ -227,66 +267,6 @@ endif; ?>
                     endif; ?>
                 </tbody>
             </table>
-
-            <!-- Oils Table -->
-            <?php if ($server && !empty($oils)): ?>
-            <div class="mb-2 overflow-x-auto">
-                <h4 class="text-sm font-bold mb-1">წებოვანი ნივთიერებები</h4>
-                <table class="w-full text-[8px] sm:text-[10px] lg:text-[12px] border-collapse border border-black min-w-[400px]">
-                    <thead>
-                        <tr class="bg-gray-200 print:bg-gray-200">
-                            <th class="border border-black p-0.5 w-6 sm:w-8 text-center">#</th>
-                            <th class="border border-black p-0.5 text-left min-w-[120px]">ბრენდი</th>
-                            <th class="border border-black p-0.5 text-left min-w-[100px]">ტიპი</th>
-                            <th class="border border-black p-0.5 text-left min-w-[80px]">შეფუთვა</th>
-                            <th class="border border-black p-0.5 w-10 sm:w-12 text-center">რაოდ.</th>
-                            <th class="border border-black p-0.5 w-16 sm:w-20 text-right">ფასი</th>
-                            <th class="border border-black p-0.5 w-10 sm:w-12 text-right">Disc%</th>
-                            <th class="border border-black p-0.5 w-16 sm:w-20 text-right">თანხა</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $i = 1;
-                        $oilsTotal = 0.0;
-                        foreach ($oils as $oil) {
-                            $brand = trim($oil['brand'] ?? '');
-                            $viscosity = trim($oil['viscosity'] ?? '');
-                            $package = trim($oil['package'] ?? '');
-                            $qty = isset($oil['qty']) ? (float)$oil['qty'] : 0;
-                            $price = isset($oil['price']) ? (float)$oil['price'] : 0;
-                            $discount = isset($oil['discount']) ? (float)$oil['discount'] : 0.0;
-
-                            $lineTotal = $qty * $price * max(0, (1 - $discount / 100.0));
-                            $oilsTotal += $lineTotal;
-
-                            $displayQty = $qty;
-                            $displayPrice = $price > 0 ? number_format($price, 2) : '';
-                            $displayDiscount = $discount > 0 ? number_format($discount, 2) . '%' : '';
-                            $displayTotal = $lineTotal > 0 ? number_format($lineTotal, 2) : '';
-
-                            echo "<tr>";
-                            echo "<td class=\"border border-black p-0.5 text-center\">" . $i++ . "</td>";
-                            echo "<td class=\"border border-black p-0.5\">" . esc($brand) . "</td>";
-                            echo "<td class=\"border border-black p-0.5\">" . esc($viscosity) . "</td>";
-                            echo "<td class=\"border border-black p-0.5\">" . esc($package) . "</td>";
-                            echo "<td class=\"border border-black p-0.5 text-center\">" . $displayQty . "</td>";
-                            echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPrice . "</td>";
-                            echo "<td class=\"border border-black p-0.5 text-right\">" . $displayDiscount . "</td>";
-                            echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotal . "</td>";
-                            echo "</tr>";
-                        }
-
-                        // Add oils total row
-                        echo "<tr class=\"font-bold bg-gray-100 print:bg-gray-100\">";
-                        echo "<td class=\"border border-black p-0.5 text-right\" colSpan=\"7\">წებოვანი ნივთიერებების ჯამი:</td>";
-                        echo "<td class=\"border border-black p-0.5 text-right\">" . ($oilsTotal > 0 ? number_format($oilsTotal, 2) : '') . "</td>";
-                        echo "</tr>";
-                        ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
 
             <!-- Grand Total -->
             <div class="flex justify-end mt-1">

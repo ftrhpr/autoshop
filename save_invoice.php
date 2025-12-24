@@ -672,8 +672,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Apply global discounts to calculated totals
     $calcPartsAfterGlobal = $partsTotal * max(0, (1 - $parts_discount_percent / 100.0));
-    $calcServiceAfterGlobal = $serviceTotal * max(0, (1 - $service_discount_percent / 100.0));
-    $calcGrandAfterGlobal = $calcPartsAfterGlobal + $calcServiceAfterGlobal + $oilsTotal;
+    $calcServiceAfterGlobal = ($serviceTotal + $oilsTotal) * max(0, (1 - $service_discount_percent / 100.0));
+    $calcGrandAfterGlobal = $calcPartsAfterGlobal + $calcServiceAfterGlobal;
 
     // Use calculated values if POST values are empty or invalid
     $providedPartsTotal = isset($data['parts_total']) && is_numeric($data['parts_total']) ? (float)$data['parts_total'] : null;

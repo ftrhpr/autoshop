@@ -1410,7 +1410,6 @@ if (!empty($serverInvoice)) {
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p><strong>Parts Total:</strong> ${partTotal > 0 ? partTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
                             <p><strong>Service Total:</strong> ${svcTotal > 0 ? svcTotal.toFixed(2) + ' ₾' : '0.00 ₾'}</p>
-                            ${oilsTotal > 0 ? `<p><strong>Oils Total:</strong> ${oilsTotal.toFixed(2)} ₾</p>` : ''}
                             <p class="text-lg font-bold text-green-600"><strong>Grand Total:</strong> ${grandTotal.toFixed(2)} ₾</p>
                         </div>
 
@@ -1608,10 +1607,10 @@ if (!empty($serverInvoice)) {
             // Apply global discounts
             const globalPartDisc = parseFloat(document.getElementById('input_parts_discount')?.value) || 0;
             const globalSvcDisc = parseFloat(document.getElementById('input_service_discount')?.value) || 0;
-            const finalPartTotal = Math.max(0, partTotal * (1 - globalPartDisc / 100));
-            const finalSvcTotal = Math.max(0, svcTotal * (1 - globalSvcDisc / 100));
             const oilsTotal = parseFloat(document.getElementById('oils-total')?.textContent.replace(' ₾', '')) || 0;
-            const grandTotal = finalPartTotal + finalSvcTotal + oilsTotal;
+            const finalPartTotal = Math.max(0, partTotal * (1 - globalPartDisc / 100));
+            const finalSvcTotal = Math.max(0, (svcTotal + oilsTotal) * (1 - globalSvcDisc / 100));
+            const grandTotal = finalPartTotal + finalSvcTotal;
 
             // Ensure totals are valid numbers
             // Update desktop totals
