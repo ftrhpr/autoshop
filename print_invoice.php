@@ -17,7 +17,6 @@ $invoice = $stmt->fetch();
 if (!$invoice) die('Invoice not found');
 
 $items = json_decode($invoice['items'], true) ?: [];
-$oils = json_decode($invoice['oils'] ?? '[]', true) ?: [];
 
 // Resolve customer
 $customer = null;

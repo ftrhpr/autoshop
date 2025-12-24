@@ -197,48 +197,8 @@ endif; ?>
                             echo "</tr>";
                         }
 
-                        // Add oils as service items
-                        if ($server && !empty($oils)) {
-                            foreach ($oils as $oil) {
-                                $brand = trim($oil['brand'] ?? '');
-                                $viscosity = trim($oil['viscosity'] ?? '');
-                                $package = trim($oil['package'] ?? '');
-                                $qty = isset($oil['qty']) ? (float)$oil['qty'] : 0;
-                                $price = isset($oil['price']) ? (float)$oil['price'] : 0;
-                                $discount = isset($oil['discount']) ? (float)$oil['discount'] : 0.0;
-
-                                $oilName = $brand;
-                                if (!empty($viscosity)) $oilName .= ' ' . $viscosity;
-                                if (!empty($package)) $oilName .= ' (' . $package . ')';
-
-                                $lineTotal = $qty * $price * max(0, (1 - $discount / 100.0));
-
-                                $displayQty = $qty;
-                                $displayPPart = ''; // Oils are service items
-                                $displayPartDisc = '';
-                                $displayTotalPart = '';
-                                $displayPSvc = $price > 0 ? number_format($price, 2) : '';
-                                $displaySvcDisc = $discount > 0 ? number_format($discount, 2) . '%' : '';
-                                $displayTotalSvc = $lineTotal > 0 ? number_format($lineTotal, 2) : '';
-                                $displayTech = ''; // No technician for oils
-
-                                echo "<tr>";
-                                echo "<td class=\"border border-black p-0.5 text-center\">" . $i++ . "</td>";
-                                echo "<td class=\"border border-black p-0.5\">" . esc($oilName) . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-center\">" . $displayQty . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPPart . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPartDisc . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalPart . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displayPSvc . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right\">" . $displaySvcDisc . "</td>";
-                                echo "<td class=\"border border-black p-0.5 text-right font-semibold bg-gray-50 print:bg-gray-50\">" . $displayTotalSvc . "</td>";
-                                echo "<td class=\"border border-black p-0.5\">" . $displayTech . "</td>";
-                                echo "</tr>";
-                            }
-                        }
-
                         // Fill empty rows up to 15 to fit one page
-                        $rowsCount = count($items) + count($oils);
+                        $rowsCount = count($items);
                         $needed = max(0, 15 - $rowsCount);
                         for ($j = 0; $j < $needed; $j++) {
                             echo "<tr>";

@@ -21,7 +21,6 @@ if (!$invoice) {
 }
 
 $items = json_decode($invoice['items'], true);
-$oils = json_decode($invoice['oils'] ?? '[]', true);
 ?>
 
 <!DOCTYPE html>
@@ -106,26 +105,6 @@ $oils = json_decode($invoice['oils'] ?? '[]', true);
                             <td class="border border-gray-300 px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($item['tech']); ?></td>
                         </tr>
                         <?php endforeach; ?>
-
-                        <?php if (!empty($oils)): ?>
-                        <?php foreach ($oils as $oil): ?>
-                        <tr class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-2 md:px-4 py-2 truncate max-w-[200px]">
-                                <?php 
-                                $oilName = htmlspecialchars($oil['brand']);
-                                if (!empty($oil['viscosity'])) $oilName .= ' ' . htmlspecialchars($oil['viscosity']);
-                                if (!empty($oil['package'])) $oilName .= ' (' . htmlspecialchars($oil['package']) . ')';
-                                echo $oilName;
-                                ?>
-                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-800">OIL</span>
-                            </td>
-                            <td class="border border-gray-300 px-2 md:px-4 py-2 text-center"><?php echo $oil['qty']; ?></td>
-                            <td class="border border-gray-300 px-2 md:px-4 py-2 text-right">-</td>
-                            <td class="border border-gray-300 px-2 md:px-4 py-2 text-right"><?php echo number_format($oil['price'], 2); ?></td>
-                            <td class="border border-gray-300 px-2 md:px-4 py-2 truncate max-w-[120px]">-</td>
-                        </tr>
-                        <?php endforeach; ?>
-                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
