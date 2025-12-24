@@ -168,6 +168,7 @@ const selectTech = document.getElementById('selectTech'); if (selectTech) select
 const btnCompute = document.getElementById('btnCompute'); if (btnCompute) btnCompute.addEventListener('click', async ()=>{
     const tech = selectTech ? selectTech.value : null; if (!tech) return alert('Select');
     const start = document.getElementById('startDate') ? document.getElementById('startDate').value : ''; const end = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
+    const res = await fetch('api_technicians.php?action=compute_earnings&technician_id='+encodeURIComponent(tech)+(start?('&start='+encodeURIComponent(start)):'')+(end?('&end='+encodeURIComponent(end)):''));
     const d = await res.json(); if (!d.success) return alert(d.message||'Failed');
     const earningsResult = document.getElementById('earningsResult');
 
