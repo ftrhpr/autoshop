@@ -162,7 +162,28 @@ if ($loadId) {
         /* Validation message animation */
         #step-validation-message {
             animation: slideInRight 0.3s ease-out;
-        }    </style>
+        }
+
+        /* Mileage unit toggle */
+        .unit-toggle {
+            display: flex;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .unit-toggle button {
+            padding: 0.5rem 1rem;
+            border: none;
+            background-color: #f9fafb;
+            color: #6b7280;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .unit-toggle button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen overflow-auto font-sans text-gray-800 antialiased pb-20">
     <?php include 'partials/sidebar.php'; ?>
@@ -322,7 +343,14 @@ if ($loadId) {
                             </div>
                             <div>
                                 <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
-                                <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                                    <div class="unit-toggle">
+                                        <button type="button" id="unit-km" class="unit-btn active" data-unit="km">KM</button>
+                                        <button type="button" id="unit-mi" class="unit-btn" data-unit="mi">MI</button>
+                                    </div>
+                                    <input type="hidden" id="mileage_unit" name="mileage_unit" value="km">
+                                </div>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end">
@@ -583,6 +611,24 @@ if (!empty($serverInvoice)) {
         // Initialize with 4 rows
         document.addEventListener('DOMContentLoaded', () => {
 
+            // Mileage unit toggle logic
+            const mileageInput = document.getElementById('input_mileage');
+            const mileageUnitInput = document.getElementById('mileage_unit');
+            const unitToggle = document.querySelector('.unit-toggle');
+
+            if (unitToggle) {
+                unitToggle.addEventListener('click', (e) => {
+                    if (e.target.matches('.unit-btn')) {
+                        const selectedUnit = e.target.dataset.unit;
+                        
+                        unitToggle.querySelectorAll('.unit-btn').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                        
+                        mileageUnitInput.value = selectedUnit;
+                        mileageInput.placeholder = `Enter mileage in ${selectedUnit}`;
+                    }
+                });
+            }
 
 
             for(let i=0; i<4; i++) addItemRow();
@@ -812,7 +858,7 @@ if (!empty($serverInvoice)) {
                     pn.value = it.plate_number || '';
                     document.getElementById('input_customer_name').value = it.full_name || '';
                     document.getElementById('input_phone_number').value = it.phone || '';
-                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id || '';
+                    const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = it.id;
                     const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.customer_id || '';
                     // Populate VIN, make/model, and mileage if present
                     const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = it.vin || '';
@@ -1239,6 +1285,8 @@ if (!empty($serverInvoice)) {
             const tabButtons = document.querySelectorAll('.tab-btn');
             const activeButton = document.querySelector('.tab-btn.bg-blue-500');
             if (!activeButton) return;
+           
+
             const currentIndex = Array.from(tabButtons).indexOf(activeButton);
             if (currentIndex < tabButtons.length - 1) {
                 tabButtons[currentIndex + 1].click();
@@ -1257,6 +1305,7 @@ if (!empty($serverInvoice)) {
 
         function skipToReview() {
             const reviewButton = document.querySelector('.tab-btn[data-tab="review"]');
+           
             if (reviewButton) reviewButton.click();
         }
 
@@ -1370,7 +1419,23 @@ if (!empty($serverInvoice)) {
             if (inv.car_mark) document.getElementById('input_car_mark').value = inv.car_mark;
             if (inv.plate_number) document.getElementById('input_plate_number').value = inv.plate_number;
             if (inv.vin) document.getElementById('input_vin').value = inv.vin || '';
-            if (inv.mileage) document.getElementById('input_mileage').value = inv.mileage;
+            
+            // Handle mileage with units
+            if (inv.mileage) {
+                const mileageParts = inv.mileage.toString().match(/^([0-9.]+)\s*(km|mi)$/i);
+                if (mileageParts) {
+                    document.getElementById('input_mileage').value = mileageParts[1];
+                    const unit = mileageParts[2].toLowerCase();
+                    document.getElementById('mileage_unit').value = unit;
+                    document.querySelectorAll('.unit-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.unit === unit);
+                    });
+                    document.getElementById('input_mileage').placeholder = `Enter mileage in ${unit}`;
+                } else {
+                    document.getElementById('input_mileage').value = inv.mileage;
+                }
+            }
+
             if (inv.customer && inv.customer.id) document.getElementById('input_vehicle_id').value = inv.customer.id;
 
             // Render existing images (if server provided) with delete functionality
@@ -2030,7 +2095,6 @@ if (!empty($serverInvoice)) {
             document.getElementById('item-search-input').addEventListener('input', function() {
                 performItemSearch(this.value.trim());
             });
-            // ... existing code ...
         });
     </script>
 

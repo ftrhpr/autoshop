@@ -513,6 +513,26 @@ if (isset($_GET['edit_id'])) {
             color: #111827;
         }
 
+        /* Mileage unit toggle */
+        .unit-toggle {
+            display: flex;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 1px solid #d1d5db;
+        }
+        .unit-toggle button {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            background-color: #f9fafb;
+            color: #6b7280;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .unit-toggle button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
 
         @media (max-width: 480px) {
             .mobile-container {
@@ -604,7 +624,14 @@ if (isset($_GET['edit_id'])) {
                             <i class="fas fa-tachometer-alt mr-1"></i>
                             Mileage
                         </label>
-                        <input type="text" id="input_mileage" class="input-field" placeholder="150000 km">
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="input_mileage" class="input-field" placeholder="150000 km">
+                             <div class="unit-toggle">
+                                <button type="button" class="unit-btn active" data-unit="km">KM</button>
+                                <button type="button" class="unit-btn" data-unit="mi">MI</button>
+                            </div>
+                            <input type="hidden" id="mileage_unit" value="km">
+                        </div>
                     </div>
                 </div>
                 <div class="step-navigation form-section">
@@ -816,6 +843,25 @@ if (isset($_GET['edit_id'])) {
             }
             calculateTotals();
             updateStep();
+
+            // Mileage unit toggle logic
+            const mileageInput = document.getElementById('input_mileage');
+            const mileageUnitInput = document.getElementById('mileage_unit');
+            const unitToggle = document.querySelector('.unit-toggle');
+
+            if (unitToggle) {
+                unitToggle.addEventListener('click', (e) => {
+                    if (e.target.matches('.unit-btn')) {
+                        const selectedUnit = e.target.dataset.unit;
+                        
+                        unitToggle.querySelectorAll('.unit-btn').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                        
+                        mileageUnitInput.value = selectedUnit;
+                        mileageInput.placeholder = `Enter mileage in ${selectedUnit}`;
+                    }
+                });
+            }
 
             // Set default service manager
             const smInput = document.getElementById('input_service_manager');
@@ -1522,7 +1568,10 @@ if (isset($_GET['edit_id'])) {
             document.getElementById('hidden_vin').value = document.getElementById('input_vin').value;
             document.getElementById('input_vehicle_id').value = document.getElementById('input_vehicle_id').value; // This is a self-assignment, but harmless. Correcting to ensure it targets an existing ID. More importantly, the *next* line is what we're fixing. The original error was on a now-deleted line. Let's ensure the whole function is correct.
             document.getElementById('hidden_customer_id').value = document.getElementById('hidden_customer_id').value;
-            document.getElementById('hidden_mileage').value = document.getElementById('input_mileage').value;
+
+            const mileageValue = document.getElementById('input_mileage').value;
+            const mileageUnit = document.getElementById('mileage_unit').value;
+            document.getElementById('hidden_mileage').value = `${mileageValue} ${mileageUnit}`;
 
             // Prepare items data
             const items = [];
@@ -1639,7 +1688,23 @@ if (isset($_GET['edit_id'])) {
             document.getElementById('input_plate_number').value = inv.plate_number || '';
             document.getElementById('input_car_mark').value = inv.car_mark || '';
             document.getElementById('input_vin').value = inv.vin || '';
-            document.getElementById('input_mileage').value = inv.mileage || '';
+            
+            // Handle mileage with units
+            if (inv.mileage) {
+                const mileageParts = inv.mileage.toString().match(/^([0-9.]+)\s*(km|mi)$/i);
+                if (mileageParts) {
+                    document.getElementById('input_mileage').value = mileageParts[1];
+                    const unit = mileageParts[2].toLowerCase();
+                    document.getElementById('mileage_unit').value = unit;
+                    document.querySelectorAll('.unit-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.unit === unit);
+                    });
+                    document.getElementById('input_mileage').placeholder = `Enter mileage in ${unit}`;
+                } else {
+                    document.getElementById('input_mileage').value = inv.mileage;
+                }
+            }
+
             document.getElementById('input_creation_date').value = inv.creation_date ? inv.creation_date.replace(' ', 'T').substring(0, 16) : '';
             document.getElementById('input_customer_name').value = inv.customer_name || '';
             document.getElementById('input_phone_number').value = inv.phone || '';
