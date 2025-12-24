@@ -465,6 +465,17 @@ if (!isset($_SESSION['user_id'])) {
             <p style="font-size: 0.9rem; opacity: 0.9;">Create invoices on the go</p>
         </header>
 
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-line"></div>
+            <div class="progress-bar-steps" id="progress-bar-steps"></div>
+            <div class="step-indicator" data-step="1">1</div>
+            <div class="step-indicator" data-step="2">2</div>
+            <div class="step-indicator" data-step="3">3</div>
+            <div class="step-indicator" data-step="4">4</div>
+            <div class="step-indicator" data-step="5">✓</div>
+        </div>
+
         <form id="mobile-invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data">
             <!-- Hidden fields -->
             <input type="hidden" name="creation_date" id="hidden_creation_date">
@@ -484,177 +495,215 @@ if (!isset($_SESSION['user_id'])) {
             <input type="hidden" name="service_manager_id" id="input_service_manager_id" value="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
             <input type="hidden" name="vehicle_id" id="input_vehicle_id">
 
-            <!-- Vehicle Section -->
-            <div class="form-section">
-                <div class="section-header">
-                    <i class="fas fa-car"></i>
-                    Vehicle Details
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_plate_number">
-                        <i class="fas fa-id-card mr-1"></i>
-                        Plate Number *
-                    </label>
-                    <input type="text" id="input_plate_number" class="input-field" placeholder="ZZ-000-ZZ">
-                    <div class="suggestions-box" style="display: none;"></div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_car_mark">
-                        <i class="fas fa-car-side mr-1"></i>
-                        Make/Model
-                    </label>
-                    <input type="text" id="input_car_mark" class="input-field" placeholder="Toyota Camry">
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_vin">
-                        <i class="fas fa-hashtag mr-1"></i>
-                        VIN
-                    </label>
-                    <input type="text" id="input_vin" class="input-field" placeholder="Vehicle VIN">
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_mileage">
-                        <i class="fas fa-tachometer-alt mr-1"></i>
-                        Mileage
-                    </label>
-                    <input type="text" id="input_mileage" class="input-field" placeholder="150000 km">
-                </div>
-            </div>
-
-            <!-- Customer Section -->
-            <div class="form-section">
-                <div class="section-header">
-                    <i class="fas fa-user"></i>
-                    Customer Details
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_creation_date">
-                        <i class="fas fa-calendar mr-1"></i>
-                        Creation Date
-                    </label>
-                    <input type="datetime-local" id="input_creation_date" class="input-field" value="<?php echo $currentDate; ?>">
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_customer_name">
-                        <i class="fas fa-user-tag mr-1"></i>
-                        Customer Name *
-                    </label>
-                    <input type="text" id="input_customer_name" class="input-field" placeholder="Enter customer name">
-                    <div class="suggestions-box" style="display: none;"></div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_phone_number">
-                        <i class="fas fa-phone mr-1"></i>
-                        Phone Number
-                    </label>
-                    <input type="text" id="input_phone_number" class="input-field" placeholder="Phone number">
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_service_manager">
-                        <i class="fas fa-user-tie mr-1"></i>
-                        Service Manager
-                    </label>
-                    <input type="text" id="input_service_manager" class="input-field" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>">
-                </div>
-            </div>
-
-            <!-- Items Section -->
-            <div class="form-section">
-                <div class="section-header">
-                    <i class="fas fa-tools"></i>
-                    Service & Parts
-                </div>
-
-                <div id="items-container">
-                    <!-- Items will be added here -->
-                </div>
-
-                <button type="button" onclick="addItem()" class="btn-secondary" style="margin-bottom: 1rem;">
-                    <i class="fas fa-plus mr-2"></i>
-                    Add Item
-                </button>
-
-                <!-- Totals -->
-                <div class="totals-section">
-                    <div class="total-row">
-                        <span class="total-label">Parts Total:</span>
-                        <span class="total-value" id="display_parts_total">0 ₾</span>
+            <!-- Step 1: Vehicle Section -->
+            <div class="form-step" data-step="1">
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-car"></i>
+                        Vehicle Details
                     </div>
-                    <div class="total-row">
-                        <span class="total-label">Service Total:</span>
-                        <span class="total-value" id="display_service_total">0 ₾</span>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_plate_number">
+                            <i class="fas fa-id-card mr-1"></i>
+                            Plate Number *
+                        </label>
+                        <input type="text" id="input_plate_number" class="input-field" placeholder="ZZ-000-ZZ">
+                        <div class="suggestions-box" style="display: none;"></div>
                     </div>
-                    <div class="total-row grand-total">
-                        <span class="total-label">Grand Total:</span>
-                        <span class="total-value" id="display_grand_total">0 ₾</span>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_car_mark">
+                            <i class="fas fa-car-side mr-1"></i>
+                            Make/Model
+                        </label>
+                        <input type="text" id="input_car_mark" class="input-field" placeholder="Toyota Camry">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_vin">
+                            <i class="fas fa-hashtag mr-1"></i>
+                            VIN
+                        </label>
+                        <input type="text" id="input_vin" class="input-field" placeholder="Vehicle VIN">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_mileage">
+                            <i class="fas fa-tachometer-alt mr-1"></i>
+                            Mileage
+                        </label>
+                        <input type="text" id="input_mileage" class="input-field" placeholder="150000 km">
                     </div>
                 </div>
-
-                <!-- Discounts -->
-                <div class="input-group">
-                    <label class="input-label" for="input_parts_discount">
-                        <i class="fas fa-percent mr-1"></i>
-                        Parts Discount (%)
-                    </label>
-                    <input type="number" id="input_parts_discount" class="input-field" min="0" max="100" value="0" oninput="calculateTotals()">
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="input_service_discount">
-                        <i class="fas fa-percent mr-1"></i>
-                        Service Discount (%)
-                    </label>
-                    <input type="number" id="input_service_discount" class="input-field" min="0" max="100" value="0" oninput="calculateTotals()">
+                <div class="step-navigation form-section">
+                    <button type="button" class="btn-primary next-btn" style="margin-left: auto;">Next Step</button>
                 </div>
             </div>
 
-            <!-- Photos Section -->
-            <div class="form-section">
-                <div class="section-header">
-                    <i class="fas fa-camera"></i>
-                    Photos
+            <!-- Step 2: Customer Section -->
+            <div class="form-step" data-step="2">
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-user"></i>
+                        Customer Details
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_creation_date">
+                            <i class="fas fa-calendar mr-1"></i>
+                            Creation Date
+                        </label>
+                        <input type="datetime-local" id="input_creation_date" class="input-field" value="<?php echo $currentDate; ?>">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_customer_name">
+                            <i class="fas fa-user-tag mr-1"></i>
+                            Customer Name *
+                        </label>
+                        <input type="text" id="input_customer_name" class="input-field" placeholder="Enter customer name">
+                        <div class="suggestions-box" style="display: none;"></div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_phone_number">
+                            <i class="fas fa-phone mr-1"></i>
+                            Phone Number
+                        </label>
+                        <input type="text" id="input_phone_number" class="input-field" placeholder="Phone number">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_service_manager">
+                            <i class="fas fa-user-tie mr-1"></i>
+                            Service Manager
+                        </label>
+                        <input type="text" id="input_service_manager" class="input-field" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>">
+                        <div class="suggestions-box" style="display: none;"></div>
+                    </div>
                 </div>
-
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                    <button type="button" id="btn_take_photo" class="btn-secondary" style="flex: 1;">
-                        <i class="fas fa-camera mr-1"></i>
-                        Take Photo
-                    </button>
-                    <button type="button" id="btn_multi_capture" class="btn-secondary" style="flex: 1;">
-                        <i class="fas fa-images mr-1"></i>
-                        Multi-Capture
-                    </button>
-                    <button type="button" id="btn_upload_photo" class="btn-secondary" style="flex: 1;">
-                        <i class="fas fa-upload mr-1"></i>
-                        Upload
-                    </button>
-                </div>
-
-                <input type="file" id="input_images" name="images[]" accept="image/*" multiple style="display: none;">
-
-                <div id="photo-preview" class="photo-grid">
-                    <!-- Photos will be displayed here -->
+                <div class="step-navigation form-section">
+                    <button type="button" class="btn-secondary prev-btn">Previous</button>
+                    <button type="button" class="btn-primary next-btn">Next Step</button>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="form-section" style="padding-bottom: 5rem;">
-                <button type="button" onclick="handleSave()" class="btn-primary">
-                    <i class="fas fa-save mr-2"></i>
-                    Save Invoice
-                </button>
-                <button type="button" onclick="handleSaveAndPrint()" class="btn-secondary">
-                    <i class="fas fa-print mr-2"></i>
-                    Save & Print
-                </button>
+            <!-- Step 3: Items Section -->
+            <div class="form-step" data-step="3">
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-tools"></i>
+                        Service & Parts
+                    </div>
+
+                    <div id="items-container">
+                        <!-- Items will be added here -->
+                    </div>
+
+                    <button type="button" onclick="addItem()" class="btn-secondary" style="margin-bottom: 1rem;">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add Item
+                    </button>
+
+                    <!-- Totals -->
+                    <div class="totals-section">
+                        <div class="total-row">
+                            <span class="total-label">Parts Total:</span>
+                            <span class="total-value" id="display_parts_total">0 ₾</span>
+                        </div>
+                        <div class="total-row">
+                            <span class="total-label">Service Total:</span>
+                            <span class="total-value" id="display_service_total">0 ₾</span>
+                        </div>
+                        <div class="total-row grand-total">
+                            <span class="total-label">Grand Total:</span>
+                            <span class="total-value" id="display_grand_total">0 ₾</span>
+                        </div>
+                    </div>
+
+                    <!-- Discounts -->
+                    <div class="input-group">
+                        <label class="input-label" for="input_parts_discount">
+                            <i class="fas fa-percent mr-1"></i>
+                            Parts Discount (%)
+                        </label>
+                        <input type="number" id="input_parts_discount" class="input-field" min="0" max="100" value="0" oninput="calculateTotals()">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_service_discount">
+                            <i class="fas fa-percent mr-1"></i>
+                            Service Discount (%)
+                        </label>
+                        <input type="number" id="input_service_discount" class="input-field" min="0" max="100" value="0" oninput="calculateTotals()">
+                    </div>
+                </div>
+                <div class="step-navigation form-section">
+                    <button type="button" class="btn-secondary prev-btn">Previous</button>
+                    <button type="button" class="btn-primary next-btn">Next Step</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Photos Section -->
+            <div class="form-step" data-step="4">
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-camera"></i>
+                        Photos
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <button type="button" id="btn_take_photo" class="btn-secondary" style="flex: 1;">
+                            <i class="fas fa-camera mr-1"></i>
+                            Take Photo
+                        </button>
+                        <button type="button" id="btn_multi_capture" class="btn-secondary" style="flex: 1;">
+                            <i class="fas fa-images mr-1"></i>
+                            Multi-Capture
+                        </button>
+                        <button type="button" id="btn_upload_photo" class="btn-secondary" style="flex: 1;">
+                            <i class="fas fa-upload mr-1"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <input type="file" id="input_images" name="images[]" accept="image/*" multiple style="display: none;">
+
+                    <div id="photo-preview" class="photo-grid">
+                        <!-- Photos will be displayed here -->
+                    </div>
+                </div>
+                <div class="step-navigation form-section">
+                    <button type="button" class="btn-secondary prev-btn">Previous</button>
+                    <button type="button" class="btn-primary next-btn">Review Invoice</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Review & Save Section -->
+            <div class="form-step" data-step="5">
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-check-circle"></i>
+                        Review & Save
+                    </div>
+                    <div id="review-container">
+                        <!-- Review content will be populated by JS -->
+                    </div>
+                </div>
+                <div class="step-navigation form-section" style="padding-bottom: 5rem;">
+                    <button type="button" class="btn-secondary prev-btn">Previous</button>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+                        <button type="button" onclick="handleSave()" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>
+                            Save Invoice
+                        </button>
+                        <button type="button" onclick="handleSaveAndPrint()" class="btn-secondary">
+                            <i class="fas fa-print mr-2"></i>
+                            Save & Print
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
