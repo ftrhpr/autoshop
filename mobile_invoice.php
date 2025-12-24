@@ -1035,33 +1035,37 @@ foreach ($oilPrices as $price) {
                 const partPrice = card.querySelector('.item-price-part').value;
                 const svcPrice = card.querySelector('.item-price-svc').value;
                 if (name) {
-                    items.push(`${name} (Qty: ${qty}) - Part: ${partPrice}₾, Svc: ${svcPrice}₾`);
+                    items.push(name + ' (Qty: ' + qty + ') - Part: ' + partPrice + '₾, Svc: ' + svcPrice + '₾');
                 }
             });
 
-            reviewContainer.innerHTML = `
-                <div class="review-section">
-                    <div class="review-title">Vehicle & Customer</div>
-                    <div class="review-item"><span>Plate Number:</span> <span>${document.getElementById('input_plate_number').value}</span></div>
-                    <div class="review-item"><span>Make/Model:</span> <span>${document.getElementById('input_car_mark').value || 'N/A'}</span></div>
-                    <div class="review-item"><span>Customer:</span> <span>${document.getElementById('input_customer_name').value}</span></div>
-                    <div class="review-item"><span>Phone:</span> <span>${document.getElementById('input_phone_number').value || 'N/A'}</span></div>
-                </div>
-                <div class="review-section">
-                    <div class="review-title">Items</div>
-                    ${items.length ? items.map(item => '<div class="review-item"><span>-</span> <span>' + item + '</span></div>').join('') : '<div class="review-item"><span>No items added.</span></div>'}
-                </div>
-                 <div class="review-section">
-                    <div class="review-title">Totals</div>
-                    <div class="review-item"><span>Parts Total:</span> <span>${document.getElementById('display_parts_total').textContent}</span></div>
-                    <div class="review-item"><span>Service Total:</span> <span>${document.getElementById('display_service_total').textContent}</span></div>
-                    <div class="review-item grand-total"><span>Grand Total:</span> <span>${document.getElementById('display_grand_total').textContent}</span></div>
-                </div>
-                 <div class="review-section">
-                    <div class="review-title">Photos</div>
-                    <div class="review-item"><span>${selectedFiles.length} photo(s) attached.</span></div>
-                </div>
-            `;
+            const itemsHtml = items.length ? items.map(item => '<div class="review-item"><span>-</span> <span>' + item + '</span></div>').join('') : '<div class="review-item"><span>No items added.</span></div>';
+            const oilsTotalText = document.getElementById('display_oils_total') ? document.getElementById('display_oils_total').textContent : '0 ₾';
+
+            reviewContainer.innerHTML = '' +
+                '<div class="review-section">' +
+                    '<div class="review-title">Vehicle & Customer</div>' +
+                    '<div class="review-item"><span>Plate Number:</span> <span>' + document.getElementById('input_plate_number').value + '</span></div>' +
+                    '<div class="review-item"><span>Make/Model:</span> <span>' + (document.getElementById('input_car_mark').value || 'N/A') + '</span></div>' +
+                    '<div class="review-item"><span>Customer:</span> <span>' + document.getElementById('input_customer_name').value + '</span></div>' +
+                    '<div class="review-item"><span>Phone:</span> <span>' + (document.getElementById('input_phone_number').value || 'N/A') + '</span></div>' +
+                '</div>' +
+                '<div class="review-section">' +
+                    '<div class="review-title">Items</div>' +
+                    itemsHtml +
+                '</div>' +
+                '<div class="review-section">' +
+                    '<div class="review-title">Totals</div>' +
+                    '<div class="review-item"><span>Parts Total:</span> <span>' + document.getElementById('display_parts_total').textContent + '</span></div>' +
+                    '<div class="review-item"><span>Service Total:</span> <span>' + document.getElementById('display_service_total').textContent + '</span></div>' +
+                    '<div class="review-item"><span>Oils Total:</span> <span>' + oilsTotalText + '</span></div>' +
+                    '<div class="review-item grand-total"><span>Grand Total:</span> <span>' + document.getElementById('display_grand_total').textContent + '</span></div>' +
+                '</div>' +
+                '<div class="review-section">' +
+                    '<div class="review-title">Photos</div>' +
+                    '<div class="review-item"><span>' + selectedFiles.length + ' photo(s) attached.</span></div>' +
+                '</div>';
+        }
         }
 
         // Add item function
