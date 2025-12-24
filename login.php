@@ -28,11 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>შესვლა - ავტო სერვისი</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Georgian Fonts -->
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
+    
     <style>
-        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
+        body { font-family: 'BPG Arial', 'BPG Arial Caps'; }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen overflow-x-hidden font-sans antialiased">

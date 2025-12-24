@@ -96,8 +96,8 @@ foreach ($oilPrices as $price) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <!-- Georgian Fonts -->
-    <link rel="stylesheet" href="//cdn.web-fonts.ge/fonts/bpg-arial/css/bpg-arial.min.css" />
-    <link rel="stylesheet" href="//cdn.web-fonts.ge/fonts/bpg-arial-caps/css/bpg-arial-caps.min.css" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
 
     <style>
         /* Mobile-first responsive design */
@@ -107,7 +107,10 @@ foreach ($oilPrices as $price) {
             min-height: 100vh;
         }
 
-        /* All elements use Georgian fonts */
+        /* Georgian fonts for headers */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'BPG Arial', 'BPG Arial Caps';
+        }
 
         .mobile-container {
             max-width: 480px;

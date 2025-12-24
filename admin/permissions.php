@@ -31,12 +31,13 @@ foreach ($roles as $r) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>როლები და უფლებები - ადმინისტრატორი</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet>
+    
+    <!-- Georgian Fonts -->
     <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
     <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
+    
     <style>
-        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
+        body { font-family: 'BPG Arial', 'BPG Arial Caps'; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>

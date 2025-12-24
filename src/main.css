@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,27 +5,27 @@
 /* BPG Arial Fonts */
 @font-face {
     font-family: 'BPG Arial';
-    src: url('https://web-fonts.ge/bpg-arial/BPG-Arial.woff2') format('woff2'),
-         url('https://web-fonts.ge/bpg-arial/BPG-Arial.woff') format('woff');
+@import url("//cdn.web-fonts.ge/fonts/bpg-arial/css/bpg-arial.min.css");
+
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'BPG Arial Caps';
-    src: url('https://web-fonts.ge/bpg-arial-caps/BPG-Arial-Caps.woff2') format('woff2'),
-         url('https://web-fonts.ge/bpg-arial-caps/BPG-Arial-Caps.woff') format('woff');
+@import url("//cdn.web-fonts.ge/fonts/bpg-arial-caps/css/bpg-arial-caps.min.css");
+
     font-weight: normal;
     font-style: normal;
 }
 
 /* Apply Georgian fonts globally */
 body {
-    font-family: 'BPG Arial', 'Noto Sans Georgian', sans-serif;
+    font-family: 'BPG Arial', 'BPG Arial Caps';
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'BPG Arial Caps', 'Noto Sans Georgian', sans-serif;
+    font-family: 'BPG Arial Caps', 'BPG Arial';
     font-weight: 600;
 }
 

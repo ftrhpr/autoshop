@@ -123,9 +123,14 @@ foreach ($oilPrices as $price) {
 
     <!-- Tailwind CSS -->
     <link href="./dist/output.css" rel="stylesheet">
+    
+    <!-- Georgian Fonts -->
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
+    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
+    
     <style>
         /* Fallback styles in case CSS fails to load */
-        body { font-family: system-ui, -apple-system, sans-serif; }
+        body { font-family: 'BPG Arial', 'BPG Arial Caps'; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .error { color: red; padding: 20px; border: 1px solid red; background: #fee; }
     </style>
