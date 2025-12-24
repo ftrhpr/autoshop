@@ -209,10 +209,10 @@ endif; ?>
                             $displayQty = $qty;
                             $displayPPart = $pPart > 0 ? number_format($pPart,2) : '';
                             $displayPartDisc = $dPart > 0 ? number_format($dPart,2) . '%' : '';
-                            $displayTotalPart = $linePart > 0 ? number_format($linePart, 2) : '';
+                            $displayTotalPart = ($linePart > 0 && $dPart > 0) ? number_format($linePart, 2) : '';
                             $displayPSvc = $pSvc > 0 ? number_format($pSvc,2) : '';
                             $displaySvcDisc = $dSvc > 0 ? number_format($dSvc,2) . '%' : '';
-                            $displayTotalSvc = $lineSvc > 0 ? number_format($lineSvc, 2) : '';
+                            $displayTotalSvc = ($lineSvc > 0 && $dSvc > 0) ? number_format($lineSvc, 2) : '';
 
                             if ($name === '') {
                                 $displayQty = '';
