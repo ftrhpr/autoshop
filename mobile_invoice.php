@@ -852,6 +852,9 @@ if (!isset($_SESSION['user_id'])) {
             });
 
             document.addEventListener('click', (ev) => { if (!input.contains(ev.target) && !box.contains(ev.target)) { box.innerHTML = ''; box.style.display = 'none'; window.removeEventListener('scroll', scrollHandler, true); window.removeEventListener('resize', resizeHandler); } });
+            
+            // make available globally in case other inline scripts run before this definition (defensive)
+            try{ window.attachTypeahead = attachTypeahead; }catch(e){}
         }
 
         // Attach typeaheads
@@ -887,7 +890,7 @@ if (!isset($_SESSION['user_id'])) {
                     // If the plate field is empty, try to autofill from the customer's most recent vehicle
                     const plateField = document.getElementById('input_plate_number');
                     if (plateField && (!plateField.value || plateField.value.trim() === '')) {
-                        fetch('./admin/api_customers.php?customer_id=' + encodeURIComponent(item.id))
+                        fetch('admin/api_customers.php?customer_id=' + encodeURIComponent(it.id))
                             .then(r => r.json())
                             .then(cust => {
                                 if (!cust || !Array.isArray(cust.vehicles) || cust.vehicles.length === 0) return;
@@ -940,7 +943,7 @@ if (!isset($_SESSION['user_id'])) {
                     const customerNameElem = document.getElementById('input_customer_name');
                     const customerName = customerNameElem.value.trim();
 
-                    fetch('./admin/api_customers.php?plate=' + encodeURIComponent(val))
+                    fetch('admin/api_customers.php?plate=' + encodeURIComponent(val))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
@@ -972,7 +975,7 @@ if (!isset($_SESSION['user_id'])) {
                         return;
                     }
 
-                    fetch('./admin/api_customers.php?phone=' + encodeURIComponent(val))
+                    fetch('admin/api_customers.php?phone=' + encodeURIComponent(val))
                         .then(r => { if(!r.ok) throw new Error('no'); return r.json(); })
                         .then(data => {
                             if (!data) return;
