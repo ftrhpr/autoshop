@@ -96,8 +96,8 @@ foreach ($oilPrices as $price) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <!-- Georgian Fonts -->
-    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial/" />
-    <link rel="stylesheet" href="https://web-fonts.ge/bpg-arial-caps/" />
+    <link rel="stylesheet" href="//cdn.web-fonts.ge/fonts/bpg-arial/css/bpg-arial.min.css" />
+    <link rel="stylesheet" href="//cdn.web-fonts.ge/fonts/bpg-arial-caps/css/bpg-arial-caps.min.css" />
 
     <style>
         /* Mobile-first responsive design */
