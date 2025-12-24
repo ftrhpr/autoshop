@@ -783,12 +783,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['user_id']
         ]);
         // After insert, fetch and log saved oils for debugging
-        $invoice_id = $pdo->lastInsertId();
+        $invoice_id = (int)$pdo->lastInsertId();
         $stmt = $pdo->prepare('SELECT oils FROM invoices WHERE id = ? LIMIT 1');
         $stmt->execute([$invoice_id]);
         $saved = $stmt->fetch();
         error_log("save_invoice: inserted invoice {$invoice_id}, saved_oils=" . ($saved ? $saved['oils'] : 'NULL') . "\n");
-        $invoice_id = $pdo->lastInsertId();
     }
 
     // Handle deleted existing images

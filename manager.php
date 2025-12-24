@@ -24,6 +24,16 @@ if (isset($_GET['updated'])) {
     $success = "Invoice #{$updated_id} updated successfully";
 }
 
+// Check for known error flags
+if (isset($_GET['error'])) {
+    $err = $_GET['error'];
+    if ($err === 'missing_invoice_id') {
+        $error = 'Invoice was saved but the system could not open the print view (missing invoice ID). Please open the invoice from the list.';
+    } else {
+        $error = 'Error: ' . htmlspecialchars($err);
+    }
+}
+
 // Build filters from GET params (search form)
 $filters = [];
 $params = [];
@@ -167,6 +177,12 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
         <?php if (isset($success)): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
                 <?php echo htmlspecialchars($success); ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (isset($error)): ?>
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
 
