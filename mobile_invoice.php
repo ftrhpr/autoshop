@@ -405,6 +405,7 @@ if (!isset($_SESSION['user_id'])) {
                         Make/Model
                     </label>
                     <input type="text" id="input_car_mark" class="input-field" placeholder="Toyota Camry">
+                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
@@ -413,6 +414,7 @@ if (!isset($_SESSION['user_id'])) {
                         VIN
                     </label>
                     <input type="text" id="input_vin" class="input-field" placeholder="Vehicle VIN">
+                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
@@ -856,6 +858,26 @@ if (!isset($_SESSION['user_id'])) {
                 (item) => {
                     document.getElementById('input_service_manager').value = item.username;
                     document.getElementById('input_service_manager_id').value = item.id;
+                }
+            );
+
+            // Car Make/Model suggestions
+            attachTypeahead(
+                document.getElementById('input_car_mark'),
+                './admin/api_customers.php?car_mark_q=',
+                mark => mark,
+                (mark) => {
+                    document.getElementById('input_car_mark').value = mark;
+                }
+            );
+
+            // VIN suggestions
+            attachTypeahead(
+                document.getElementById('input_vin'),
+                './admin/api_customers.php?vin_q=',
+                vin => vin,
+                (vin) => {
+                    document.getElementById('input_vin').value = vin;
                 }
             );
 
