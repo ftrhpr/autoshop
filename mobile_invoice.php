@@ -637,7 +637,7 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                     <div class="price-input">
                         <label class="price-label">Technician</label>
-                        <input type="text" class="input-field item-tech" placeholder="Name" oninput="fetchTechnicianSuggestions(this)">
+                        <input type="text" class="input-field item-tech" placeholder="Name">
                         <div class="suggestions-box" style="display: none;"></div>
                     </div>
                 </div>
@@ -651,6 +651,20 @@ if (!isset($_SESSION['user_id'])) {
 
             container.appendChild(itemCard);
             updateProgress();
+
+            // Attach technician typeahead to the new field
+            const techInput = itemCard.querySelector('.item-tech');
+            if (techInput) {
+                attachTypeahead(
+                    techInput,
+                    'api_technicians_search.php?q=',
+                    t => t.name,
+                    (item) => {
+                        techInput.value = item.name;
+                        itemCard.querySelector('.item-tech-id').value = item.id;
+                    }
+                );
+            }
         }
 
         // Remove item function
@@ -1029,54 +1043,6 @@ if (!isset($_SESSION['user_id'])) {
             el.closest('.suggestions-box').style.display = 'none';
             calculateTotals();
             updateProgress();
-        }
-
-        // Fetch technician suggestions
-        function fetchTechnicianSuggestions(input) {
-            const query = input.value.trim();
-            const box = input.nextElementSibling;
-
-            if (query.length < 1) {
-                // Show all technicians on focus
-                fetch('./admin/api_technicians.php?action=list')
-                    .then(r => r.json())
-                    .then(data => {
-                        const items = data.technicians || [];
-                        if (Array.isArray(items) && items.length > 0) {
-                            box.innerHTML = items.map(item => `
-                                <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
-                                    ${item.name}
-                                </div>
-                            `).join('');
-                            box.style.display = 'block';
-                        }
-                    });
-                return;
-            }
-
-            fetch(`api_technicians_search.php?q=${encodeURIComponent(query)}`)
-                .then(r => r.json())
-                .then(items => {
-                    if (Array.isArray(items) && items.length > 0) {
-                        box.innerHTML = items.map(item => `
-                            <div class="suggestion-item" onclick="selectTechnician(this, '${item.name}', ${item.id})">
-                                ${item.name}
-                            </div>
-                        `).join('');
-                        box.style.display = 'block';
-                    } else {
-                        box.style.display = 'none';
-                    }
-                })
-                .catch(() => box.style.display = 'none');
-        }
-
-        // Select technician
-        function selectTechnician(el, name, id) {
-            const card = el.closest('.item-card');
-            card.querySelector('.item-tech').value = name;
-            card.querySelector('.item-tech-id').value = id;
-            el.closest('.suggestions-box').style.display = 'none';
         }
 
         // Photo handling
