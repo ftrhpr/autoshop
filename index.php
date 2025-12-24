@@ -138,19 +138,6 @@ if ($loadId) {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        /* Invoice summary (desktop) */
-        #invoice-summary { position: fixed; right: 1rem; top: 6.5rem; width: 320px; z-index: 60; }
-        #invoice-summary .card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(13, 46, 84, 0.08); }
-        #invoice-summary .tot { font-size: 1.25rem; font-weight: 600; }
-
-        /* Sticky action bar (mobile) */
-        #sticky-actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; padding: 10px; background: linear-gradient(180deg, rgba(255,255,255,0.9), #fff); border-top: 1px solid rgba(0,0,0,0.06); display: none; }
-        @media (max-width: 767px) { #sticky-actions { display: flex; gap: 8px; justify-content: space-between; padding: 12px; } #invoice-summary { display: none; } }
-
-        /* Toast */
-        #global-toast { position: fixed; right: 16px; bottom: 86px; z-index: 10000; display: none; }
-        #global-toast .inner { background: rgba(0,0,0,0.85); color: white; padding: 10px 14px; border-radius: 10px; min-width: 160px; }
-
         /* Navigation button enhancements */
         #prev-step:not(:disabled):hover svg {
             transform: translateX(-2px);
@@ -261,41 +248,6 @@ if ($loadId) {
             </div>
         </header>
         
-        <!-- Right-hand summary panel (desktop) -->
-        <div id="invoice-summary" class="hidden md:block">
-            <div class="card">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="text-sm text-gray-500">Invoice Summary</div>
-                    <div class="text-xs text-gray-400">Live</div>
-                </div>
-                <div class="mb-3">
-                    <div class="text-xs text-gray-500">Parts</div>
-                    <div id="summary_parts" class="tot">0.00 ₾</div>
-                </div>
-                <div class="mb-3">
-                    <div class="text-xs text-gray-500">Service</div>
-                    <div id="summary_service" class="tot">0.00 ₾</div>
-                </div>
-                <div class="mb-3 border-t pt-3">
-                    <div class="text-xs text-gray-500">Grand Total</div>
-                    <div id="summary_grand" class="text-2xl font-bold">0.00 ₾</div>
-                </div>
-                <div class="mt-4 flex gap-2">
-                    <button type="button" onclick="handleSave(false)" class="flex-1 touch-btn bg-green-600 text-white rounded-md px-3 py-2">Save</button>
-                    <button type="button" onclick="handleSave(true)" class="flex-1 touch-btn bg-indigo-600 text-white rounded-md px-3 py-2">Save & Print</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sticky action bar (mobile) -->
-        <div id="sticky-actions" class="print-hidden md:hidden">
-            <div id="sticky-sum" class="text-sm text-gray-700">0.00 ₾</div>
-            <div class="flex gap-2">
-                <button type="button" onclick="handleSave(false)" class="bg-green-600 text-white px-4 py-2 rounded-md">Save</button>
-                <button type="button" onclick="handleSave(true)" class="bg-indigo-600 text-white px-4 py-2 rounded-md">Save & Print</button>
-            </div>
-        </div>
-
         <div class="h-full overflow-auto p-4 md:p-8">
         <div id="edit-mode" class="block print-hidden animate-fade-in">
             <form id="invoice-form" action="save_invoice.php" method="post" enctype="multipart/form-data" onsubmit="return handleSave()" role="form" aria-label="Invoice form">
@@ -500,10 +452,9 @@ if ($loadId) {
                         <div id="review-content" class="space-y-4">
                             <!-- Review content will be populated by JS -->
                         </div>
-                        <div class="mt-6 flex gap-4 items-center">
+                        <div class="mt-6 flex gap-4">
                             <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"><?php echo $isEdit ? 'Update Invoice' : 'Save Invoice'; ?></button>
                             <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><?php echo $isEdit ? 'Update & Print' : 'Save & Print'; ?></button>
-                            <a href="mobile_invoice.php" target="_blank" class="ml-auto text-sm text-indigo-600 hover:underline">Open Mobile Editor</a>
                         </div>
                     </div>
                 </div>
@@ -1535,12 +1486,6 @@ if (!empty($serverInvoice)) {
             document.getElementById('display_service_total').innerText = finalSvcTotal > 0 ? finalSvcTotal.toFixed(2) + ' ₾' : '';
             document.getElementById('display_grand_total').innerText = grandTotal > 0 ? grandTotal.toFixed(2) + ' ₾' : '';
 
-            // Update the right-hand summary and sticky sum
-            try{ document.getElementById('summary_parts').innerText = finalPartTotal.toFixed(2) + ' ₾'; }catch(e){}
-            try{ document.getElementById('summary_service').innerText = finalSvcTotal.toFixed(2) + ' ₾'; }catch(e){}
-            try{ document.getElementById('summary_grand').innerText = grandTotal.toFixed(2) + ' ₾'; }catch(e){}
-            try{ document.getElementById('sticky-sum').innerText = grandTotal.toFixed(2) + ' ₾'; }catch(e){}
-
             return { partTotal: finalPartTotal, svcTotal: finalSvcTotal, grandTotal };
 
             return { partTotal, svcTotal, grandTotal };
@@ -1794,25 +1739,25 @@ if (!empty($serverInvoice)) {
             const plateNumber = document.getElementById('input_plate_number').value.trim();
 
             if (!customerName) {
-                showToast('Please enter a customer name.', 'error');
+                alert('Please enter a customer name.');
                 document.getElementById('input_customer_name').focus();
                 return false;
             }
             if (!vehicleId && !plateNumber.trim()) {
-                showToast('Please select a vehicle or enter a plate number.', 'error');
+                alert('Please select a vehicle or enter a plate number.');
                 document.getElementById('input_plate_number').focus();
                 return false;
             }
 
             if (!serviceManager) {
-                showToast('Please enter a service manager.', 'error');
+                alert('Please enter a service manager.');
                 document.getElementById('input_service_manager').focus();
                 return false;
             }
 
             // If no customer is selected, plate number is required
             if (!vehicleId && customerName && !plateNumber) {
-                showToast('Please enter a plate number when creating a new customer.', 'error');
+                alert('Please enter a plate number when creating a new customer.');
                 document.getElementById('input_plate_number').focus();
                 return false;
             }
@@ -1832,29 +1777,12 @@ if (!empty($serverInvoice)) {
             if (!handleSave()) {
                 // Clear flag when validation fails to avoid accidental print after failed save
                 document.getElementById('print_after_save').value = '';
-            } else {
-                showToast('Saving and preparing print...', 'info');
             }
         }
 
         // Autocomplete for item names
         let currentSuggestions = [];
         let currentInput = null;
-
-        // Simple toast utility for compact messages
-        if (!window.showToast) {
-            window.showToast = function(message, type='info', duration=3000){
-                const t = document.getElementById('global-toast') || (function(){ const d = document.createElement('div'); d.id='global-toast'; d.innerHTML = '<div class="inner"></div>'; document.body.appendChild(d); return d; })();
-                t.querySelector('.inner').innerText = message;
-                t.style.display = 'block';
-                if (type === 'error') t.querySelector('.inner').style.background = 'rgba(220,38,38,0.95)';
-                else if (type === 'info') t.querySelector('.inner').style.background = 'rgba(31,41,55,0.95)';
-                else t.querySelector('.inner').style.background = 'rgba(0,0,0,0.85)';
-                clearTimeout(t._to);
-                t._to = setTimeout(()=>{ t.style.display = 'none'; }, duration);
-            };
-        }
-
 
         function showSuggestions(input, suggestions) {
             const container = input.closest('td').querySelector('.suggestions');
