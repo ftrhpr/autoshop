@@ -1100,4 +1100,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         header('Location: view_invoice.php?id=' . $invoice_id);
     }
     exit;
+}
 ?>
