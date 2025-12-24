@@ -344,8 +344,8 @@ if ($loadId) {
                             <div>
                                 <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="text" id="input_mileage" placeholder="150000 km" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
-                                    <div class="unit-toggle">
+                                    <input type="text" id="input_mileage" placeholder="150000 km" class="flex-1 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                                    <div class="unit-toggle flex-shrink-0">
                                         <button type="button" id="unit-km" class="unit-btn active" data-unit="km">KM</button>
                                         <button type="button" id="unit-mi" class="unit-btn" data-unit="mi">MI</button>
                                     </div>

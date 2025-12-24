@@ -625,8 +625,8 @@ if (isset($_GET['edit_id'])) {
                             Mileage
                         </label>
                         <div class="flex items-center gap-2">
-                            <input type="text" id="input_mileage" class="input-field" placeholder="150000 km">
-                             <div class="unit-toggle">
+                            <input type="text" id="input_mileage" class="input-field" placeholder="150000 km" style="width: auto; flex-grow: 1;">
+                             <div class="unit-toggle" style="flex-shrink: 0;">
                                 <button type="button" class="unit-btn active" data-unit="km">KM</button>
                                 <button type="button" class="unit-btn" data-unit="mi">MI</button>
                             </div>
