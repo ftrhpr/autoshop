@@ -231,7 +231,6 @@ if ($loadId) {
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                            </svg>
                         </div>
                         <div class="ml-3">
                             <h3 class="text-sm font-medium text-red-800">
@@ -522,7 +521,7 @@ if (!empty($serverInvoice)) {
                     <div class="flex gap-2 justify-center mb-3">
                         <button id="capture-photo" class="bg-green-600 text-white p-3 rounded-full hover:bg-green-700 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 002-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
                         </button>
@@ -860,6 +859,11 @@ if (!empty($serverInvoice)) {
             let selectedFiles = [];
             let isMultiCaptureMode = false;
 
+            function updateImageCount() {
+                const count = imgPreview.querySelectorAll('.relative.inline-block').length;
+                imageCount.textContent = `${count} image${count !== 1 ? 's' : ''}`;
+            }
+
             if (imgInput && imgPreview) {
                 // Click helpers for separate buttons
                 const btnTake = document.getElementById('btn_take_photo');
@@ -1165,22 +1169,8 @@ if (!empty($serverInvoice)) {
 
             // Function to update image count
             function updateImageCount() {
-                const imageCount = document.getElementById('image_count');
-                if (imageCount) {
-                    const preview = document.getElementById('input_images_preview');
-                    const existingImages = preview.querySelectorAll('img').length;
-                    imageCount.textContent = `${existingImages} image${existingImages !== 1 ? 's' : ''}`;
-                }
-            }
-
-            // Function to update image count
-            function updateImageCount() {
-                const imageCount = document.getElementById('image_count');
-                if (imageCount) {
-                    const preview = document.getElementById('input_images_preview');
-                    const existingImages = preview.querySelectorAll('img').length;
-                    imageCount.textContent = `${existingImages} image${existingImages !== 1 ? 's' : ''}`;
-                }
+                const count = imgPreview.querySelectorAll('.relative.inline-block').length;
+                imageCount.textContent = `${count} image${count !== 1 ? 's' : ''}`;
             }
 
             // If server supplied invoice data, populate and optionally print
@@ -1287,7 +1277,7 @@ if (!empty($serverInvoice)) {
                             <p><strong>Plate Number:</strong> ${plateNumber}</p>
                             <p><strong>VIN:</strong> ${vin}</p>
                             <p><strong>Mileage:</strong> ${mileage}</p>
-                        </div>
+                                               </div>
                     </div>
 
                     <div class="space-y-4">
@@ -1957,7 +1947,7 @@ if (!empty($serverInvoice)) {
                             <div class="text-sm text-gray-600">${item.description || ''}${item.vehicle_make_model ? ` — <span class="text-xs text-gray-500">${item.vehicle_make_model}</span>` : ''}</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-sm font-medium text-blue-600">${item.suggested_price > 0 ? item.suggested_price + ' ₾' : ''} ${item.has_vehicle_price ? '<span class="text-xs bg-green-100 text-green-800 px-1 rounded ml-2">vehicle</span>' : (vehicleVal ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-1 rounded ml-2">default</span>' : '')}</div>
+                            <div class="text-sm font-medium text-blue-600">${item.suggested_price > 0 ? item.suggested_price + ' ₾' : ''} ${item.has_vehicle_price ? '<div class="text-xs text-green-700">vehicle price</div>' : (vehicleVal ? '<div class="text-xs text-yellow-700">default price</div>' : '')}</div>
                             <div class="text-xs text-gray-500 uppercase">${item.type}</div>
                         </div>
                     </div>
