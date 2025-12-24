@@ -17,7 +17,6 @@ $invoice = $stmt->fetch();
 if (!$invoice) die('Invoice not found');
 
 $items = json_decode($invoice['items'], true) ?: [];
-$oils = json_decode($invoice['oils'], true) ?: [];
 
 // Resolve customer
 $customer = null;
@@ -50,22 +49,29 @@ $partsTotal = number_format((float)$invoice['parts_total'], 2);
 $svcTotal = number_format((float)$invoice['service_total'], 2);
 $grandTotal = number_format((float)$invoice['grand_total'], 2);
 
-// Calculate oils total for display
-$oilsTotal = 0.00;
-foreach ($oils as $ol) {
-    if (isset($ol['brand_id']) && isset($ol['viscosity_id']) && isset($ol['package_type'])) {
-        $stmt = $pdo->prepare("SELECT price FROM oil_prices WHERE brand_id = ? AND viscosity_id = ? AND package_type = ? LIMIT 1");
-        $stmt->execute([$ol['brand_id'], $ol['viscosity_id'], $ol['package_type']]);
-        $priceData = $stmt->fetch();
-        if ($priceData) {
-            $unitPrice = (float)$priceData['price'];
-            $qty = isset($ol['qty']) ? (float)$ol['qty'] : 1;
-            $discount = isset($ol['discount']) ? (float)$ol['discount'] : 0.0;
-            $oilsTotal += $qty * $unitPrice * max(0, (1 - $discount / 100.0));
-        }
-    }
+// Load oils for printing
+$oils = !empty($invoice['oils']) ? json_decode($invoice['oils'], true) : [];
+$oilBrandsMap = $pdo->query('SELECT id, name FROM oil_brands')->fetchAll(PDO::FETCH_KEY_PAIR);
+$oilViscositiesMap = $pdo->query('SELECT id, viscosity FROM oil_viscosities')->fetchAll(PDO::FETCH_KEY_PAIR);
+$oilsTotal = 0.0;
+foreach ($oils as &$o) {
+    $b = isset($oilBrandsMap[$o['brand_id']]) ? $oilBrandsMap[$o['brand_id']] : '';
+    $v = isset($oilViscositiesMap[$o['viscosity_id']]) ? $oilViscositiesMap[$o['viscosity_id']] : '';
+    $o['brand_name'] = $b;
+    $o['viscosity_name'] = $v;
+    // price lookup
+    $stmt = $pdo->prepare('SELECT price FROM oil_prices WHERE brand_id = ? AND viscosity_id = ? AND package_type = ? LIMIT 1');
+    $stmt->execute([$o['brand_id'], $o['viscosity_id'], $o['package_type']]);
+    $priceRow = $stmt->fetch();
+    $unit = $priceRow ? (float)$priceRow['price'] : 0.0;
+    $o['unit_price'] = $unit;
+    $qty = isset($o['qty']) ? (int)$o['qty'] : 1;
+    $discount = isset($o['discount']) ? (float)$o['discount'] : 0.0;
+    $line = $qty * $unit * max(0, (1 - $discount / 100.0));
+    $o['line_total'] = $line;
+    $oilsTotal += $line;
 }
-$oilsTotalFormatted = number_format($oilsTotal, 2);
+unset($o);
 
 ?>
 <!DOCTYPE html>

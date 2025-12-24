@@ -51,8 +51,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    // DEBUG: log oil data
-    error_log("save_invoice: processed oils: " . json_encode($oils) . "\n");
+    // DEBUG: log raw oil data
+    error_log("save_invoice: raw processed oils: " . json_encode($oils) . "\n");
+
+    // Normalize / deduplicate oils by brand + viscosity + package + discount (sum qtys)
+    $normalized = [];
+    foreach ($oils as $o) {
+        $key = $o['brand_id'] . '_' . $o['viscosity_id'] . '_' . $o['package_type'] . '_' . $o['discount'];
+        if (isset($normalized[$key])) {
+            $normalized[$key]['qty'] += $o['qty'];
+        } else {
+            $normalized[$key] = $o;
+        }
+    }
+    $oils = array_values($normalized);
+    error_log("save_invoice: normalized oils to save: " . json_encode($oils) . "\n");
 
     // Handle vehicle - find or create for existing customer
     // DEBUG: log incoming items payload to help diagnose missing-created-items issue
@@ -678,6 +691,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    // DEBUG: what we will store in DB
+    error_log("save_invoice: oilsTotal={$oilsTotal}, oils_to_store=" . json_encode($oils) . "\n");
+
     // Read posted global discounts (if any)
     $parts_discount_percent = isset($data['parts_discount_percent']) ? floatval($data['parts_discount_percent']) : 0.0;
     $service_discount_percent = isset($data['service_discount_percent']) ? floatval($data['service_discount_percent']) : 0.0;
@@ -735,6 +751,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $finalGrandTotal,
             $existing_id
         ]);
+        // After update, fetch saved oils for debugging
+        $stmt = $pdo->prepare('SELECT oils FROM invoices WHERE id = ? LIMIT 1');
+        $stmt->execute([$existing_id]);
+        $saved = $stmt->fetch();
+        error_log("save_invoice: updated invoice {$existing_id}, saved_oils=" . ($saved ? $saved['oils'] : 'NULL') . "\n");
         $invoice_id = $existing_id;
     } else {
         // Insert new invoice (include VIN, technician)
@@ -761,6 +782,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $finalGrandTotal,
             $_SESSION['user_id']
         ]);
+        // After insert, fetch and log saved oils for debugging
+        $invoice_id = $pdo->lastInsertId();
+        $stmt = $pdo->prepare('SELECT oils FROM invoices WHERE id = ? LIMIT 1');
+        $stmt->execute([$invoice_id]);
+        $saved = $stmt->fetch();
+        error_log("save_invoice: inserted invoice {$invoice_id}, saved_oils=" . ($saved ? $saved['oils'] : 'NULL') . "\n");
         $invoice_id = $pdo->lastInsertId();
     }
 

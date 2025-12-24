@@ -1679,7 +1679,6 @@ if (!empty($serverInvoice)) {
 
             // Load oils
             document.querySelectorAll('.oil-row').forEach(r => r.remove());
-            oilRowCount = 0; // Reset counter when loading
             (inv.oils || []).forEach(ol => {
                 addOilRow();
                 const tr = document.querySelector('.oil-row:last-child'); if (!tr) return;
@@ -1690,6 +1689,16 @@ if (!empty($serverInvoice)) {
                 tr.querySelector('.oil-discount').value = (ol.discount !== undefined) ? ol.discount : 0;
                 // Update price and total
                 updateOilPrice(tr);
+            });
+            // Normalize visible oil input names to sequential indexes (avoid name collisions / duplication)
+            document.querySelectorAll('.oil-row').forEach((tr, idx) => {
+                const i = idx;
+                const b = tr.querySelector('.oil-brand'); if (b) b.name = `oil_brand_${i}`;
+                const v = tr.querySelector('.oil-viscosity'); if (v) v.name = `oil_viscosity_${i}`;
+                const p = tr.querySelector('.oil-package'); if (p) p.name = `oil_package_${i}`;
+                const q = tr.querySelector('.oil-qty'); if (q) q.name = `oil_qty_${i}`;
+                const up = tr.querySelector('.oil-unit-price'); if (up) up.name = `oil_unit_price_${i}`;
+                const d = tr.querySelector('.oil-discount'); if (d) d.name = `oil_discount_${i}`;
             });
             updateOilsTotal();
 
@@ -1962,39 +1971,45 @@ if (!empty($serverInvoice)) {
                 smIdEl.value = smDefaultId;
             }
 
+            // Remove previously prepared hidden inputs to avoid duplicates
+            form = document.getElementById('invoice-form');
+            form.querySelectorAll('.prepared-input').forEach(el => el.remove());
+
             // Add hidden for items
-            let form = document.getElementById('invoice-form');
             let index = 0;
             document.querySelectorAll('.item-row').forEach(row => {
                 let name = row.querySelector('.item-name').value;
                 if (name.trim() !== '') {
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_name_${index}" value="${name}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_qty_${index}" value="${row.querySelector('.item-qty').value}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_part_${index}" value="${row.querySelector('.item-price-part').value}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_price_svc_${index}" value="${row.querySelector('.item-price-svc').value}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_${index}" value="${row.querySelector('.item-tech').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_name_${index}" value="${name}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_qty_${index}" value="${row.querySelector('.item-qty').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_price_part_${index}" value="${row.querySelector('.item-price-part').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_price_svc_${index}" value="${row.querySelector('.item-price-svc').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_tech_${index}" value="${row.querySelector('.item-tech').value}">`);
                     // include per-item technician id if selected from suggestions
                     if (row.dataset && row.dataset.itemTechId) {
-                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_tech_id_${index}" value="${row.dataset.itemTechId}">`);
+                        form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_tech_id_${index}" value="${row.dataset.itemTechId}">`);
                     }
                     // include per-item discounts
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_part_${index}" value="${row.querySelector('.item-discount-part').value}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_discount_svc_${index}" value="${row.querySelector('.item-discount-svc').value}">`);
-                
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_discount_part_${index}" value="${row.querySelector('.item-discount-part').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_discount_svc_${index}" value="${row.querySelector('.item-discount-svc').value}">`);
+
 
                     // include matched db id/type if suggestion was used
                     if (row.dataset && row.dataset.itemDbId) {
-                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_id_${index}" value="${row.dataset.itemDbId}">`);
+                        form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_db_id_${index}" value="${row.dataset.itemDbId}">`);
                     }
                     if (row.dataset && row.dataset.itemDbType) {
-                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_type_${index}" value="${row.dataset.itemDbType}">`);
+                        form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_db_type_${index}" value="${row.dataset.itemDbType}">`);
                     }
                     if (row.dataset && row.dataset.itemDbVehicle) {
-                        form.insertAdjacentHTML('beforeend', `<input type="hidden" name="item_db_vehicle_${index}" value="${row.dataset.itemDbVehicle}">`);
+                        form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_db_vehicle_${index}" value="${row.dataset.itemDbVehicle}">`);
                     }
                     index++;
                 }
             });
+
+            // Remove any previously added hidden oil inputs to avoid duplicates
+            form.querySelectorAll('input[name^="oil_"]').forEach(el => el.remove());
 
             // Add hidden for oils
             let oilIndex = 0;
@@ -2004,11 +2019,11 @@ if (!empty($serverInvoice)) {
                 let packageType = row.querySelector('.oil-package').value;
                 
                 if (brandId && viscosityId && packageType) {
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_brand_${oilIndex}" value="${brandId}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_viscosity_${oilIndex}" value="${viscosityId}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_package_${oilIndex}" value="${packageType}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_qty_${oilIndex}" value="${row.querySelector('.oil-qty').value}">`);
-                    form.insertAdjacentHTML('beforeend', `<input type="hidden" name="oil_discount_${oilIndex}" value="${row.querySelector('.oil-discount').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_brand_${oilIndex}" value="${brandId}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_viscosity_${oilIndex}" value="${viscosityId}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_package_${oilIndex}" value="${packageType}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_qty_${oilIndex}" value="${row.querySelector('.oil-qty').value}">`);
+                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="oil_discount_${oilIndex}" value="${row.querySelector('.oil-discount').value}">`);
                     oilIndex++;
                 }
             });
