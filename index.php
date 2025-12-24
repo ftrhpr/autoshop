@@ -313,6 +313,7 @@ if ($loadId) {
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="vehicle">Vehicle</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">Customer</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="items">Items</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="oil">Oil</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="photos">Photos</button>
                         <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="review">Review</button>
                     </nav>
@@ -442,6 +443,64 @@ if ($loadId) {
                             <div class="bg-green-50 p-4 rounded-lg">
                                 <p class="text-xs text-green-700">Grand Total</p>
                                 <p class="font-bold text-xl text-green-800" id="display_grand_total"></p>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
+                                <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="oil-tab">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-700">
+                            <svg class="h-6 w-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            Oil Selection
+                        </h2>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Oil Package</label>
+                            <select id="oil_package_select" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                <option value="">Choose an oil package...</option>
+                                <?php
+                                $oilPackages = $pdo->query("
+                                    SELECT p.id, b.name as brand_name, v.viscosity, p.package_type, p.amount, p.price
+                                    FROM oil_packages p
+                                    JOIN oil_brands b ON p.brand_id = b.id
+                                    JOIN oil_viscosities v ON p.viscosity_id = v.id
+                                    ORDER BY b.name, v.viscosity, p.package_type, p.amount
+                                ")->fetchAll();
+                                foreach ($oilPackages as $package):
+                                    $description = $package['brand_name'] . ' ' . $package['viscosity'];
+                                    if ($package['package_type'] === 'canned') {
+                                        $description .= ' (' . $package['amount'] . 'L Canned)';
+                                    } else {
+                                        $description .= ' (' . $package['package_type'] . ')';
+                                    }
+                                    $description .= ' - ' . number_format($package['price'], 2) . ' ₾';
+                                ?>
+                                    <option value="<?php echo $package['id']; ?>" data-price="<?php echo $package['price']; ?>" data-description="<?php echo htmlspecialchars($description); ?>">
+                                        <?php echo htmlspecialchars($description); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                            <input type="number" id="oil_quantity" min="1" value="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="button" onclick="addOilToInvoice()" class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
+                            Add Oil to Invoice
+                        </button>
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold mb-4">Added Oil Items</h3>
+                            <div id="oil-items-list" class="space-y-2">
+                                <!-- Oil items will be added here -->
                             </div>
                         </div>
                         <div class="mt-6 flex justify-between">
@@ -1802,6 +1861,62 @@ if (!empty($serverInvoice)) {
                 }
             });
             return true;
+        }
+
+        function addOilToInvoice() {
+            const select = document.getElementById('oil_package_select');
+            const quantity = parseInt(document.getElementById('oil_quantity').value) || 1;
+            const selectedOption = select.options[select.selectedIndex];
+
+            if (!selectedOption.value) {
+                alert('Please select an oil package.');
+                return;
+            }
+
+            const description = selectedOption.getAttribute('data-description');
+            const price = parseFloat(selectedOption.getAttribute('data-price'));
+
+            // Add as a regular item
+            addItemRow();
+            const rows = document.querySelectorAll('.item-row');
+            const lastRow = rows[rows.length - 1];
+
+            lastRow.querySelector('.item-name').value = description;
+            lastRow.querySelector('.item-qty').value = quantity;
+            lastRow.querySelector('.item-price-part').value = price;
+            lastRow.querySelector('.item-price-svc').value = 0;
+
+            // Update the oil items list display
+            updateOilItemsList();
+
+            // Switch to items tab
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm'));
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelector('[data-tab="items"]').classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+            document.getElementById('items-tab').classList.remove('hidden');
+
+            calculateTotals();
+        }
+
+        function updateOilItemsList() {
+            const list = document.getElementById('oil-items-list');
+            list.innerHTML = '';
+
+            document.querySelectorAll('.item-row').forEach((row, index) => {
+                const name = row.querySelector('.item-name').value;
+                const qty = row.querySelector('.item-qty').value;
+                const price = row.querySelector('.item-price-part').value;
+
+                if (name && name.toLowerCase().includes('oil')) {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex justify-between items-center p-2 bg-gray-50 rounded';
+                    itemDiv.innerHTML = `
+                        <span>${name} (x${qty})</span>
+                        <span>${(price * qty).toFixed(2)} ₾</span>
+                    `;
+                    list.appendChild(itemDiv);
+                }
+            });
         }
 
         function handleSave() {
