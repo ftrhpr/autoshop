@@ -1018,7 +1018,7 @@ foreach ($oilPrices as $price) {
         }
 
         function populateReview() {
-            // Ensure totals are up to date before populating review
+            // Ensure totals are up to date before displaying review
             calculateTotals();
             
             const reviewContainer = document.getElementById('review-container');
@@ -1259,9 +1259,6 @@ foreach ($oilPrices as $price) {
                 `;
 
                 container.appendChild(card);
-
-                // Update totals to include the new oil (even with 0 value)
-                calculateTotals();
 
                 // If editing, populate
                 if (existingOil) {
