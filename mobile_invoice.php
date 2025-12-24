@@ -1825,6 +1825,25 @@ foreach ($oilPrices as $price) {
                 }
             });
 
+            // Always include a JSON fallback with the current oils (helps when individual fields are missing)
+            const oilCards = Array.from(document.querySelectorAll('.oil-card')).map(card => ({
+                brand_id: parseInt(card.querySelector('.oil-brand')?.value || 0) || null,
+                viscosity_id: parseInt(card.querySelector('.oil-viscosity')?.value || 0) || null,
+                package_type: card.querySelector('.oil-package')?.value || '',
+                qty: parseInt(card.querySelector('.oil-qty')?.value || 1) || 1,
+                discount: parseFloat(card.querySelector('.oil-discount')?.value || 0) || 0
+            }));
+
+            let hiddenOilsInput = document.querySelector('input[name="hidden_oils_json"]');
+            if (!hiddenOilsInput) {
+                hiddenOilsInput = document.createElement('input');
+                hiddenOilsInput.type = 'hidden';
+                hiddenOilsInput.name = 'hidden_oils_json';
+                hiddenOilsInput.className = 'prepared-input';
+                document.getElementById('mobile-invoice-form').appendChild(hiddenOilsInput);
+            }
+            hiddenOilsInput.value = JSON.stringify(oilCards);
+
             return true;
         }
 
