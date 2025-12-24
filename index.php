@@ -1583,6 +1583,11 @@ if (!empty($serverInvoice)) {
             for(const [inId, outId] of Object.entries(map)) {
                 let val = document.getElementById(inId).value;
                 if(inId === 'input_creation_date') val = val.replace('T', ' ');
+                if(inId === 'input_mileage') {
+                    const mileageValue = val;
+                    const mileageUnit = document.getElementById('mileage_unit').value;
+                    val = mileageValue ? `${mileageValue} ${mileageUnit}` : '';
+                }
                 document.getElementById(outId).innerText = val;
             }
 
@@ -1714,7 +1719,9 @@ if (!empty($serverInvoice)) {
             const phoneNumber = document.getElementById('input_phone_number').value;
             const carMark = document.getElementById('input_car_mark').value;
             const plateNumber = document.getElementById('input_plate_number').value;
-            const mileage = document.getElementById('input_mileage').value;
+            const mileageValue = document.getElementById('input_mileage').value;
+            const mileageUnit = document.getElementById('mileage_unit').value;
+            const mileage = mileageValue ? `${mileageValue} ${mileageUnit}` : '';
 
             document.getElementById('hidden_creation_date').value = creationDate;
             document.getElementById('hidden_service_manager').value = serviceManager;
