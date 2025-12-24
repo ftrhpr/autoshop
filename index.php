@@ -206,9 +206,9 @@ foreach ($oilPrices as $price) {
         <header class="flex-shrink-0 p-4 md:p-8 print-hidden">
             <nav aria-label="Breadcrumb" class="mb-6">
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
-                    <li><a href="admin/index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
+                    <li><a href="admin/index.php" class="hover:text-blue-600 transition">მთავარი</a></li>
                     <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
-                    <li aria-current="page">Invoice Editor</li>
+                    <li aria-current="page">ინვოისის რედაქტორი</li>
                 </ol>
             </nav>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -218,20 +218,20 @@ foreach ($oilPrices as $price) {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                         <?php if ($isEdit && !empty($serverInvoice)): ?>
-                            Editing Invoice #<?php echo htmlspecialchars($loadId); ?>
+                            ინვოისის რედაქტირება #<?php echo htmlspecialchars($loadId); ?>
                         <?php elseif ($isPrint && !empty($serverInvoice)): ?>
-                            Invoice #<?php echo htmlspecialchars($loadId); ?> - Ready for Print
+                            ინვოისი #<?php echo htmlspecialchars($loadId); ?> - მზად არის ბეჭდვისთვის
                         <?php else: ?>
-                            Invoice Editor
+                            ინვოისის რედაქტორი
                         <?php endif; ?>
                     </h1>
                     <p class="mt-2 text-gray-600">
                         <?php if ($isEdit && !empty($serverInvoice)): ?>
-                            Invoice loaded for editing. Make changes and save to update.
+                            ინვოისი ჩაიტვირთა რედაქტირებისთვის. შეცვალეთ და შეინახეთ განახლებისთვის.
                         <?php elseif ($isPrint && !empty($serverInvoice)): ?>
-                            Invoice loaded successfully. Use the Preview or Print buttons below to view or print the invoice.
+                            ინვოისი წარმატებით ჩაიტვირთა. გამოიყენეთ გადახედვის ან ბეჭდვის ღილაკები ინვოისის სანახავად ან დასაბეჭდად.
                         <?php else: ?>
-                            Create and manage auto shop invoices with ease.
+                            შექმენით და მართეთ ავტოსერვისის ინვოისები მარტივად.
                         <?php endif; ?>
                     </p>
 
@@ -245,7 +245,7 @@ foreach ($oilPrices as $price) {
                             </div>
                             <div class="ml-3">
                                 <p class="text-sm text-blue-700">
-                                    Invoice #<?php echo htmlspecialchars($loadId); ?> has been loaded and all data has been populated. You can now edit the invoice details and save changes.
+                                    ინვოისი #<?php echo htmlspecialchars($loadId); ?> ჩაიტვირთა და ყველა მონაცემი შევსებულია. ახლა შეგიძლიათ დაარედაქტიროთ ინვოისის დეტალები და შეინახოთ ცვლილებები.
                                 </p>
                             </div>
                         </div>
@@ -260,10 +260,10 @@ foreach ($oilPrices as $price) {
                             </div>
                             <div class="ml-3">
                                 <h3 class="text-sm font-medium text-green-800">
-                                    Invoice Loaded Successfully
+                                    ინვოისი წარმატებით ჩაიტვირთა
                                 </h3>
                                 <div class="mt-2 text-sm text-green-700">
-                                    <p>Invoice #<?php echo htmlspecialchars($loadId); ?> has been loaded and all data has been populated. You can now preview the invoice or print it directly.</p>
+                                    <p>ინვოისი #<?php echo htmlspecialchars($loadId); ?> ჩაიტვირთა და ყველა მონაცემი შევსებულია. ახლა შეგიძლიათ გადახედოთ ინვოისს ან დაბეჭდოთ პირდაპირ.</p>
                                 </div>
                             </div>
                         </div>
@@ -280,10 +280,10 @@ foreach ($oilPrices as $price) {
                         </div>
                         <div class="ml-3">
                             <h3 class="text-sm font-medium text-red-800">
-                                Invoice Not Found
+                                ინვოისი ვერ მოიძებნა
                             </h3>
                             <div class="mt-2 text-sm text-red-700">
-                                <p>The invoice with ID <?php echo htmlspecialchars($loadId); ?> could not be found. It may have been deleted or the ID may be incorrect.</p>
+                                <p>ინვოისი ID-ით <?php echo htmlspecialchars($loadId); ?> ვერ მოიძებნა. შესაძლოა წაშლილი იყო ან ID არასწორია.</p>
                             </div>
                         </div>
                     </div>
@@ -323,12 +323,12 @@ foreach ($oilPrices as $price) {
                 <!-- Tab Navigation -->
                 <div class="mb-6">
                     <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="vehicle">Vehicle</button>
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">Customer</button>
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="items">Items</button>
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="oils">Oils</button>
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="photos">Photos</button>
-                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="review">Review</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="vehicle">ავტომობილი</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="customer">კლიენტი</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="items">ნივთები</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="oils">ზეთები</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="photos">ფოტოები</button>
+                        <button type="button" class="tab-btn flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors" data-tab="review">გადახედვა</button>
                     </nav>
                 </div>
 
@@ -339,36 +339,36 @@ foreach ($oilPrices as $price) {
                             <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
-                            Vehicle Details
+                            ავტომობილის დეტალები
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2">Plate Number</label>
+                                <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2">სახელმწიფო ნომერი</label>
                                 <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
                             <div>
-                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">Car Make/Model <span class="text-xs text-gray-500"> <button type="button" title="Format: 'Make Model' - e.g., 'Toyota Corolla'" class="ml-1 text-gray-400 hover:text-gray-600">ℹ️</button></span></label>
-                                <input type="text" id="input_car_mark" placeholder="e.g., Toyota Camry" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">ავტომობილის მარკა/მოდელი <span class="text-xs text-gray-500"> <button type="button" title="ფორმატი: 'მარკა მოდელი' - მაგ: 'Toyota Corolla'" class="ml-1 text-gray-400 hover:text-gray-600">ℹ️</button></span></label>
+                                <input type="text" id="input_car_mark" placeholder="მაგ: Toyota Camry" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
 
                             <div>
                                 <label for="input_vin" class="block text-sm font-medium text-gray-700 mb-2">VIN</label>
-                                <input type="text" id="input_vin" placeholder="Vehicle VIN" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                                <input type="text" id="input_vin" placeholder="ავტომობილის VIN" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
                             <div>
-                                <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
+                                <label for="input_mileage" class="block text-sm font-medium text-gray-700 mb-2">გარბენი</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="text" id="input_mileage" placeholder="150000 km" class="flex-1 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+                                    <input type="text" id="input_mileage" placeholder="150000 კმ" class="flex-1 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                                     <div class="unit-toggle flex-shrink-0">
-                                        <button type="button" id="unit-km" class="unit-btn active" data-unit="km">KM</button>
-                                        <button type="button" id="unit-mi" class="unit-btn" data-unit="mi">MI</button>
+                                        <button type="button" id="unit-km" class="unit-btn active" data-unit="km">კმ</button>
+                                        <button type="button" id="unit-mi" class="unit-btn" data-unit="mi">მილი</button>
                                     </div>
                                     <input type="hidden" id="mileage_unit" name="mileage_unit" value="km">
                                 </div>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end">
-                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">შემდეგი ნაბიჯი</button>
                         </div>
                     </div>
                 </div>
@@ -379,30 +379,30 @@ foreach ($oilPrices as $price) {
                             <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            Customer Details
+                            კლიენტის დეტალები
                         </h2>
                         <div class="space-y-4">
                             <div>
-                                <label for="input_creation_date" class="block text-sm font-medium text-gray-700 mb-2">Creation Date</label>
+                                <label for="input_creation_date" class="block text-sm font-medium text-gray-700 mb-2">შექმნის თარიღი</label>
                                 <input type="datetime-local" id="input_creation_date" value="<?php echo $currentDate; ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                             <div>
-                                <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
-                                <input type="text" id="input_customer_name" placeholder="Enter customer name" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                                <label for="input_customer_name" class="block text-sm font-medium text-gray-700 mb-2">კლიენტის სახელი</label>
+                                <input type="text" id="input_customer_name" placeholder="შეიყვანეთ კლიენტის სახელი" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                             <div>
-                                <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                                <input type="text" id="input_phone_number" placeholder="Phone number" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                                <label for="input_phone_number" class="block text-sm font-medium text-gray-700 mb-2">ტელეფონის ნომერი</label>
+                                <input type="text" id="input_phone_number" placeholder="ტელეფონის ნომერი" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                             <input type="hidden" id="input_customer_id" name="customer_id" value="">
                             <div>
-                                <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">Service Manager</label>
-                                <input type="text" id="input_service_manager" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
+                                <label for="input_service_manager" class="block text-sm font-medium text-gray-700 mb-2">სერვისის მენეჯერი</label>
+                                <input type="text" id="input_service_manager" placeholder="მენეჯერის სახელი" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 text-base transition">
                             </div>
                         </div>
                         <div class="mt-6 flex justify-between">
-                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
-                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">წინა</button>
+                            <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">შემდეგი ნაბიჯი</button>
                         </div>
                     </div>
                 </div>
@@ -413,21 +413,21 @@ foreach ($oilPrices as $price) {
                             <svg class="h-6 w-6 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
-                            Service & Parts
+                            სერვისი & ნაწილები
                         </h2>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm bg-white rounded-lg overflow-hidden shadow-sm min-w-[600px]">
                                 <thead class="bg-gray-100">
                                     <tr>
                                         <th class="px-4 py-3 text-left">#</th>
-                                        <th class="px-4 py-3 text-left">Item Name</th>
-                                        <th class="px-4 py-3 text-center">Qty</th>
-                                        <th class="px-4 py-3 text-right">Part Price</th>
-                                        <th class="px-4 py-3 text-right">Disc %</th>
-                                        <th class="px-4 py-3 text-right">Svc Price</th>
-                                        <th class="px-4 py-3 text-right">Disc %</th>
-                                        <th class="px-4 py-3 text-left">Technician</th>
-                                        <th class="px-4 py-3 text-center">Action</th>
+                                        <th class="px-4 py-3 text-left">ნივთის სახელი</th>
+                                        <th class="px-4 py-3 text-center">რაოდენობა</th>
+                                        <th class="px-4 py-3 text-right">ნაწილის ფასი</th>
+                                        <th class="px-4 py-3 text-right">ფასდაკლება %</th>
+                                        <th class="px-4 py-3 text-right">სერვისის ფასი</th>
+                                        <th class="px-4 py-3 text-right">ფასდაკლება %</th>
+                                        <th class="px-4 py-3 text-left">ტექნიკოსი</th>
+                                        <th class="px-4 py-3 text-center">მოქმედება</th>
                                     </tr>
                                 </thead>
                                 <tbody id="items-table-body" class="divide-y divide-gray-100">
@@ -439,30 +439,30 @@ foreach ($oilPrices as $price) {
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
-                            Add Item
+                            ნივთის დამატება
                         </button>
 
                         <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="bg-gray-50 p-4 rounded-lg">
-                                <p class="text-xs text-gray-600">Parts Total</p>
+                                <p class="text-xs text-gray-600">ნაწილების ჯამი</p>
                                 <p class="font-bold text-lg" id="display_parts_total"></p>
-                                <div class="mt-2 text-xs text-slate-600">Discount: <input type="number" id="input_parts_discount" min="0" max="100" value="0" class="w-20 ml-2 border p-1 rounded text-sm" oninput="calculateTotals()"> %</div>
+                                <div class="mt-2 text-xs text-slate-600">ფასდაკლება: <input type="number" id="input_parts_discount" min="0" max="100" value="0" class="w-20 ml-2 border p-1 rounded text-sm" oninput="calculateTotals()"> %</div>
                             </div>
                             <div class="bg-gray-50 p-4 rounded-lg">
-                                <p class="text-xs text-gray-600">Service Total</p>
+                                <p class="text-xs text-gray-600">სერვისის ჯამი</p>
                                 <p class="font-bold text-lg" id="display_service_total"></p>
-                                <div class="mt-2 text-xs text-slate-600">Discount: <input type="number" id="input_service_discount" min="0" max="100" value="0" class="w-20 ml-2 border p-1 rounded text-sm" oninput="calculateTotals()"> %</div>
+                                <div class="mt-2 text-xs text-slate-600">ფასდაკლება: <input type="number" id="input_service_discount" min="0" max="100" value="0" class="w-20 ml-2 border p-1 rounded text-sm" oninput="calculateTotals()"> %</div>
                             </div>
                             <div class="bg-green-50 p-4 rounded-lg">
-                                <p class="text-xs text-green-700">Grand Total</p>
+                                <p class="text-xs text-green-700">საერთო ჯამი</p>
                                 <p class="font-bold text-xl text-green-800" id="display_grand_total"></p>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-between">
-                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">წინა</button>
                             <div class="flex gap-2">
-                                <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
-                                <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                                <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">გადახედვაზე გადასვლა</button>
+                                <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">შემდეგი ნაბიჯი</button>
                             </div>
                         </div>
                     </div>
@@ -474,7 +474,7 @@ foreach ($oilPrices as $price) {
                             <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                             </svg>
-                            Engine Oils
+                            ძრავის ზეთები
                         </h2>
 
                         <div class="overflow-x-auto">
@@ -482,14 +482,14 @@ foreach ($oilPrices as $price) {
                                 <thead class="bg-gray-100">
                                     <tr>
                                         <th class="px-4 py-3 text-left">#</th>
-                                        <th class="px-4 py-3 text-left">Brand</th>
-                                        <th class="px-4 py-3 text-left">Viscosity</th>
-                                        <th class="px-4 py-3 text-left">Package</th>
-                                        <th class="px-4 py-3 text-center">Quantity</th>
-                                        <th class="px-4 py-3 text-right">Unit Price</th>
-                                        <th class="px-4 py-3 text-right">Discount %</th>
-                                        <th class="px-4 py-3 text-right">Total</th>
-                                        <th class="px-4 py-3 text-center">Action</th>
+                                        <th class="px-4 py-3 text-left">ბრენდი</th>
+                                        <th class="px-4 py-3 text-left">სიბლანტე</th>
+                                        <th class="px-4 py-3 text-left">შეფუთვა</th>
+                                        <th class="px-4 py-3 text-center">რაოდენობა</th>
+                                        <th class="px-4 py-3 text-right">ერთეულის ფასი</th>
+                                        <th class="px-4 py-3 text-right">ფასდაკლება %</th>
+                                        <th class="px-4 py-3 text-right">ჯამი</th>
+                                        <th class="px-4 py-3 text-center">მოქმედება</th>
                                     </tr>
                                 </thead>
                                 <tbody id="oils-table-body" class="divide-y divide-gray-100">
@@ -502,19 +502,19 @@ foreach ($oilPrices as $price) {
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
-                            Add Oil
+                            ზეთის დამატება
                         </button>
 
                         <div class="mt-6 bg-green-50 p-4 rounded-lg">
-                            <p class="text-sm text-green-700 font-medium">Oils Total</p>
+                            <p class="text-sm text-green-700 font-medium">ზეთების ჯამი</p>
                             <p class="font-bold text-xl text-green-800" id="oils-total">0.00 ₾</p>
                         </div>
 
                         <div class="mt-6 flex justify-between">
-                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">წინა</button>
                             <div class="flex gap-2">
-                                <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Skip to Review</button>
-                                <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Next Step</button>
+                                <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">გადახედვაზე გადასვლა</button>
+                                <button type="button" onclick="nextTab()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">შემდეგი ნაბიჯი</button>
                             </div>
                         </div>
                     </div>
@@ -526,22 +526,22 @@ foreach ($oilPrices as $price) {
                             <svg class="h-6 w-6 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            Photos
+                            ფოტოები
                         </h2>
                         <div class="flex gap-2 items-center mb-4">
-                            <button type="button" id="btn_take_photo" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors" title="Click for single photo, long-press for multi-capture">📷 Take Photo</button>
-                            <button type="button" id="btn_take_multiple" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors" title="Take multiple photos in sequence">📸 Multi-Capture</button>
-                            <button type="button" id="btn_upload_photo" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300 transition-colors">📁 Choose Files</button>
+                            <button type="button" id="btn_take_photo" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors" title="დააჭირეთ ერთი ფოტოსთვის, დაჭერით და გაუშვით მრავალფოტოანი გადაღებისთვის">📷 გადაიღეთ ფოტო</button>
+                            <button type="button" id="btn_take_multiple" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors" title="გადაიღეთ მრავალი ფოტო მიმდევრობით">📸 მრავალფოტოანი</button>
+                            <button type="button" id="btn_upload_photo" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm hover:bg-gray-300 transition-colors">📁 აირჩიეთ ფაილები</button>
                             <input type="file" id="input_images" name="images[]" accept="image/*" multiple class="hidden">
                         </div>
                         <div id="input_images_preview" class="space-y-3"></div>
                         <div class="mt-2 flex items-center justify-between">
-                            <p class="text-xs text-gray-500">Upload multiple vehicle photos (max 10MB each). Long-press "Take Photo" or use "Multi-Capture" for continuous photo taking.</p>
-                            <span id="image_count" class="text-xs text-gray-400">0 images</span>
+                            <p class="text-xs text-gray-500">ატვირთეთ მრავალი ავტომობილის ფოტო (მაქსიმუმ 10MB თითო). დაჭერით და გაუშვით "გადაიღეთ ფოტო" ან გამოიყენეთ "მრავალფოტოანი" უწყვეტი ფოტოების გადასაღებად.</p>
+                            <span id="image_count" class="text-xs text-gray-400">0 ფოტო</span>
                         </div>
                         <div class="mt-6 flex justify-between">
-                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Previous</button>
-                            <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Skip to Review</button>
+                            <button type="button" onclick="prevTab()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">წინა</button>
+                            <button type="button" onclick="skipToReview()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">გადახედვა</button>
                         </div>
                     </div>
                 </div>
@@ -552,14 +552,14 @@ foreach ($oilPrices as $price) {
                             <svg class="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            Review & Save
+                            გადახედვა & შენახვა
                         </h2>
                         <div id="review-content" class="space-y-4">
                             <!-- Review content will be populated by JS -->
                         </div>
                         <div class="mt-6 flex gap-4">
-                            <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"><?php echo $isEdit ? 'Update Invoice' : 'Save Invoice'; ?></button>
-                            <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><?php echo $isEdit ? 'Update & Print' : 'Save & Print'; ?></button>
+                            <button type="button" onclick="handleSave()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"><?php echo $isEdit ? 'ინვოისის განახლება' : 'ინვოისის შენახვა'; ?></button>
+                            <button type="button" onclick="handlePrint()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><?php echo $isEdit ? 'განახლება & დაბეჭდვა' : 'შენახვა & დაბეჭდვა'; ?></button>
                         </div>
                     </div>
                 </div>
@@ -574,7 +574,7 @@ foreach ($oilPrices as $price) {
         <div id="preview-mode" class="hidden print-visible flex-col items-center">
             <div class="mb-4 print-hidden text-gray-500 text-sm flex items-center gap-2">
                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>Click the <strong>Print</strong> button above to download as PDF or print.</span>
+                <span>დააჭირეთ ზემოთ მოცემულ <strong>დაბეჭდვის</strong> ღილაკს PDF-ის გადმოსაწერად ან დასაბეჭდად.</span>
             </div>
 
             <!-- A4 Container -->
@@ -595,7 +595,7 @@ if (!empty($serverInvoice)) {
         <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">📸 Multi-Photo Capture</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">📸 მრავალფოტოანი გადაღება</h3>
                     <button id="close-multi-capture" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>

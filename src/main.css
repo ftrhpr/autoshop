@@ -1,6 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* BPG Arial Fonts */
+@font-face {
+    font-family: 'BPG Arial';
+    src: url('https://cdn.jsdelivr.net/gh/bpgfonts/bpg-arial@latest/fonts/BPG-Arial.woff2') format('woff2'),
+         url('https://cdn.jsdelivr.net/gh/bpgfonts/bpg-arial@latest/fonts/BPG-Arial.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'BPG Arial Caps';
+    src: url('https://cdn.jsdelivr.net/gh/bpgfonts/bpg-arial-caps@latest/fonts/BPG-Arial-Caps.woff2') format('woff2'),
+         url('https://cdn.jsdelivr.net/gh/bpgfonts/bpg-arial-caps@latest/fonts/BPG-Arial-Caps.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Apply Georgian fonts globally */
+body {
+    font-family: 'BPG Arial', 'Noto Sans Georgian', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'BPG Arial Caps', 'Noto Sans Georgian', sans-serif;
+    font-weight: 600;
+}
 
 /* Custom styles */
 .tab-active { @apply bg-yellow-500 text-slate-900 font-semibold shadow-md; }

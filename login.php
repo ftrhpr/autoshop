@@ -22,27 +22,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Auto Shop</title>
+    <title>შესვლა - ავტო სერვისი</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
+    </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen overflow-x-hidden font-sans antialiased">
     <div class="bg-white p-6 md:p-8 rounded-lg shadow-md w-full max-w-sm mx-4">
-        <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
-        <?php if (isset($error)) echo "<p class='text-red-500 mb-4'>$error</p>"; ?>
+        <h2 class="text-2xl font-bold mb-6 text-center">შესვლა</h2>
+        <?php if (isset($error)) echo "<p class='text-red-500 mb-4'>არასწორი მომხმარებლის სახელი ან პაროლი</p>"; ?>
         <form method="post">
             <div class="mb-4">
-                <label class="block text-gray-700 mb-1">Username</label>
+                <label class="block text-gray-700 mb-1">მომხმარებლის სახელი</label>
                 <input type="text" name="username" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
             </div>
             <div class="mb-4">
-                <label class="block text-gray-700 mb-1">Password</label>
+                <label class="block text-gray-700 mb-1">პაროლი</label>
                 <input type="password" name="password" class="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" required>
             </div>
-            <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">Login</button>
+            <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">შესვლა</button>
         </form>
     </div>
 </body>

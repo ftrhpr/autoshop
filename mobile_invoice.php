@@ -564,9 +564,9 @@ foreach ($oilPrices as $price) {
         <header style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; text-align: center; position: relative;">
             <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
                 <i class="fas fa-file-invoice-dollar mr-2"></i>
-                Mobile Invoice Creator
+                მობილური ინვოისის შექმნა
             </h1>
-            <p style="font-size: 0.9rem; opacity: 0.9;">Create invoices on the go</p>
+            <p style="font-size: 0.9rem; opacity: 0.9;">შექმენით ინვოისები გზაში</p>
         </header>
 
         <!-- Progress Bar -->
@@ -604,13 +604,13 @@ foreach ($oilPrices as $price) {
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-car"></i>
-                        Vehicle Details
+                        ავტომობილის დეტალები
                     </div>
 
                     <div class="input-group">
                         <label class="input-label" for="input_plate_number">
                             <i class="fas fa-id-card mr-1"></i>
-                            Plate Number *
+                            სახელმწიფო ნომერი *
                         </label>
                         <input type="text" id="input_plate_number" class="input-field" placeholder="ZZ-000-ZZ">
                         <div class="suggestions-box" style="display: none;"></div>
@@ -619,7 +619,7 @@ foreach ($oilPrices as $price) {
                     <div class="input-group">
                         <label class="input-label" for="input_car_mark">
                             <i class="fas fa-car-side mr-1"></i>
-                            Make/Model
+                            მარკა/მოდელი
                         </label>
                         <input type="text" id="input_car_mark" class="input-field" placeholder="Toyota Camry">
                     </div>
@@ -629,26 +629,26 @@ foreach ($oilPrices as $price) {
                             <i class="fas fa-hashtag mr-1"></i>
                             VIN
                         </label>
-                        <input type="text" id="input_vin" class="input-field" placeholder="Vehicle VIN">
+                        <input type="text" id="input_vin" class="input-field" placeholder="ავტომობილის VIN">
                     </div>
 
                     <div class="input-group">
                         <label class="input-label" for="input_mileage">
                             <i class="fas fa-tachometer-alt mr-1"></i>
-                            Mileage
+                            გარბენი
                         </label>
                         <div class="flex items-center gap-2">
-                            <input type="text" id="input_mileage" class="input-field" placeholder="150000 km" style="width: auto; flex-grow: 1;">
+                            <input type="text" id="input_mileage" class="input-field" placeholder="150000 კმ" style="width: auto; flex-grow: 1;">
                              <div class="unit-toggle" style="flex-shrink: 0;">
-                                <button type="button" class="unit-btn active" data-unit="km">KM</button>
-                                <button type="button" class="unit-btn" data-unit="mi">MI</button>
+                                <button type="button" class="unit-btn active" data-unit="km">კმ</button>
+                                <button type="button" class="unit-btn" data-unit="mi">მილი</button>
                             </div>
                             <input type="hidden" id="mileage_unit" value="km">
                         </div>
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-primary next-btn" style="margin-left: auto;">Next Step</button>
+                    <button type="button" class="btn-primary next-btn" style="margin-left: auto;">შემდეგი ნაბიჯი</button>
                 </div>
             </div>
 
@@ -657,13 +657,13 @@ foreach ($oilPrices as $price) {
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-user"></i>
-                        Customer Details
+                        კლიენტის დეტალები
                     </div>
 
                     <div class="input-group">
                         <label class="input-label" for="input_creation_date">
                             <i class="fas fa-calendar mr-1"></i>
-                            Creation Date
+                            შექმნის თარიღი
                         </label>
                         <input type="datetime-local" id="input_creation_date" class="input-field" value="<?php echo $currentDate; ?>">
                     </div>
@@ -671,32 +671,32 @@ foreach ($oilPrices as $price) {
                     <div class="input-group">
                         <label class="input-label" for="input_customer_name">
                             <i class="fas fa-user-tag mr-1"></i>
-                            Customer Name *
+                            კლიენტის სახელი *
                         </label>
-                        <input type="text" id="input_customer_name" class="input-field" placeholder="Enter customer name">
+                        <input type="text" id="input_customer_name" class="input-field" placeholder="შეიყვანეთ კლიენტის სახელი">
                         <div class="suggestions-box" style="display: none;"></div>
                     </div>
 
                     <div class="input-group">
                         <label class="input-label" for="input_phone_number">
                             <i class="fas fa-phone mr-1"></i>
-                            Phone Number
+                            ტელეფონის ნომერი
                         </label>
-                        <input type="text" id="input_phone_number" class="input-field" placeholder="Phone number">
+                        <input type="text" id="input_phone_number" class="input-field" placeholder="ტელეფონის ნომერი">
                     </div>
 
                     <div class="input-group">
                         <label class="input-label" for="input_service_manager">
                             <i class="fas fa-user-tie mr-1"></i>
-                            Service Manager
+                            სერვისის მენეჯერი
                         </label>
-                        <input type="text" id="input_service_manager" class="input-field" placeholder="Manager Name" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>">
+                        <input type="text" id="input_service_manager" class="input-field" placeholder="მენეჯერის სახელი" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>">
                         <div class="suggestions-box" style="display: none;"></div>
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-secondary prev-btn">Previous</button>
-                    <button type="button" class="btn-primary next-btn">Next Step</button>
+                    <button type="button" class="btn-secondary prev-btn">წინა</button>
+                    <button type="button" class="btn-primary next-btn">შემდეგი ნაბიჯი</button>
                 </div>
             </div>
 
@@ -705,7 +705,7 @@ foreach ($oilPrices as $price) {
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-tools"></i>
-                        Service & Parts
+                        სერვისი & ნაწილები
                     </div>
 
                     <div id="items-container">
@@ -714,13 +714,13 @@ foreach ($oilPrices as $price) {
 
                     <button type="button" onclick="addItem()" class="btn-secondary" style="margin-bottom: 1rem;">
                         <i class="fas fa-plus mr-2"></i>
-                        Add Item
+                        ნივთის დამატება
                     </button>
 
                     <!-- Oils Section -->
                     <div class="section-header" style="margin-top:0.75rem;">
                         <i class="fas fa-oil-can"></i>
-                        Oils
+                        ზეთები
                     </div>
                     <div id="oils-container">
                         <!-- Oil cards will be added here -->
@@ -728,25 +728,25 @@ foreach ($oilPrices as $price) {
 
                     <button type="button" onclick="addOil()" class="btn-secondary" style="margin-bottom: 1rem;">
                         <i class="fas fa-plus mr-2"></i>
-                        Add Oil
+                        ზეთის დამატება
                     </button>
 
                     <!-- Totals -->
                     <div class="totals-section">
                         <div class="total-row">
-                            <span class="total-label">Parts Total:</span>
+                            <span class="total-label">ნაწილების ჯამი:</span>
                             <span class="total-value" id="display_parts_total">0 ₾</span>
                         </div>
                         <div class="total-row">
-                            <span class="total-label">Service Total:</span>
+                            <span class="total-label">სერვისის ჯამი:</span>
                             <span class="total-value" id="display_service_total">0 ₾</span>
                         </div>
                         <div class="total-row">
-                            <span class="total-label">Oils Total:</span>
+                            <span class="total-label">ზეთების ჯამი:</span>
                             <span class="total-value" id="display_oils_total">0 ₾</span>
                         </div>
                         <div class="total-row grand-total">
-                            <span class="total-label">Grand Total:</span>
+                            <span class="total-label">საერთო ჯამი:</span>
                             <span class="total-value" id="display_grand_total">0 ₾</span>
                         </div>
                     </div>
@@ -755,7 +755,7 @@ foreach ($oilPrices as $price) {
                     <div class="input-group">
                         <label class="input-label" for="input_parts_discount">
                             <i class="fas fa-percent mr-1"></i>
-                            Parts Discount (%)
+                            ნაწილების ფასდაკლება (%)
                         </label>
                         <input type="number" id="input_parts_discount" class="input-field" min="0" max="100" value="0" oninput="calculateTotals()">
                     </div>
@@ -763,14 +763,14 @@ foreach ($oilPrices as $price) {
                     <div class="input-group">
                         <label class="input-label" for="input_service_discount">
                             <i class="fas fa-percent mr-1"></i>
-                            Service Discount (%)
+                            სერვისის ფასდაკლება (%)
                         </label>
                         <input type="number" id="input_service_discount" class="input-field" min="0" max="100" value="0" oninput="calculateTotals()">
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-secondary prev-btn">Previous</button>
-                    <button type="button" class="btn-primary next-btn">Next Step</button>
+                    <button type="button" class="btn-secondary prev-btn">წინა</button>
+                    <button type="button" class="btn-primary next-btn">შემდეგი ნაბიჯი</button>
                 </div>
             </div>
 
@@ -779,21 +779,21 @@ foreach ($oilPrices as $price) {
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-camera"></i>
-                        Photos
+                        ფოტოები
                     </div>
 
                     <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
                         <button type="button" id="btn_take_photo" class="btn-secondary" style="flex: 1;">
                             <i class="fas fa-camera mr-1"></i>
-                            Take Photo
+                            გადაიღეთ ფოტო
                         </button>
                         <button type="button" id="btn_multi_capture" class="btn-secondary" style="flex: 1;">
                             <i class="fas fa-images mr-1"></i>
-                            Multi-Capture
+                            მრავალფოტოანი
                         </button>
                         <button type="button" id="btn_upload_photo" class="btn-secondary" style="flex: 1;">
                             <i class="fas fa-upload mr-1"></i>
-                            Upload
+                            ატვირთვა
                         </button>
                     </div>
 
@@ -804,8 +804,8 @@ foreach ($oilPrices as $price) {
                     </div>
                 </div>
                 <div class="step-navigation form-section">
-                    <button type="button" class="btn-secondary prev-btn">Previous</button>
-                    <button type="button" class="btn-primary next-btn">Review Invoice</button>
+                    <button type="button" class="btn-secondary prev-btn">წინა</button>
+                    <button type="button" class="btn-primary next-btn">ინვოისის გადახედვა</button>
                 </div>
             </div>
 
@@ -814,22 +814,22 @@ foreach ($oilPrices as $price) {
                 <div class="form-section">
                     <div class="section-header">
                         <i class="fas fa-check-circle"></i>
-                        Review & Save
+                        გადახედვა & შენახვა
                     </div>
                     <div id="review-container">
                         <!-- Review content will be populated by JS -->
                     </div>
                 </div>
                 <div class="step-navigation form-section" style="padding-bottom: 5rem;">
-                        <button type="button" class="btn-secondary prev-btn">Previous</button>
+                        <button type="button" class="btn-secondary prev-btn">წინა</button>
                     <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
                         <button type="button" onclick="handleSave()" class="btn-primary">
                             <i class="fas fa-save mr-2"></i>
-                            Save Invoice
+                            ინვოისის შენახვა
                         </button>
                         <button type="button" onclick="handleSaveAndPrint()" class="btn-secondary">
                             <i class="fas fa-print mr-2"></i>
-                            Save & Print
+                            შენახვა & ბეჭდვა
                         </button>
                     </div>
                 </div>
@@ -850,7 +850,7 @@ foreach ($oilPrices as $price) {
     <!-- Toast Notifications -->
     <div id="toast" class="toast">
         <i class="fas fa-check-circle mr-2"></i>
-        <span id="toast-message">Invoice saved successfully!</span>
+        <span id="toast-message">ინვოისი წარმატებით შენახულია!</span>
     </div>
 
     <?php if (!empty($serverInvoice)): ?>
@@ -895,7 +895,7 @@ foreach ($oilPrices as $price) {
                         e.target.classList.add('active');
                         
                         mileageUnitInput.value = selectedUnit;
-                        mileageInput.placeholder = `Enter mileage in ${selectedUnit}`;
+                        mileageInput.placeholder = `შეიყვანეთ გარბენი ${selectedUnit}-ში`;
                     }
                 });
             }
@@ -1007,7 +1007,7 @@ foreach ($oilPrices as $price) {
                 }
             });
 
-            const itemsHtml = items.length ? items.map(item => '<div class="review-item"><span>-</span> <span>' + item + '</span></div>').join('') : '<div class="review-item"><span>No items added.</span></div>';
+            const itemsHtml = items.length ? items.map(item => '<div class="review-item"><span>-</span> <span>' + item + '</span></div>').join('') : '<div class="review-item"><span>ნივთები არ არის დამატებული.</span></div>';
             const oilsTotalText = document.getElementById('display_oils_total') ? document.getElementById('display_oils_total').textContent : '0 ₾';
 
             const plate = document.getElementById('input_plate_number') ? document.getElementById('input_plate_number').value : '';
@@ -1020,26 +1020,26 @@ foreach ($oilPrices as $price) {
 
             reviewContainer.innerHTML = '' +
                 '<div class="review-section">' +
-                    '<div class="review-title">Vehicle & Customer</div>' +
-                    '<div class="review-item"><span>Plate Number:</span> <span>' + plate + '</span></div>' +
-                    '<div class="review-item"><span>Make/Model:</span> <span>' + carMark + '</span></div>' +
-                    '<div class="review-item"><span>Customer:</span> <span>' + customerName + '</span></div>' +
-                    '<div class="review-item"><span>Phone:</span> <span>' + phone + '</span></div>' +
+                    '<div class="review-title">ავტომობილი & კლიენტი</div>' +
+                    '<div class="review-item"><span>სახელმწიფო ნომერი:</span> <span>' + plate + '</span></div>' +
+                    '<div class="review-item"><span>მარკა/მოდელი:</span> <span>' + carMark + '</span></div>' +
+                    '<div class="review-item"><span>კლიენტი:</span> <span>' + customerName + '</span></div>' +
+                    '<div class="review-item"><span>ტელეფონი:</span> <span>' + phone + '</span></div>' +
                 '</div>' +
                 '<div class="review-section">' +
-                    '<div class="review-title">Items</div>' +
+                    '<div class="review-title">ნივთები</div>' +
                     itemsHtml +
                 '</div>' +
                 '<div class="review-section">' +
-                    '<div class="review-title">Totals</div>' +
-                    '<div class="review-item"><span>Parts Total:</span> <span>' + partsTotal + '</span></div>' +
-                    '<div class="review-item"><span>Service Total:</span> <span>' + serviceTotal + '</span></div>' +
-                    '<div class="review-item"><span>Oils Total:</span> <span>' + oilsTotalText + '</span></div>' +
-                    '<div class="review-item grand-total"><span>Grand Total:</span> <span>' + grandTotal + '</span></div>' +
+                    '<div class="review-title">ჯამები</div>' +
+                    '<div class="review-item"><span>ნაწილების ჯამი:</span> <span>' + partsTotal + '</span></div>' +
+                    '<div class="review-item"><span>სერვისის ჯამი:</span> <span>' + serviceTotal + '</span></div>' +
+                    '<div class="review-item"><span>ზეთების ჯამი:</span> <span>' + oilsTotalText + '</span></div>' +
+                    '<div class="review-item grand-total"><span>საერთო ჯამი:</span> <span>' + grandTotal + '</span></div>' +
                 '</div>' +
                 '<div class="review-section">' +
-                    '<div class="review-title">Photos</div>' +
-                    '<div class="review-item"><span>' + selectedFiles.length + ' photo(s) attached.</span></div>' +
+                    '<div class="review-title">ფოტოები</div>' +
+                    '<div class="review-item"><span>' + selectedFiles.length + ' ფოტო მიმაგრებულია.</span></div>' +
                 '</div>';
         }
 
@@ -1054,42 +1054,42 @@ foreach ($oilPrices as $price) {
 
             itemCard.innerHTML = `
                 <div class="item-header">
-                    <span class="item-name">Item ${itemCount}</span>
+                    <span class="item-name">ნივთი ${itemCount}</span>
                     <button type="button" class="remove-item" onclick="removeItem(${itemCount})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
 
                 <div class="input-group">
-                    <input type="text" class="input-field item-name-input" placeholder="Item description" oninput="fetchItemSuggestions(this)">
+                    <input type="text" class="input-field item-name-input" placeholder="ნივთის აღწერა" oninput="fetchItemSuggestions(this)">
                     <div class="suggestions-box" style="display: none;"></div>
                     <div class="price-source text-xs text-gray-500 mt-1"></div>
                 </div>
 
                 <div class="price-grid">
                     <div class="price-input">
-                        <label class="price-label">Qty</label>
+                        <label class="price-label">რაოდენობა</label>
                         <input type="number" class="input-field item-qty" min="1" value="1" oninput="calculateTotals()">
                     </div>
                     <div class="price-input">
-                        <label class="price-label">Part Price</label>
+                        <label class="price-label">ნაწილის ფასი</label>
                         <input type="number" class="input-field item-price-part" min="0" value="0" oninput="calculateTotals()">
                     </div>
                     <div class="price-input">
-                        <label class="price-label">Part Disc %</label>
+                        <label class="price-label">ნაწილის ფასდაკლება %</label>
                         <input type="number" class="input-field item-discount-part" min="0" max="100" value="0" oninput="calculateTotals()">
                     </div>
                     <div class="price-input">
-                        <label class="price-label">Svc Price</label>
+                        <label class="price-label">სერვისის ფასი</label>
                         <input type="number" class="input-field item-price-svc" min="0" value="0" oninput="calculateTotals()">
                     </div>
                     <div class="price-input">
-                        <label class="price-label">Svc Disc %</label>
+                        <label class="price-label">სერვისის ფასდაკლება %</label>
                         <input type="number" class="input-field item-discount-svc" min="0" max="100" value="0" oninput="calculateTotals()">
                     </div>
                     <div class="price-input">
-                        <label class="price-label">Technician</label>
-                        <input type="text" class="input-field item-tech" placeholder="Name">
+                        <label class="price-label">ტექნიკოსი</label>
+                        <input type="text" class="input-field item-tech" placeholder="სახელი">
                         <div class="suggestions-box" style="display: none;"></div>
                     </div>
                 </div>
@@ -1179,50 +1179,50 @@ foreach ($oilPrices as $price) {
 
                 card.innerHTML = `
                     <div class="item-header">
-                        <span class="item-name">Oil ${oilCount}</span>
+                        <span class="item-name">ზეთი ${oilCount}</span>
                         <button type="button" class="remove-item" onclick="removeOil(${oilCount})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                     <div class="input-group">
-                        <label class="price-label">Brand</label>
+                        <label class="price-label">ბრენდი</label>
                         <select class="input-field oil-brand" onchange="updateOilCardPrice(this.closest('.oil-card'))">
-                            <option value="">Select Brand</option>
+                            <option value="">აირჩიეთ ბრენდი</option>
                             ${brandOptions}
                         </select>
                     </div>
                     <div class="input-group">
-                        <label class="price-label">Viscosity</label>
+                        <label class="price-label">სიბლანტე</label>
                         <select class="input-field oil-viscosity" onchange="updateOilCardPrice(this.closest('.oil-card'))">
-                            <option value="">Select Viscosity</option>
+                            <option value="">აირჩიეთ სიბლანტე</option>
                             ${viscosityOptions}
                         </select>
                     </div>
                     <div class="price-grid">
                         <div class="price-input">
-                            <label class="price-label">Package</label>
+                            <label class="price-label">შეფუთვა</label>
                             <select class="input-field oil-package" onchange="updateOilCardPrice(this.closest('.oil-card'))">
-                                <option value="">Select Package</option>
-                                <option value="canned">Canned</option>
-                                <option value="1lt">1 Liter</option>
-                                <option value="4lt">4 Liter</option>
-                                <option value="5lt">5 Liter</option>
+                                <option value="">აირჩიეთ შეფუთვა</option>
+                                <option value="canned">ქილა</option>
+                                <option value="1lt">1 ლიტრი</option>
+                                <option value="4lt">4 ლიტრი</option>
+                                <option value="5lt">5 ლიტრი</option>
                             </select>
                         </div>
                         <div class="price-input">
-                            <label class="price-label">Qty</label>
+                            <label class="price-label">რაოდენობა</label>
                             <input type="number" min="1" value="1" class="input-field oil-qty" oninput="updateOilCardPrice(this.closest('.oil-card'))">
                         </div>
                         <div class="price-input">
-                            <label class="price-label">Unit</label>
+                            <label class="price-label">ერთეული</label>
                             <input type="number" class="input-field oil-unit-price" readonly value="0">
                         </div>
                         <div class="price-input">
-                            <label class="price-label">Disc %</label>
+                            <label class="price-label">ფასდაკლება %</label>
                             <input type="number" min="0" max="100" value="0" class="input-field oil-discount" oninput="updateOilCardPrice(this.closest('.oil-card'))">
                         </div>
                         <div class="price-input" style="flex:1;">
-                            <label class="price-label">Total</label>
+                            <label class="price-label">ჯამი</label>
                             <div class="input-field" style="padding:0.5rem;"> <span class="oil-total">0.00 ₾</span> </div>
                         </div>
                     </div>

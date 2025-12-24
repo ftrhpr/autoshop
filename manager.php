@@ -110,12 +110,17 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manager Panel - Auto Shop</title>
+    <title>მენეჯერის პანელი - ავტო სერვისი</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans Georgian', 'BPG Arial', 'BPG Arial Caps', sans-serif; }
     <style>
         /* Live update styles for new invoices */
         @keyframes invoice-blink {
@@ -172,7 +177,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     <div class="h-full overflow-hidden ml-0 md:ml-64 pt-4 pl-4">
         <div class="h-full overflow-auto p-4 md:p-6">
-        <h2 class="text-2xl font-bold mb-6">Invoice Management</h2>
+        <h2 class="text-2xl font-bold mb-6">ინვოისების მართვა</h2>
 
         <?php if (isset($success)): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -190,59 +195,59 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
         <!-- Filters -->
         <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <div class="md:col-span-3 flex items-center justify-between">
-                <div class="text-sm text-gray-600">Showing <span class="results-count"><?php echo $resultsCount; ?> result(s)</span></div>
+                <div class="text-sm text-gray-600">ნაჩვენებია <span class="results-count"><?php echo $resultsCount; ?> შედეგი</span></div>
                 <div class="text-sm text-green-600 flex items-center">
                     <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    Live updates active
+                    ცოცხალი განახლებები აქტიურია
                 </div>
             </div>
             <div>
-                <label class="block text-xs font-medium text-gray-600">Search</label>
-                <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="Customer, plate, VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
+                <label class="block text-xs font-medium text-gray-600">ძიება</label>
+                <input type="text" name="q" value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" placeholder="კლიენტი, ნომერი, VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
             </div>
             <div>
-                <label class="block text-xs font-medium text-gray-600">Service Manager</label>
-                <input type="text" name="sm" value="<?php echo htmlspecialchars($_GET['sm'] ?? ''); ?>" placeholder="Manager username" class="mt-1 block w-full rounded border-gray-200 p-2" />
+                <label class="block text-xs font-medium text-gray-600">სერვისის მენეჯერი</label>
+                <input type="text" name="sm" value="<?php echo htmlspecialchars($_GET['sm'] ?? ''); ?>" placeholder="მენეჯერის სახელი" class="mt-1 block w-full rounded border-gray-200 p-2" />
             </div>
             <div class="flex gap-2">
                 <div class="flex-1">
-                    <label class="block text-xs font-medium text-gray-600">Date From</label>
+                    <label class="block text-xs font-medium text-gray-600">თარიღიდან</label>
                     <input type="date" name="date_from" value="<?php echo htmlspecialchars($_GET['date_from'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
                 </div>
                 <div class="flex-1">
-                    <label class="block text-xs font-medium text-gray-600">Date To</label>
+                    <label class="block text-xs font-medium text-gray-600">თარიღამდე</label>
                     <input type="date" name="date_to" value="<?php echo htmlspecialchars($_GET['date_to'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
                 </div>
             </div>
             <div>
-                <label class="block text-xs font-medium text-gray-600">Plate</label>
-                <input type="text" name="plate" value="<?php echo htmlspecialchars($_GET['plate'] ?? ''); ?>" placeholder="Plate..." class="mt-1 block w-full rounded border-gray-200 p-2" />
+                <label class="block text-xs font-medium text-gray-600">სახელმწიფო ნომერი</label>
+                <input type="text" name="plate" value="<?php echo htmlspecialchars($_GET['plate'] ?? ''); ?>" placeholder="ნომერი..." class="mt-1 block w-full rounded border-gray-200 p-2" />
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-600">VIN</label>
                 <input type="text" name="vin" value="<?php echo htmlspecialchars($_GET['vin'] ?? ''); ?>" placeholder="VIN..." class="mt-1 block w-full rounded border-gray-200 p-2" />
             </div>
             <div>
-                <label class="block text-xs font-medium text-gray-600">FINA Status</label>
+                <label class="block text-xs font-medium text-gray-600">FINA სტატუსი</label>
                 <select name="fina_status" class="mt-1 block w-full rounded border-gray-200 p-2">
-                    <option value="">All</option>
-                    <option value="opened" <?php echo ($_GET['fina_status'] ?? '') === 'opened' ? 'selected' : ''; ?>>Opened in FINA</option>
-                    <option value="not_opened" <?php echo ($_GET['fina_status'] ?? '') === 'not_opened' ? 'selected' : ''; ?>>Not Opened</option>
+                    <option value="">ყველა</option>
+                    <option value="opened" <?php echo ($_GET['fina_status'] ?? '') === 'opened' ? 'selected' : ''; ?>>გახსნილია FINA-ში</option>
+                    <option value="not_opened" <?php echo ($_GET['fina_status'] ?? '') === 'not_opened' ? 'selected' : ''; ?>>არ არის გახსნილი</option>
                 </select>
             </div>
             <div class="flex gap-2">
                 <div class="flex-1">
-                    <label class="block text-xs font-medium text-gray-600">Min Total</label>
+                    <label class="block text-xs font-medium text-gray-600">მინიმალური ჯამი</label>
                     <input type="number" step="0.01" name="min_total" value="<?php echo htmlspecialchars($_GET['min_total'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
                 </div>
                 <div class="flex-1">
-                    <label class="block text-xs font-medium text-gray-600">Max Total</label>
+                    <label class="block text-xs font-medium text-gray-600">მაქსიმალური ჯამი</label>
                     <input type="number" step="0.01" name="max_total" value="<?php echo htmlspecialchars($_GET['max_total'] ?? ''); ?>" class="mt-1 block w-full rounded border-gray-200 p-2" />
                 </div>
             </div>
             <div class="md:col-span-3 flex gap-2">
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Apply</button>
-                <a href="manager.php" class="px-4 py-2 bg-gray-200 rounded">Reset</a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">გამოყენება</button>
+                <a href="manager.php" class="px-4 py-2 bg-gray-200 rounded">გადატვირთვა</a>
             </div>
         </form>
 
@@ -251,17 +256,17 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 <thead>
                     <tr class="bg-gray-200">
                         <th class="px-2 md:px-4 py-2 text-left">ID</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Customer</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Phone</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Car</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Plate</th>
+                        <th class="px-2 md:px-4 py-2 text-left">კლიენტი</th>
+                        <th class="px-2 md:px-4 py-2 text-left">ტელეფონი</th>
+                        <th class="px-2 md:px-4 py-2 text-left">ავტომობილი</th>
+                        <th class="px-2 md:px-4 py-2 text-left">სახელმწიფო ნომერი</th>
                         <th class="px-2 md:px-4 py-2 text-left">VIN</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Mileage</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Service Manager</th>
-                        <th class="px-2 md:px-4 py-2 text-right">Total</th>
-                        <th class="px-2 md:px-4 py-2 text-left">Created At</th>
+                        <th class="px-2 md:px-4 py-2 text-left">გარბენი</th>
+                        <th class="px-2 md:px-4 py-2 text-left">სერვისის მენეჯერი</th>
+                        <th class="px-2 md:px-4 py-2 text-right">ჯამი</th>
+                        <th class="px-2 md:px-4 py-2 text-left">შექმნის თარიღი</th>
                         <th class="px-2 md:px-4 py-2 text-center">FINA</th>
-                        <th class="px-2 md:px-4 py-2 text-center">Actions</th>
+                        <th class="px-2 md:px-4 py-2 text-center">მოქმედებები</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -284,12 +289,12 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                                    <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
-                            <a href="index.php?edit_id=<?php echo $invoice['id']; ?>" class="text-purple-600 hover:underline mr-2 text-xs md:text-sm">Edit</a>
-                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">View</a>
-                            <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
-                            <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
+                            <a href="index.php?edit_id=<?php echo $invoice['id']; ?>" class="text-purple-600 hover:underline mr-2 text-xs md:text-sm">რედაქტირება</a>
+                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">ნახვა</a>
+                            <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">ბეჭდვა</a>
+                            <form method="post" style="display:inline-block" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">
                                 <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
-                                <button type="submit" name="delete_invoice" class="text-red-600 hover:underline text-xs md:text-sm">Delete</button>
+                                <button type="submit" name="delete_invoice" class="text-red-600 hover:underline text-xs md:text-sm">წაშლა</button>
                             </form>
                         </td>
                     </tr>

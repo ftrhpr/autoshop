@@ -13,26 +13,26 @@ $badges = $badges ?? [];
 
 // New menu sections with nested children and optional badge keys
 $menu_sections = [
-    ['label' => 'Analytics', 'items' => [
-        ['label' => 'Overview', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => null]
+    ['label' => 'ანალიტიკა', 'items' => [
+        ['label' => 'მიმოხილვა', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => null]
     ]],
-    ['label' => 'Management', 'items' => [
-        ['label' => 'Create Invoice', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => null],
-        ['label' => 'Mobile Invoice', 'href' => $appRoot . '/mobile_invoice.php', 'icon' => 'mobile-alt', 'permission' => null],
-        ['label' => 'Invoices', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
-        ['label' => 'Export Invoices', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'manage_customers'],
-        ['label' => 'Import Customers', 'href' => $appRoot . '/admin/import_customers.php', 'icon' => 'download', 'permission' => 'manage_customers'],
-        ['label' => 'Customers', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
-        ['label' => 'Parts, Labors & Oils', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
-        ['label' => 'Users & Access', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
-            ['label' => 'Users', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
-            ['label' => 'Roles & Permissions', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']
+    ['label' => 'მართვა', 'items' => [
+        ['label' => 'ინვოისის შექმნა', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => null],
+        ['label' => 'მობილური ინვოისი', 'href' => $appRoot . '/mobile_invoice.php', 'icon' => 'mobile-alt', 'permission' => null],
+        ['label' => 'ინვოისები', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
+        ['label' => 'ექსპორტი ინვოისები', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'manage_customers'],
+        ['label' => 'იმპორტი კლიენტები', 'href' => $appRoot . '/admin/import_customers.php', 'icon' => 'download', 'permission' => 'manage_customers'],
+        ['label' => 'კლიენტები', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
+        ['label' => 'ნაწილები, სერვისები & ზეთები', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
+        ['label' => 'მომხმარებლები & წვდომა', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
+            ['label' => 'მომხმარებლები', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
+            ['label' => 'როლები & უფლებები', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']
         ]],
-        ['label' => 'Technicians', 'href' => $appRoot . '/admin/technicians.php', 'icon' => 'user', 'permission' => 'manage_users'],
-        ['label' => 'Item Price Usage', 'href' => $appRoot . '/admin/item_price_usage.php', 'icon' => 'clock', 'permission' => 'manage_prices']
+        ['label' => 'ტექნიკოსები', 'href' => $appRoot . '/admin/technicians.php', 'icon' => 'user', 'permission' => 'manage_users'],
+        ['label' => 'ნივთების ფასების გამოყენება', 'href' => $appRoot . '/admin/item_price_usage.php', 'icon' => 'clock', 'permission' => 'manage_prices']
     ]],
-    ['label' => 'Settings', 'items' => [
-        ['label' => 'Audit Logs', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
+    ['label' => 'პარამეტრები', 'items' => [
+        ['label' => 'აუდიტის ლოგები', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
     ]]
 ];
 
