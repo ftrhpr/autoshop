@@ -171,12 +171,12 @@ const btnCompute = document.getElementById('btnCompute'); if (btnCompute) btnCom
     const res = await fetch('api_technicians.php?action=compute_earnings&technician_id='+encodeURIComponent(tech)+(start?('&start='+encodeURIComponent(start)):'')+(end?('&end='+encodeURIComponent(end)):''));
     const d = await res.json(); if (!d.success) return alert(d.message||'Failed');
     const earningsResult = document.getElementById('earningsResult');
-    if (earningsResult) earningsResult.innerHTML = `<div>Total labor: <strong>${d.total_labor}</strong></div><div>Total earned: <strong>${d.total_earned}</strong></div>`;
+    if (earningsResult) earningsResult.innerHTML = `<div>Total labor: <strong>${(d.total_labor||0).toFixed(2)}</strong></div><div>Total earned: <strong>${(d.total_earned||0).toFixed(2)}</strong></div>`;
     let html = '<h4 class="mt-4">Details</h4><table class="w-full text-sm"><thead><tr><th>ID</th><th>Labor</th><th>Earnings</th></tr></thead><tbody>';
-    d.details.forEach(row=> html += `<tr><td>${row.invoice_id}</td><td>${row.labor}</td><td>${row.earnings}</td></tr>`);
+    d.details.forEach(row=> html += `<tr><td>${row.invoice_id}</td><td>${(row.labor||0).toFixed(2)}</td><td>${(row.earnings||0).toFixed(2)}</td></tr>`);
     html += '</tbody></table>'; if (earningsResult) earningsResult.innerHTML += html;
     // update earnings placeholder in table if present
-    const total = d.total_earned || 0; const el = document.getElementById('earnings-'+tech); if (el) el.textContent = total;
+    const total = d.total_earned || 0; const el = document.getElementById('earnings-'+tech); if (el) el.textContent = total.toFixed ? total.toFixed(2) : total;
 });
 
 // Rules

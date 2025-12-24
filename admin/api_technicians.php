@@ -84,16 +84,24 @@ try{
         $totalEarned = 0.0; $totalLabor = 0.0; $applied = [];
         // fetch rules for technician
         $r = $pdo->prepare('SELECT * FROM payroll_rules WHERE technician_id=?'); $r->execute([$tech]); $rules = $r->fetchAll(PDO::FETCH_ASSOC);
+        // fetch technician name for fallback matching (older invoices may store technician by name)
+        $stmt = $pdo->prepare('SELECT name FROM technicians WHERE id=? LIMIT 1'); $stmt->execute([$tech]); $techRow = $stmt->fetch(PDO::FETCH_ASSOC); $techName = $techRow ? trim($techRow['name']) : '';
 
         foreach($invoices as $inv){
             $items = json_decode($inv['items'] ?? '[]', true);
             $laborSumForTech = 0.0;
             foreach($items as $it){
-                $type = $it['type'] ?? 'part';
-                if ($type !== 'labor') continue;
+                // Determine whether this item should be considered 'labor'
+                $isLabor = false;
+                if (isset($it['type']) && $it['type'] === 'labor') $isLabor = true;
+                if (isset($it['db_type']) && $it['db_type'] === 'labor') $isLabor = true;
+                if (array_key_exists('price_svc', $it)) $isLabor = true; // presence of price_svc indicates a labor line (even if 0)
+                if (!$isLabor) continue;
+
                 $assignedTechId = isset($it['tech_id']) ? (int)$it['tech_id'] : 0;
                 // include item if explicitly assigned to technician, or if not assigned and invoice-level technician matches
-                if ($assignedTechId === $tech || ($assignedTechId === 0 && !empty($inv['technician_id']) && (int)$inv['technician_id'] === $tech)){
+                // match per-item assigned tech id OR invoice-level technician id OR invoice-level technician name fallback
+                if ($assignedTechId === $tech || ($assignedTechId === 0 && (!empty($inv['technician_id']) && (int)$inv['technician_id'] === $tech)) || ($assignedTechId === 0 && empty($inv['technician_id']) && !empty($inv['technician']) && trim($inv['technician']) === $techName) ){
                     $line = 0.0;
                     if (isset($it['line_total'])) {
                         $line = floatval($it['line_total']);
@@ -122,7 +130,7 @@ try{
             $totalEarned += $invoiceEarnings;
         }
 
-        echo json_encode(['success'=>true,'total_earned'=>$totalEarned,'total_labor'=>$totalLabor,'details'=>$applied]); exit;
+        echo json_encode(['success'=>true,'total_earned'=>$totalEarned,'total_labor'=>$totalLabor,'invoice_count'=>count($invoices),'details'=>$applied]); exit;
     }
 
     echo json_encode(['success'=>false,'error'=>'unknown_action']);
