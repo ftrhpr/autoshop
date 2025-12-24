@@ -44,14 +44,18 @@ function h_json($v){ return json_encode($v, JSON_UNESCAPED_UNICODE); }
 <link rel="stylesheet" href="main.css">
 <style>
 /* Mobile-specific tweaks for the testing page */
-body { -webkit-tap-highlight-color: transparent; }
+body { -webkit-tap-highlight-color: transparent; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
 .header { position: sticky; top: 0; z-index: 60; background: #fff; border-bottom: 1px solid rgba(0,0,0,0.06); }
-.container { padding: 1rem; max-width: 900px; margin: 0 auto; }
+.container { padding: 0.75rem; max-width: 900px; margin: 0 auto; }
 .item-row { display:flex; gap:8px; align-items:center; }
 .item-row .flex-1 { flex:1 }
 .small { font-size:0.9rem }
 .touch-btn { padding: 12px 16px; border-radius:10px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 9999; }
+#mobile-summary { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px; }
+#mobile-summary .card { background:#fff; padding:10px 12px; border-radius:10px; box-shadow: 0 6px 18px rgba(13,46,84,0.06); width:100%; }
+#mobile-sticky { position:fixed; left:0; right:0; bottom:0; z-index:999; padding:10px; background: linear-gradient(180deg, rgba(255,255,255,0.98), #fff); border-top: 1px solid rgba(0,0,0,0.06); display:flex; gap:8px; }
+@media (min-width: 768px){ #mobile-sticky { display:none; } }
 </style>
 </head>
 <body class="bg-gray-50">
@@ -129,6 +133,7 @@ body { -webkit-tap-highlight-color: transparent; }
           <input id="input_service_discount" class="w-full p-3 border rounded-lg" name="service_discount_percent" value="0">
         </div>
       </div>
+      <div id="mobile-summary" class="mb-3"><div class="card"><div class="flex items-center justify-between"><div><div class="text-xs text-gray-500">Grand</div><div id="display_grand_total" class="text-lg font-semibold">0.00 ₾</div></div><div><button id="quickApplyDiscount" class="text-sm text-blue-600">Apply to items</button></div></div></div></div>
       <div class="flex items-center justify-between">
         <div>
           <div class="text-sm text-gray-600">Parts</div>
@@ -144,6 +149,13 @@ body { -webkit-tap-highlight-color: transparent; }
         </div>
       </div>
     </section>
+    <div id="mobile-sticky" style="display:none;">
+      <div class="flex-1 text-lg font-semibold" id="mobile-sticky-total">0.00 ₾</div>
+      <div class="flex gap-2">
+        <button id="mobile-save" type="button" class="bg-green-600 text-white px-4 py-2 rounded-md">Save</button>
+        <button id="mobile-print" type="button" class="bg-indigo-600 text-white px-4 py-2 rounded-md">Save & Print</button>
+      </div>
+    </div>
 
     <section class="flex gap-3 mb-6">
       <button type="button" id="btnSave2" class="flex-1 bg-green-600 text-white touch-btn rounded-md">Save Invoice</button>
@@ -238,6 +250,7 @@ function calculateTotals(){
     document.getElementById('display_parts_total').innerText = finalP>0? finalP.toFixed(2)+' ₾':'0.00 ₾';
     document.getElementById('display_service_total').innerText = finalS>0? finalS.toFixed(2)+' ₾':'0.00 ₾';
     document.getElementById('display_grand_total').innerText = grand>0? grand.toFixed(2)+' ₾':'0.00 ₾';
+    try{ document.getElementById('mobile-sticky-total').innerText = grand.toFixed(2)+' ₾'; document.getElementById('mobile-sticky').style.display = 'flex'; }catch(e){}
     return {partTotal:finalP, svcTotal:finalS, grandTotal:grand};
 }
 
@@ -291,6 +304,21 @@ document.getElementById('btnSave').addEventListener('click', ()=>handleSave(fals
 document.getElementById('btnSave2').addEventListener('click', ()=>handleSave(false));
 document.getElementById('btnSavePrint').addEventListener('click', ()=>handleSave(true));
 
+// Mobile sticky actions
+try{
+    document.getElementById('mobile-save').addEventListener('click', ()=>handleSave(false));
+    document.getElementById('mobile-print').addEventListener('click', ()=>handleSave(true));
+    document.getElementById('quickApplyDiscount').addEventListener('click', ()=>{ showToast('Quick discount applied to all items', 'info'); document.querySelectorAll('#mobile-items-list .item-discount-svc').forEach(i=>i.value = document.getElementById('input_service_discount').value); calculateTotals(); });
+}catch(e){}
+
+// Toast utility
+window.showToast = window.showToast || function(msg, type='info', duration=3000){
+    let el = document.querySelector('.toast');
+    if (!el){ el = document.createElement('div'); el.className='toast'; const inner = document.createElement('div'); inner.className='bg-black text-white p-3 rounded shadow'; el.appendChild(inner); document.body.appendChild(el); }
+    try{ el.querySelector('div').innerText = msg; el.style.display='block'; setTimeout(()=> el.style.display='none', duration); }catch(e){ console.log(msg); }
+};
+
+// If server invoice provided, load values
 // Plate typeahead: use admin/api_customers.php?q=
 attachTypeahead(document.getElementById('input_plate_number'),'./admin/api_customers.php?q=', c=>`${c.plate_number} — ${c.full_name} ${c.car_mark? '— '+c.car_mark:''}`, it=>{
     document.getElementById('input_plate_number').value = it.plate_number || '';
