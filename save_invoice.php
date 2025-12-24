@@ -981,6 +981,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // DEBUG: Log final items that were saved into invoice
     error_log("save_invoice: final items saved with invoice {$invoice_id}: " . json_encode($items));
 
+    // If debug echo requested, return parsed payload to the client for inspection (no redirect)
+    if (!empty($data['debug_echo'])) {
+        $debug_oil_posts = [];
+        foreach ($data as $k => $v) {
+            if (strpos($k, 'oil_') === 0 || $k === 'oils_json') $debug_oil_posts[$k] = $v;
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => true,
+            'invoice_id' => isset($invoice_id) ? $invoice_id : null,
+            'existing_id' => isset($existing_id) ? $existing_id : null,
+            'items' => $items,
+            'oils' => $oils,
+            'debug_oil_posts' => $debug_oil_posts,
+            'post_keys' => array_values(array_keys($data))
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     // Redirect based on flag
     if (!empty($data['print_after_save'])) {
         if (!empty($invoice_id) && is_numeric($invoice_id)) {
