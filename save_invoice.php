@@ -542,13 +542,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 }
             }
-                            $created_items[] = ['type' => 'labor_price', 'name' => $name, 'vehicle' => $vehicleCanonical, 'price' => floatval($it['price_svc']), 'item_id' => $newLaborId];
-                        } catch (PDOException $e) {
-                            error_log("save_invoice: FAILED to create item_price for labor id={$newLaborId} vehicle={$vehicleCanonical} price={$it['price_svc']}: " . $e->getMessage());
-                        }
-                    }
-                }
-            }
 
             // If still not identified, try to find any match in parts then labors (no price given) but do not create new items
             if (empty($it['db_id'])) {
