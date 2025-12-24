@@ -13,5 +13,5 @@ try{
         $stmt->execute([$like]);
     }
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode($rows);
-} catch (Exception $e){ echo json_encode([]); }
+    echo json_encode(['success' => true, 'technicians' => $rows]);
+} catch (Exception $e){ echo json_encode(['success' => false, 'message' => $e->getMessage()]); }
