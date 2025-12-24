@@ -571,22 +571,6 @@ if (!isset($_SESSION['user_id'])) {
         <span id="toast-message">Invoice saved successfully!</span>
     </div>
 
-    <!-- Multi-Capture Modal -->
-    <div id="multi-capture-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50 flex flex-col items-center justify-center p-4">
-        <video id="video-stream" class="w-full h-full object-contain" autoplay playsinline></video>
-        <div class="absolute bottom-4 left-4 right-4 flex justify-center items-center gap-4">
-            <button id="capture-photo" class="bg-white text-blue-600 w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <i class="fas fa-camera"></i>
-            </button>
-            <button id="finish-multi-capture" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg">
-                Finish (<span id="capture-count">0</span>)
-            </button>
-        </div>
-        <button id="close-multi-capture" class="absolute top-4 right-4 text-white text-2xl">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-
     <script>
         // Global variables
         let itemCount = 0;
@@ -1053,24 +1037,45 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         // Photo handling
+        const imageInput = document.getElementById('input_images');
+        
         document.getElementById('btn_take_photo').addEventListener('click', () => {
-            document.getElementById('input_images').setAttribute('capture', 'environment');
-            document.getElementById('input_images').click();
+            imageInput.removeAttribute('multiple');
+            imageInput.setAttribute('capture', 'environment');
+            imageInput.click();
+        });
+
+        document.getElementById('btn_multi_capture').addEventListener('click', () => {
+            imageInput.setAttribute('multiple', '');
+            imageInput.setAttribute('capture', 'environment');
+            imageInput.click();
         });
 
         document.getElementById('btn_upload_photo').addEventListener('click', () => {
-            document.getElementById('input_images').removeAttribute('capture');
-            document.getElementById('input_images').click();
+            imageInput.setAttribute('multiple', '');
+            imageInput.removeAttribute('capture');
+            imageInput.click();
         });
 
-        document.getElementById('input_images').addEventListener('change', (e) => {
+        imageInput.addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
-            selectedFiles = files;
+            
+            // Append new files to the existing list
+            const dt = new DataTransfer();
+            selectedFiles.forEach(f => dt.items.add(f));
+            files.forEach(f => {
+                if (!selectedFiles.find(ef => ef.name === f.name && ef.lastModified === f.lastModified)) {
+                    dt.items.add(f);
+                }
+            });
+
+            imageInput.files = dt.files;
+            selectedFiles = Array.from(dt.files);
 
             const preview = document.getElementById('photo-preview');
             preview.innerHTML = '';
 
-            files.forEach((file, index) => {
+            selectedFiles.forEach((file, index) => {
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
@@ -1096,61 +1101,6 @@ if (!isset($_SESSION['user_id'])) {
             document.getElementById('input_images').files = dt.files;
             document.getElementById('input_images').dispatchEvent(new Event('change'));
         }
-
-        // Multi-Capture Modal Logic
-        const multiCaptureModal = document.getElementById('multi-capture-modal');
-        const videoStream = document.getElementById('video-stream');
-        let stream = null;
-
-        function startMultiCapture() {
-            if (multiCaptureModal) multiCaptureModal.classList.remove('hidden');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(s => {
-                    stream = s;
-                    if (videoStream) videoStream.srcObject = stream;
-                })
-                .catch(err => {
-                    console.error("Error accessing camera: ", err);
-                    alert('Could not access the camera. Please ensure you have given permission.');
-                    stopVideoStream();
-                });
-            document.getElementById('capture-count').textContent = '0';
-        }
-
-        function stopVideoStream() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            if (multiCaptureModal) multiCaptureModal.classList.add('hidden');
-        }
-
-        function captureAndAddPhoto() {
-            if (!stream) return;
-            const canvas = document.createElement('canvas');
-            canvas.width = videoStream.videoWidth;
-            canvas.height = videoStream.videoHeight;
-            canvas.getContext('2d').drawImage(videoStream, 0, 0);
-            canvas.toBlob(blob => {
-                const newFile = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
-                
-                const dt = new DataTransfer();
-                selectedFiles.forEach(f => dt.items.add(f));
-                dt.items.add(newFile);
-                
-                document.getElementById('input_images').files = dt.files;
-                document.getElementById('input_images').dispatchEvent(new Event('change'));
-
-                // Update count
-                document.getElementById('capture-count').textContent = selectedFiles.length;
-
-            }, 'image/jpeg', 0.9);
-        }
-
-        document.getElementById('btn_multi_capture')?.addEventListener('click', startMultiCapture);
-        document.getElementById('close-multi-capture')?.addEventListener('click', stopVideoStream);
-        document.getElementById('finish-multi-capture')?.addEventListener('click', stopVideoStream);
-        document.getElementById('capture-photo')?.addEventListener('click', captureAndAddPhoto);
 
 
         // Form preparation and validation
