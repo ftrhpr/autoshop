@@ -21,6 +21,7 @@ if (!$invoice) {
 }
 
 $items = json_decode($invoice['items'], true);
+$oils = json_decode($invoice['oils'] ?? '[]', true);
 ?>
 
 <!DOCTYPE html>
@@ -108,6 +109,38 @@ $items = json_decode($invoice['items'], true);
                     </tbody>
                 </table>
             </div>
+
+            <?php if (!empty($oils)): ?>
+            <div class="overflow-x-auto mt-6">
+                <h3 class="text-lg font-semibold mb-2">Oils</h3>
+                <table class="w-full border-collapse border border-gray-300 mb-4 min-w-[500px] text-sm">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 px-2 md:px-4 py-2">Brand</th>
+                            <th class="border border-gray-300 px-2 md:px-4 py-2">Viscosity</th>
+                            <th class="border border-gray-300 px-2 md:px-4 py-2">Package</th>
+                            <th class="border border-gray-300 px-2 md:px-4 py-2">Qty</th>
+                            <th class="border border-gray-300 px-2 md:px-4 py-2">Price</th>
+                            <th class="border border-gray-300 px-2 md:px-4 py-2">Discount</th>
+                            <th class="border border-gray-300 px-2 md:px-4 py-2">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($oils as $oil): ?>
+                        <tr class="hover:bg-gray-50">
+                            <td class="border border-gray-300 px-2 md:px-4 py-2"><?php echo htmlspecialchars($oil['brand']); ?></td>
+                            <td class="border border-gray-300 px-2 md:px-4 py-2"><?php echo htmlspecialchars($oil['viscosity']); ?></td>
+                            <td class="border border-gray-300 px-2 md:px-4 py-2"><?php echo htmlspecialchars($oil['package']); ?></td>
+                            <td class="border border-gray-300 px-2 md:px-4 py-2 text-center"><?php echo $oil['qty']; ?></td>
+                            <td class="border border-gray-300 px-2 md:px-4 py-2 text-right"><?php echo number_format($oil['price'], 2); ?> ₾</td>
+                            <td class="border border-gray-300 px-2 md:px-4 py-2 text-center"><?php echo $oil['discount']; ?>%</td>
+                            <td class="border border-gray-300 px-2 md:px-4 py-2 text-right"><?php echo number_format($oil['qty'] * $oil['price'] * (1 - $oil['discount'] / 100), 2); ?> ₾</td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
 
             <div class="text-right">
                 <p><strong>Parts Total:</strong> <?php echo $invoice['parts_total']; ?> ₾</p>
