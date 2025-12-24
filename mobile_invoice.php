@@ -54,6 +54,7 @@ if (!isset($_SESSION['user_id'])) {
 
         .input-group {
             margin-bottom: 1.5rem;
+            position: relative; /* For suggestion dropdowns */
         }
 
         .input-label {
@@ -169,6 +170,7 @@ if (!isset($_SESSION['user_id'])) {
         .price-input {
             display: flex;
             flex-direction: column;
+            position: relative; /* For suggestion dropdowns */
         }
 
         .price-label {
@@ -397,6 +399,7 @@ if (!isset($_SESSION['user_id'])) {
                         Plate Number *
                     </label>
                     <input type="text" id="input_plate_number" class="input-field" placeholder="ZZ-000-ZZ">
+                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
@@ -445,6 +448,7 @@ if (!isset($_SESSION['user_id'])) {
                         Customer Name *
                     </label>
                     <input type="text" id="input_customer_name" class="input-field" placeholder="Enter customer name">
+                    <div class="suggestions-box" style="display: none;"></div>
                 </div>
 
                 <div class="input-group">
