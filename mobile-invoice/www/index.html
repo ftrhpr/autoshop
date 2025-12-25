@@ -1,67 +1,50 @@
 <!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
 <html>
     <head>
         <meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval';">
+        <!--
+        Customize this policy to fit your own app's needs. For more guidance, please refer to the docs:
+            https://cordova.apache.org/docs/en/latest/
+        Some notes:
+            * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly
+            * Disables use of inline scripts in order to mitigate risk of XSS vulnerabilities. To change this:
+                * Enable inline JS: add 'unsafe-inline' to default-src
+        -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;">
         <meta name="format-detection" content="telephone=no">
         <meta name="msapplication-tap-highlight" content="no">
         <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
         <meta name="color-scheme" content="light dark">
-        <title>Mobile Invoice - Auto Shop</title>
-        <style>
-            body, html {
-                margin: 0;
-                padding: 0;
-                height: 100%;
-                overflow: hidden;
-            }
-            iframe {
-                width: 100%;
-                height: 100%;
-                border: none;
-            }
-            .loading {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                font-size: 18px;
-                color: #666;
-            }
-        </style>
+        <link rel="stylesheet" href="css/index.css">
+        <title>Hello World</title>
     </head>
     <body>
-        <div id="loading" class="loading">Loading Mobile Invoice...</div>
-        <iframe id="invoiceFrame" src="" style="display: none;"></iframe>
-
+        <div class="app">
+            <h1>Apache Cordova</h1>
+            <div id="deviceready" class="blink">
+                <p class="event listening">Connecting to Device</p>
+                <p class="event received">Device is Ready</p>
+            </div>
+        </div>
         <script src="cordova.js"></script>
-        <script>
-            document.addEventListener('deviceready', function() {
-                console.log('Device is ready');
-
-                // Get server URL - you'll need to replace this with your actual server URL
-                // For development, you can use a local server or your production server
-                var serverUrl = 'http://10.0.2.2:8000/mobile_invoice.php'; // Android emulator localhost
-                // For physical device, use your actual server IP/domain
-                // var serverUrl = 'https://your-server.com/mobile_invoice.php';
-
-                var iframe = document.getElementById('invoiceFrame');
-                var loading = document.getElementById('loading');
-
-                iframe.src = serverUrl;
-                iframe.onload = function() {
-                    loading.style.display = 'none';
-                    iframe.style.display = 'block';
-                };
-
-                // Handle back button
-                document.addEventListener('backbutton', function(e) {
-                    if (confirm('Exit Mobile Invoice app?')) {
-                        navigator.app.exitApp();
-                    }
-                }, false);
-
-            }, false);
-        </script>
+        <script src="js/index.js"></script>
     </body>
 </html>
