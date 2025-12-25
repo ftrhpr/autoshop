@@ -2235,8 +2235,7 @@ foreach ($oilPrices as $price) {
 
             // Reset step to first step
             currentStep = 1;
-            updateStepIndicator();
-            showStep(1);
+            updateStep();
 
             // Clear any displayed images
             const imagePreview = document.getElementById('image-preview');
