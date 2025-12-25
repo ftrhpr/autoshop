@@ -648,11 +648,23 @@ foreach ($oilPrices as $price) {
                     </div>
 
                     <div class="input-group">
-                        <label class="input-label" for="input_car_mark">
+                        <label class="input-label" for="input_vehicle_make">
                             <i class="fas fa-car-side mr-1"></i>
-                            მარკა/მოდელი
+                            ავტომობილის მარკა
                         </label>
-                        <input type="text" id="input_car_mark" class="input-field" placeholder="Toyota Camry">
+                        <select id="input_vehicle_make" class="input-field">
+                            <option value="">აირჩიეთ მარკა</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="input_vehicle_model">
+                            <i class="fas fa-car mr-1"></i>
+                            მოდელი
+                        </label>
+                        <select id="input_vehicle_model" class="input-field" disabled>
+                            <option value="">ჯერ აირჩიეთ მარკა</option>
+                        </select>
                     </div>
 
                     <div class="input-group">
@@ -931,6 +943,9 @@ foreach ($oilPrices as $price) {
                 });
             }
 
+            // Load vehicle makes and setup model loading
+            loadVehicleMakes();
+
             // Set default service manager
             const smInput = document.getElementById('input_service_manager');
             const smIdInput = document.getElementById('input_service_manager_id');
@@ -1042,7 +1057,12 @@ foreach ($oilPrices as $price) {
             const oilsTotalText = document.getElementById('display_oils_total') ? document.getElementById('display_oils_total').textContent : '0 ₾';
 
             const plate = document.getElementById('input_plate_number') ? document.getElementById('input_plate_number').value : '';
-            const carMark = document.getElementById('input_car_mark') ? (document.getElementById('input_car_mark').value || 'N/A') : 'N/A';
+            // Get combined make and model for display
+            const makeSelect = document.getElementById('input_vehicle_make');
+            const modelSelect = document.getElementById('input_vehicle_model');
+            const makeText = makeSelect.options[makeSelect.selectedIndex]?.text || '';
+            const modelText = modelSelect.options[modelSelect.selectedIndex]?.text || '';
+            const carMark = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || 'N/A');
             const customerName = document.getElementById('input_customer_name') ? document.getElementById('input_customer_name').value : '';
             const phone = document.getElementById('input_phone_number') ? (document.getElementById('input_phone_number').value || 'N/A') : 'N/A';
             const partsTotal = document.getElementById('display_parts_total') ? document.getElementById('display_parts_total').textContent : '0 ₾';
@@ -1485,7 +1505,7 @@ foreach ($oilPrices as $price) {
                     document.getElementById('input_plate_number').value = item.plate_number || '';
                     document.getElementById('input_customer_name').value = item.full_name || '';
                     document.getElementById('input_phone_number').value = item.phone || '';
-                    document.getElementById('input_car_mark').value = item.car_mark || '';
+                    setVehicleFromCarMark(item.car_mark || '');
                     document.getElementById('input_vin').value = item.vin || '';
                     document.getElementById('input_mileage').value = item.mileage || '';
                     document.getElementById('input_vehicle_id').value = item.id || '';
@@ -1555,7 +1575,7 @@ foreach ($oilPrices as $price) {
                             // Always set VIN, car make/model and vehicle id
                             document.getElementById('input_vehicle_id').value = data.id;
                             document.getElementById('input_vin').value = data.vin || '';
-                            document.getElementById('input_car_mark').value = data.car_mark || '';
+                            setVehicleFromCarMark(data.car_mark || '');
                             document.getElementById('input_mileage').value = data.mileage || '';
                         }).catch(e=>{});
                 });
@@ -1596,7 +1616,11 @@ foreach ($oilPrices as $price) {
         function showSuggestions(input, suggestions) {
             const container = input.parentNode.querySelector('.suggestions');
             container.innerHTML = '';
-            const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
+            const makeSelect = document.getElementById('input_vehicle_make');
+            const modelSelect = document.getElementById('input_vehicle_model');
+            const makeText = makeSelect.options[makeSelect.selectedIndex]?.text || '';
+            const modelText = modelSelect.options[modelSelect.selectedIndex]?.text || '';
+            const vehicleVal = (makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '')).trim();
             if (Array.isArray(suggestions) && suggestions.length > 0) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
@@ -1694,7 +1718,11 @@ foreach ($oilPrices as $price) {
                 hideSuggestions();
                 return;
             }
-            const vehicle = (document.getElementById('input_car_mark')?.value || '').trim();
+            const makeSelect = document.getElementById('input_vehicle_make');
+            const modelSelect = document.getElementById('input_vehicle_model');
+            const make = makeSelect?.options[makeSelect.selectedIndex]?.text || '';
+            const model = modelSelect?.options[modelSelect.selectedIndex]?.text || '';
+            const vehicle = (make + ' ' + model).trim();
             const params = new URLSearchParams({ q: query });
             if (vehicle) params.set('vehicle', vehicle);
 
@@ -1790,7 +1818,13 @@ foreach ($oilPrices as $price) {
             const in_sm = document.getElementById('input_service_manager'); if (in_sm) document.getElementById('hidden_service_manager').value = in_sm.value;
             const in_cust = document.getElementById('input_customer_name'); if (in_cust) document.getElementById('hidden_customer_name').value = in_cust.value;
             const in_phone = document.getElementById('input_phone_number'); if (in_phone) document.getElementById('hidden_phone_number').value = in_phone.value;
-            const in_car = document.getElementById('input_car_mark'); if (in_car) document.getElementById('hidden_car_mark').value = in_car.value;
+            // Combine make and model for car_mark
+            const makeSelect = document.getElementById('input_vehicle_make');
+            const modelSelect = document.getElementById('input_vehicle_model');
+            const makeText = makeSelect.options[makeSelect.selectedIndex]?.text || '';
+            const modelText = modelSelect.options[modelSelect.selectedIndex]?.text || '';
+            const carMark = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '');
+            document.getElementById('hidden_car_mark').value = carMark;
             const in_plate = document.getElementById('input_plate_number'); if (in_plate) document.getElementById('hidden_plate_number').value = in_plate.value;
             const in_vin = document.getElementById('input_vin'); if (in_vin) document.getElementById('hidden_vin').value = in_vin.value;
             const in_vehicle_id = document.getElementById('input_vehicle_id'); if (in_vehicle_id) in_vehicle_id.value = in_vehicle_id.value; // keep as-is if present
@@ -1998,7 +2032,7 @@ foreach ($oilPrices as $price) {
         function loadServerInvoice(inv) {
             // Populate basic fields
             document.getElementById('input_plate_number').value = inv.plate_number || '';
-            document.getElementById('input_car_mark').value = inv.car_mark || '';
+            setVehicleFromCarMark(inv.car_mark || '');
             document.getElementById('input_vin').value = inv.vin || '';
             
             // Handle mileage with units
@@ -2129,6 +2163,98 @@ foreach ($oilPrices as $price) {
                 }
             }
         });
+
+        // Vehicle make and model loading functions
+        async function loadVehicleMakes() {
+            try {
+                const response = await fetch('./admin/api_vehicle_makes.php');
+                const makes = await response.json();
+                
+                const makeSelect = document.getElementById('input_vehicle_make');
+                makeSelect.innerHTML = '<option value="">აირჩიეთ მარკა</option>';
+                
+                makes.forEach(make => {
+                    const option = document.createElement('option');
+                    option.value = make.id;
+                    option.textContent = make.name;
+                    makeSelect.appendChild(option);
+                });
+                
+                // Add change event listener for make selection
+                makeSelect.addEventListener('change', loadVehicleModels);
+                
+            } catch (error) {
+                console.error('Error loading vehicle makes:', error);
+            }
+        }
+
+        async function loadVehicleModels() {
+            const makeId = document.getElementById('input_vehicle_make').value;
+            const modelSelect = document.getElementById('input_vehicle_model');
+            
+            if (!makeId) {
+                modelSelect.innerHTML = '<option value="">ჯერ აირჩიეთ მარკა</option>';
+                modelSelect.disabled = true;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`./admin/api_vehicle_models.php?make_id=${makeId}`);
+                const models = await response.json();
+                
+                modelSelect.innerHTML = '<option value="">აირჩიეთ მოდელი</option>';
+                
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    modelSelect.appendChild(option);
+                });
+                
+                modelSelect.disabled = false;
+                
+            } catch (error) {
+                console.error('Error loading vehicle models:', error);
+                modelSelect.innerHTML = '<option value="">შეცდომა მოდელების ჩატვირთვაში</option>';
+            }
+        }
+
+        // Function to set vehicle make/model from car_mark string
+        async function setVehicleFromCarMark(carMark) {
+            if (!carMark || carMark.trim() === '') return;
+            
+            // Try to find matching make and model
+            try {
+                const makesResponse = await fetch('./admin/api_vehicle_makes.php');
+                const makes = await makesResponse.json();
+                
+                // Look for make that matches the beginning of carMark
+                for (const make of makes) {
+                    if (carMark.toLowerCase().startsWith(make.name.toLowerCase())) {
+                        document.getElementById('input_vehicle_make').value = make.id;
+                        
+                        // Load models for this make
+                        await loadVehicleModels();
+                        
+                        // Try to find matching model
+                        const remaining = carMark.substring(make.name.length).trim();
+                        if (remaining) {
+                            const modelSelect = document.getElementById('input_vehicle_model');
+                            const options = modelSelect.options;
+                            for (let i = 0; i < options.length; i++) {
+                                if (options[i].text.toLowerCase() === remaining.toLowerCase()) {
+                                    modelSelect.value = options[i].value;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('Error setting vehicle from car_mark:', error);
+            }
+        }
     </script>
 </body>
 </html>
