@@ -1400,7 +1400,7 @@ foreach ($oilPrices as $price) {
                 });
                 const oilsDisplayEl = document.getElementById('display_oils_total'); if (oilsDisplayEl) oilsDisplayEl.textContent = total.toFixed(2) + ' ₾';
                 // Recompute grand total to include oils
-                if (typeof calculateTotals === 'function') calculateTotals();
+                if (typeof calculateTotals === 'function' && !isLoadingInvoice) calculateTotals();
             }
 
             function removeOil(id) {
@@ -1413,12 +1413,20 @@ foreach ($oilPrices as $price) {
             let partsTotal = 0;
             let serviceTotal = 0;
 
-            document.querySelectorAll('.item-card').forEach(card => {
-                const qty = parseFloat(card.querySelector('.item-qty').value) || 0;
-                const partPrice = parseFloat(card.querySelector('.item-price-part').value) || 0;
-                const partDiscount = parseFloat(card.querySelector('.item-discount-part').value) || 0;
-                const svcPrice = parseFloat(card.querySelector('.item-price-svc').value) || 0;
-                const svcDiscount = parseFloat(card.querySelector('.item-discount-svc').value) || 0;
+            document.querySelectorAll('.item-card:not(.oil-card)').forEach(card => {
+                const qtyEl = card.querySelector('.item-qty');
+                const partPriceEl = card.querySelector('.item-price-part');
+                const partDiscountEl = card.querySelector('.item-discount-part');
+                const svcPriceEl = card.querySelector('.item-price-svc');
+                const svcDiscountEl = card.querySelector('.item-discount-svc');
+
+                if (!qtyEl || !partPriceEl || !partDiscountEl || !svcPriceEl || !svcDiscountEl) return;
+
+                const qty = parseFloat(qtyEl.value) || 0;
+                const partPrice = parseFloat(partPriceEl.value) || 0;
+                const partDiscount = parseFloat(partDiscountEl.value) || 0;
+                const svcPrice = parseFloat(svcPriceEl.value) || 0;
+                const svcDiscount = parseFloat(svcDiscountEl.value) || 0;
 
                 const partDiscounted = partPrice * (1 - partDiscount / 100);
                 const svcDiscounted = svcPrice * (1 - svcDiscount / 100);
@@ -1436,9 +1444,15 @@ foreach ($oilPrices as $price) {
             // Compute oils total from numeric fields (unit price * qty * (1-discount))
             let oilsTotal = 0;
             document.querySelectorAll('.oil-card').forEach(card => {
-                const qty = parseFloat(card.querySelector('.oil-qty')?.value) || 0;
-                const unit = parseFloat(card.querySelector('.oil-unit-price')?.value) || 0;
-                const discount = parseFloat(card.querySelector('.oil-discount')?.value) || 0;
+                const qtyEl = card.querySelector('.oil-qty');
+                const unitEl = card.querySelector('.oil-unit-price');
+                const discountEl = card.querySelector('.oil-discount');
+
+                if (!qtyEl || !unitEl || !discountEl) return;
+
+                const qty = parseFloat(qtyEl.value) || 0;
+                const unit = parseFloat(unitEl.value) || 0;
+                const discount = parseFloat(discountEl.value) || 0;
                 const line = qty * unit * Math.max(0, (1 - discount / 100));
                 oilsTotal += line;
             });
@@ -2102,7 +2116,10 @@ foreach ($oilPrices as $price) {
         // Update progress on input changes
         document.addEventListener('input', updateProgress);
 
+        let isLoadingInvoice = false;
+
         function loadServerInvoice(inv) {
+            isLoadingInvoice = true;
             // Populate basic fields
             document.getElementById('input_plate_number').value = inv.plate_number || '';
             setVehicleFromCarMark(inv.car_mark || '');
@@ -2189,6 +2206,7 @@ foreach ($oilPrices as $price) {
             // Populate discounts and calculate totals
             document.getElementById('input_parts_discount').value = inv.parts_discount_percent || 0;
             document.getElementById('input_service_discount').value = inv.service_discount_percent || 0;
+            isLoadingInvoice = false;
             calculateTotals();
         }
 
