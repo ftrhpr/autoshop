@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     foreach ($oils as $k => $no) {
         $key = $no['brand_id'] . '_' . $no['viscosity_id'] . '_' . $no['package_type'] . '_' . $no['discount'];
         $sum = array_sum($raw_qty_map[$key] ?? []);
-        if ($sum !== (int)$no['qty']) {
+        if (abs($sum - (float)$no['qty']) > 0.01) { // Allow small floating point differences
             error_log("save_invoice: WARNING: normalized qty mismatch for key={$key}: expected_sum={$sum} normalized_saved={$no['qty']} raw_list=" . json_encode($raw_qty_map[$key] ?? []) . "\n");
         }
     }
