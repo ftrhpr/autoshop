@@ -105,10 +105,10 @@ try {
             echo "Skipping $typeName (ID: $typeId) - API only provides data for passenger cars\n";
             continue;
         }
-        
+
         echo "Processing $typeName (ID: $typeId)...\n";
         $makesUrl = $baseUrl . 'make.getAll.csv.en?api_key=' . $apiKey . '&id_type=' . $typeId;
-        
+
         try {
             $makesCSV = fetchCSV($makesUrl);
             if (empty($makesCSV) || strlen($makesCSV) < 10) {

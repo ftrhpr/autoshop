@@ -177,8 +177,8 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 <body class="bg-gray-100 h-screen overflow-hidden font-sans antialiased pb-20">
     <?php include 'partials/sidebar.php'; ?>
 
-    <div class="h-full overflow-hidden ml-0 md:ml-64 pt-4 pl-4">
-        <div class="h-full overflow-auto p-4 md:p-6">
+    <div class="h-full overflow-hidden ml-0 md:ml-64">
+        <div class="h-full overflow-auto p-2 md:p-6">
         <h2 class="text-2xl font-bold mb-6">ინვოისების მართვა</h2>
 
         <?php if (isset($success)): ?>
@@ -253,7 +253,8 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
             </div>
         </form>
 
-        <div class="overflow-x-auto">
+        <!-- Desktop Table View -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="bg-white rounded-lg shadow-md w-full min-w-[700px] text-sm">
                 <thead>
                     <tr class="bg-gray-200">
@@ -291,18 +292,91 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                                    <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
-                            <a href="index.php?edit_id=<?php echo $invoice['id']; ?>" class="text-purple-600 hover:underline mr-2 text-xs md:text-sm">რედაქტირება</a>
-                            <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">ნახვა</a>
-                            <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">ბეჭდვა</a>
-                            <form method="post" style="display:inline-block" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">
-                                <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
-                                <button type="submit" name="delete_invoice" class="text-red-600 hover:underline text-xs md:text-sm">წაშლა</button>
-                            </form>
+                            <div class="flex flex-col sm:flex-row gap-1 justify-center">
+                                <a href="index.php?edit_id=<?php echo $invoice['id']; ?>" class="text-purple-600 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-purple-50 transition">რედაქტირება</a>
+                                <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-blue-50 transition view-link">ნახვა</a>
+                                <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-green-50 transition">ბეჭდვა</a>
+                                <form method="post" style="display:inline-block" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">
+                                    <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
+                                    <button type="submit" name="delete_invoice" class="text-red-600 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-red-50 transition">წაშლა</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="md:hidden space-y-4">
+            <?php foreach ($invoices as $invoice): ?>
+            <div class="bg-white rounded-lg shadow-md p-4 <?php echo (!empty($invoice['opened_in_fina'])) ? 'invoice-fina' : ((!empty($invoice['is_new'])) ? 'invoice-new invoice-recent' : 'invoice-viewed'); ?>" data-invoice-id="<?php echo $invoice['id']; ?>" data-created-at="<?php echo $invoice['created_at']; ?>">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-semibold text-lg">#<?php echo $invoice['id']; ?></h3>
+                        <p class="text-sm text-gray-600"><?php echo $invoice['created_at']; ?></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-lg"><?php echo $invoice['grand_total']; ?> ₾</p>
+                        <div class="flex items-center mt-1">
+                            <input type="checkbox"
+                                   class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 mr-2"
+                                   data-invoice-id="<?php echo $invoice['id']; ?>"
+                                   <?php echo (!empty($invoice['opened_in_fina'])) ? 'checked' : ''; ?>>
+                            <span class="text-xs text-gray-600">FINA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2 mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-gray-700">კლიენტი:</span>
+                        <span class="text-sm"><?php echo htmlspecialchars($invoice['customer_name']); ?></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-gray-700">ტელეფონი:</span>
+                        <span class="text-sm"><?php echo htmlspecialchars($invoice['phone']); ?></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-gray-700">ავტომობილი:</span>
+                        <span class="text-sm"><?php echo htmlspecialchars($invoice['car_mark']); ?></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-gray-700">სახელმწიფო ნომერი:</span>
+                        <span class="text-sm"><?php echo htmlspecialchars($invoice['plate_number']); ?></span>
+                    </div>
+                    <?php if (!empty($invoice['vin'])): ?>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-gray-700">VIN:</span>
+                        <span class="text-sm"><?php echo htmlspecialchars($invoice['vin']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($invoice['mileage'])): ?>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-gray-700">გარბენი:</span>
+                        <span class="text-sm"><?php echo htmlspecialchars($invoice['mileage']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($invoice['sm_username'])): ?>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-gray-700">სერვისის მენეჯერი:</span>
+                        <span class="text-sm"><?php echo htmlspecialchars($invoice['sm_username']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
+                    <a href="index.php?edit_id=<?php echo $invoice['id']; ?>" class="flex-1 min-w-[80px] bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">რედაქტირება</a>
+                    <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="flex-1 min-w-[80px] bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition view-link">ნახვა</a>
+                    <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="flex-1 min-w-[80px] bg-green-600 hover:bg-green-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">ბეჭდვა</a>
+                    <form method="post" style="flex: 1; min-width: 80px;" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">
+                        <input type="hidden" name="id" value="<?php echo $invoice['id']; ?>">
+                        <button type="submit" name="delete_invoice" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-md text-sm font-medium transition">წაშლა</button>
+                    </form>
+                </div>
+            </div>
+            <?php endforeach; ?>
         </div>
 
         <?php if ($resultsCount === 0): ?>
@@ -515,17 +589,17 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
             }
 
             function handleInvoiceUpdates(updatedInvoices) {
-                const tableBody = document.querySelector('tbody');
-                if (!tableBody) return;
-
                 let hasUpdates = false;
 
                 // Process each updated invoice
                 updatedInvoices.forEach(invoice => {
-                    // Check if this invoice is already in the table
+                    // Check if this invoice exists in desktop table
                     const existingRow = document.querySelector(`tr[data-invoice-id="${invoice.id}"]`);
+                    // Check if this invoice exists in mobile cards
+                    const existingCard = document.querySelector(`.md\\:hidden > div[data-invoice-id="${invoice.id}"]`);
+
                     if (existingRow) {
-                        // Update existing row
+                        // Update existing desktop row
                         hasUpdates = true;
                         const newRow = createInvoiceRow(invoice);
                         // Remove the blinking if it was new
@@ -534,18 +608,52 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                         existingRow.parentNode.replaceChild(newRow, existingRow);
                         // Re-setup event listeners
                         setupRowEventListeners(newRow);
-                    } else {
-                        // This is a new invoice
-                        hasUpdates = true;
-                        const newRow = createInvoiceRow(invoice);
-                        newRow.classList.add('invoice-new'); // Start with blinking
-                        newInvoiceIds.add(invoice.id);
+                    }
 
-                        // Insert at the top
-                        if (tableBody.firstChild) {
-                            tableBody.insertBefore(newRow, tableBody.firstChild);
-                        } else {
-                            tableBody.appendChild(newRow);
+                    if (existingCard) {
+                        // Update existing mobile card
+                        hasUpdates = true;
+                        const newCard = createInvoiceCard(invoice);
+                        // Remove the blinking if it was new
+                        newCard.classList.remove('invoice-new');
+                        // Replace the existing card
+                        existingCard.parentNode.replaceChild(newCard, existingCard);
+                        // Re-setup event listeners
+                        setupCardEventListeners(newCard);
+                    }
+
+                    if (!existingRow && !existingCard) {
+                        // This is a new invoice - add to both desktop and mobile views
+                        hasUpdates = true;
+
+                        // Add to desktop table
+                        const tableBody = document.querySelector('tbody');
+                        if (tableBody) {
+                            const newRow = createInvoiceRow(invoice);
+                            newRow.classList.add('invoice-new'); // Start with blinking
+                            newInvoiceIds.add(invoice.id);
+
+                            // Insert at the top
+                            if (tableBody.firstChild) {
+                                tableBody.insertBefore(newRow, tableBody.firstChild);
+                            } else {
+                                tableBody.appendChild(newRow);
+                            }
+                        }
+
+                        // Add to mobile cards
+                        const mobileContainer = document.querySelector('.md\\:hidden.space-y-4');
+                        if (mobileContainer) {
+                            const newCard = createInvoiceCard(invoice);
+                            newCard.classList.add('invoice-new'); // Start with blinking
+                            newInvoiceIds.add(invoice.id);
+
+                            // Insert at the top
+                            if (mobileContainer.firstChild) {
+                                mobileContainer.insertBefore(newCard, mobileContainer.firstChild);
+                            } else {
+                                mobileContainer.appendChild(newCard);
+                            }
                         }
                     }
                 });
@@ -554,7 +662,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 updateResultsCount();
 
                 // Play notification sound only for new invoices
-                const newInvoices = updatedInvoices.filter(inv => !document.querySelector(`tr[data-invoice-id="${inv.id}"]`));
+                const newInvoices = updatedInvoices.filter(inv => !document.querySelector(`tr[data-invoice-id="${inv.id}"]`) && !document.querySelector(`.md\\:hidden > div[data-invoice-id="${inv.id}"]`));
                 if (newInvoices.length > 0) {
                     playNotificationSound();
                     // Add visual flash effect
@@ -611,6 +719,162 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 setupRowEventListeners(row);
 
                 return row;
+            }
+
+            function createInvoiceCard(invoice) {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-md p-4';
+                if (invoice.opened_in_fina) {
+                    card.classList.add('invoice-fina');
+                } else if (invoice.is_new) {
+                    card.classList.add('invoice-new');
+                    card.classList.add('invoice-recent');
+                } else {
+                    card.classList.add('invoice-viewed');
+                }
+                card.setAttribute('data-invoice-id', invoice.id);
+                card.setAttribute('data-created-at', invoice.created_at || '');
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="font-semibold text-lg">#${invoice.id}</h3>
+                            <p class="text-sm text-gray-600">${invoice.created_at}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-lg">${invoice.grand_total || 0} ₾</p>
+                            <div class="flex items-center mt-1">
+                                <input type="checkbox" class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 mr-2" data-invoice-id="${invoice.id}" ${invoice.opened_in_fina ? 'checked' : ''}>
+                                <span class="text-xs text-gray-600">FINA</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between">
+                            <span class="text-sm font-medium text-gray-700">კლიენტი:</span>
+                            <span class="text-sm">${escapeHtml(invoice.customer_name || '')}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm font-medium text-gray-700">ტელეფონი:</span>
+                            <span class="text-sm">${escapeHtml(invoice.phone || '')}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm font-medium text-gray-700">ავტომობილი:</span>
+                            <span class="text-sm">${escapeHtml(invoice.car_mark || '')}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm font-medium text-gray-700">სახელმწიფო ნომერი:</span>
+                            <span class="text-sm">${escapeHtml(invoice.plate_number || '')}</span>
+                        </div>
+                        ${invoice.vin ? `<div class="flex justify-between">
+                            <span class="text-sm font-medium text-gray-700">VIN:</span>
+                            <span class="text-sm">${escapeHtml(invoice.vin)}</span>
+                        </div>` : ''}
+                        ${invoice.mileage ? `<div class="flex justify-between">
+                            <span class="text-sm font-medium text-gray-700">გარბენი:</span>
+                            <span class="text-sm">${escapeHtml(invoice.mileage)}</span>
+                        </div>` : ''}
+                        ${invoice.sm_username ? `<div class="flex justify-between">
+                            <span class="text-sm font-medium text-gray-700">სერვისის მენეჯერი:</span>
+                            <span class="text-sm">${escapeHtml(invoice.sm_username)}</span>
+                        </div>` : ''}
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
+                        <a href="index.php?edit_id=${invoice.id}" class="flex-1 min-w-[80px] bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">რედაქტირება</a>
+                        <a href="view_invoice.php?id=${invoice.id}" class="flex-1 min-w-[80px] bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition view-link">ნახვა</a>
+                        <a href="print_invoice.php?id=${invoice.id}" target="_blank" class="flex-1 min-w-[80px] bg-green-600 hover:bg-green-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">ბეჭდვა</a>
+                        <form method="post" style="flex: 1; min-width: 80px;" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">
+                            <input type="hidden" name="id" value="${invoice.id}">
+                            <button type="submit" name="delete_invoice" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-md text-sm font-medium transition">წაშლა</button>
+                        </form>
+                    </div>
+                `;
+
+                // Add event listeners for the new card
+                setupCardEventListeners(card);
+
+                return card;
+            }
+
+            function setupCardEventListeners(card) {
+                const invoiceId = card.getAttribute('data-invoice-id');
+
+                // Stop blinking and mark as seen when View link is clicked
+                const viewLink = card.querySelector('.view-link');
+                if (viewLink) {
+                    viewLink.addEventListener('click', function() {
+                        const invoiceId = parseInt(card.getAttribute('data-invoice-id'));
+                        markInvoiceAsSeen(invoiceId, card);
+                    });
+                }
+
+                // Also stop blinking on card click (but not on buttons/links)
+                card.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on links/buttons
+                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.type === 'checkbox') {
+                        return;
+                    }
+                    const invoiceId = parseInt(card.getAttribute('data-invoice-id'));
+                    markInvoiceAsSeen(invoiceId, card);
+                });
+
+                // Setup FINA checkbox for new cards
+                const finaCheckbox = card.querySelector('.fina-checkbox');
+                if (finaCheckbox) {
+                    finaCheckbox.addEventListener('change', function() {
+                        const invoiceId = this.dataset.invoiceId;
+                        const isChecked = this.checked;
+
+                        // Update card styling immediately
+                        if (isChecked) {
+                            card.classList.add('invoice-fina');
+                            card.classList.remove('invoice-new', 'invoice-recent', 'invoice-viewed');
+                        } else {
+                            card.classList.remove('invoice-fina');
+                            if (!card.classList.contains('invoice-new')) {
+                                card.classList.add('invoice-viewed');
+                            }
+                        }
+
+                        this.disabled = true;
+                        this.style.opacity = '0.5';
+
+                        fetch('update_fina_status.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ invoice_id: invoiceId, opened_in_fina: isChecked ? 1 : 0 })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.success) {
+                                this.checked = !isChecked;
+                                // Revert card styling
+                                if (!isChecked) {
+                                    card.classList.add('invoice-fina');
+                                } else {
+                                    card.classList.remove('invoice-fina');
+                                }
+                                alert('Failed to update FINA status: ' + (data.error || 'Unknown error'));
+                            }
+                        })
+                        .catch(error => {
+                            this.checked = !isChecked;
+                            // Revert card styling
+                            if (!isChecked) {
+                                card.classList.add('invoice-fina');
+                            } else {
+                                card.classList.remove('invoice-fina');
+                            }
+                            alert('Error updating FINA status: ' + error.message);
+                        })
+                        .finally(() => {
+                            this.disabled = false;
+                            this.style.opacity = '';
+                        });
+                    });
+                }
             }
 
             function setupRowEventListeners(row) {
@@ -692,30 +956,30 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 }
             }
 
-            function markInvoiceAsSeen(invoiceId, row) {
+            function markInvoiceAsSeen(invoiceId, element) {
                 if (newInvoiceIds.has(invoiceId)) {
                     newInvoiceIds.delete(invoiceId);
-                    row.classList.remove('invoice-new', 'invoice-recent');
-                    row.classList.add('invoice-highlight');
+                    element.classList.remove('invoice-new', 'invoice-recent');
+                    element.classList.add('invoice-highlight');
                     // Remove highlight after 30 seconds and add seen class
                     setTimeout(() => {
-                        row.classList.remove('invoice-highlight');
-                        if (row.classList.contains('invoice-fina')) {
+                        element.classList.remove('invoice-highlight');
+                        if (element.classList.contains('invoice-fina')) {
                             // keep fina
                         } else {
-                            row.classList.add('invoice-viewed');
+                            element.classList.add('invoice-viewed');
                         }
                     }, 30000);
                 } else {
                     // Even if not in newInvoiceIds, still mark as seen for cross-tab communication
-                    row.classList.remove('invoice-new', 'invoice-recent');
-                    row.classList.add('invoice-highlight');
+                    element.classList.remove('invoice-new', 'invoice-recent');
+                    element.classList.add('invoice-highlight');
                     setTimeout(() => {
-                        row.classList.remove('invoice-highlight');
-                        if (row.classList.contains('invoice-fina')) {
+                        element.classList.remove('invoice-highlight');
+                        if (element.classList.contains('invoice-fina')) {
                             // keep
                         } else {
-                            row.classList.add('invoice-viewed');
+                            element.classList.add('invoice-viewed');
                         }
                     }, 30000);
                 }
@@ -744,9 +1008,16 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                     try {
                         const seenInvoices = JSON.parse(e.newValue);
                         seenInvoices.forEach(invoiceId => {
+                            // Mark desktop row as seen
                             const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
                             if (row) {
                                 markInvoiceAsSeen(invoiceId, row);
+                            }
+
+                            // Mark mobile card as seen
+                            const card = document.querySelector(`.md\\:hidden > div[data-invoice-id="${invoiceId}"]`);
+                            if (card) {
+                                markInvoiceAsSeen(invoiceId, card);
                             }
                         });
                     } catch (e) {
@@ -766,9 +1037,17 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
                     recentInvoiceIds.forEach(invoiceId => {
                         if (!seenSet.has(invoiceId)) {
+                            // Mark desktop row as new
                             const row = document.querySelector(`tr[data-invoice-id="${invoiceId}"]`);
                             if (row) {
                                 row.classList.add('invoice-new');
+                                newInvoiceIds.add(invoiceId);
+                            }
+
+                            // Mark mobile card as new
+                            const card = document.querySelector(`.md\\:hidden > div[data-invoice-id="${invoiceId}"]`);
+                            if (card) {
+                                card.classList.add('invoice-new');
                                 newInvoiceIds.add(invoiceId);
                             }
                         } else {
@@ -777,6 +1056,11 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                             if (row) {
                                 row.classList.add('invoice-seen');
                             }
+
+                            const card = document.querySelector(`.md\\:hidden > div[data-invoice-id="${invoiceId}"]`);
+                            if (card) {
+                                card.classList.add('invoice-seen');
+                            }
                         }
                     });
                 } catch (e) {
@@ -784,8 +1068,9 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 }
             }
 
-            // Add event listeners to all existing rows
-            function setupExistingRowEventListeners() {
+            // Add event listeners to all existing rows and cards
+            function setupExistingEventListeners() {
+                // Setup desktop table rows
                 document.querySelectorAll('tbody tr[data-invoice-id]').forEach(row => {
                     setupRowEventListeners(row);
 
@@ -795,6 +1080,22 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                         const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
                         if (seenInvoices.includes(invoiceId) && !row.classList.contains('invoice-recent') && !row.classList.contains('invoice-new')) {
                             row.classList.add('invoice-seen');
+                        }
+                    } catch (e) {
+                        // Ignore sessionStorage errors
+                    }
+                });
+
+                // Setup mobile cards
+                document.querySelectorAll('.md\\:hidden > div[data-invoice-id]').forEach(card => {
+                    setupCardEventListeners(card);
+
+                    // Check if this invoice has been seen and apply styling
+                    const invoiceId = parseInt(card.getAttribute('data-invoice-id'));
+                    try {
+                        const seenInvoices = JSON.parse(sessionStorage.getItem('seen_invoices') || '[]');
+                        if (seenInvoices.includes(invoiceId) && !card.classList.contains('invoice-recent') && !card.classList.contains('invoice-new')) {
+                            card.classList.add('invoice-seen');
                         }
                     } catch (e) {
                         // Ignore sessionStorage errors
@@ -825,7 +1126,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
             // Initialize
             console.log('Starting live updates initialization...');
             initializeRecentInvoices(); // Mark recent invoices as new
-            setupExistingRowEventListeners(); // Add event listeners to existing rows
+            setupExistingEventListeners(); // Add event listeners to existing rows and cards
             fetchLatestTimestamp().then(() => {
                 console.log('Initial timestamp fetched, starting polling...');
                 pollForUpdates();
