@@ -20,6 +20,11 @@
     <p>This tool will run necessary database migrations for the autoshop application.</p>
 
     <div id="migrations">
+        <div class="migration pending" id="permissions-migration">
+            <h3>Add Permissions System</h3>
+            <p>Creates permissions and role_permissions tables for role-based access control. Required for menu filtering by user roles.</p>
+            <button onclick="runMigration('permissions')">Run Migration</button>
+        </div>
         <div class="migration pending" id="fina-status-migration">
             <h3>Add opened_in_fina column to invoices table</h3>
             <p>Adds a column to track whether invoices have been opened in FINA system.</p>
@@ -44,7 +49,9 @@
 
             try {
                 let response;
-                if (type === 'fina') {
+                if (type === 'permissions') {
+                    response = await fetch('migrate_add_permissions_system.php');
+                } else if (type === 'fina') {
                     response = await fetch('migrate_add_fina_status.php');
                 } else if (type === 'item_price_usage') {
                     response = await fetch('migrate_create_item_price_usage.php');

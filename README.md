@@ -121,6 +121,34 @@ Sound file:
 - For better quality, place `notify.mp3` and/or `notify.ogg` in `assets/sounds/` — the app will prefer those files automatically.
 - To use a custom WAV file instead of the server endpoint, add `notify.wav` to the same folder and update `assets/sounds/notify.php` or remove it.
 
+## Database Migrations
+
+The application uses database migrations to safely update the database schema without data loss. Migrations are PHP scripts that can be run individually or through the migration runner.
+
+### Running Migrations
+
+1. **Individual Migration**: Run specific migration files directly:
+   ```bash
+   php migrate_add_permissions_system.php
+   ```
+
+2. **Migration Runner**: Use the web-based migration runner at `migration_runner.html` for a user-friendly interface.
+
+### Available Migrations
+
+- `migrate_add_permissions_system.php` - Adds role-based permissions system (required for menu access control)
+- `migrate_add_fina_status.php` - Adds FINA integration tracking
+- `migrate_create_item_price_usage.php` - Creates price usage tracking table
+- And more migration files for various features...
+
+### Creating New Migrations
+
+When adding new database changes:
+
+1. Create a new migration file: `migrate_add_[feature_name].php`
+2. Follow the pattern of existing migrations using `IF NOT EXISTS` and `INSERT IGNORE`
+3. Add the migration to `migration_runner.html` if needed
+4. Update this README section
 
 ## License
 
