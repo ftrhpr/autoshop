@@ -878,7 +878,7 @@ foreach ($oilPrices as $price) {
                     <div class="flex gap-2 mb-4">
                         <button type="button" onclick="addItem('part')" class="btn-secondary flex-1">
                             <i class="fas fa-cog mr-2"></i>
-                            ნაწილის დამატება
+                            ნაწილი (+ სერვისი)
                         </button>
                         <button type="button" onclick="addItem('labor')" class="btn-secondary flex-1">
                             <i class="fas fa-wrench mr-2"></i>
@@ -1014,7 +1014,7 @@ foreach ($oilPrices as $price) {
         <div class="fab fab-danger" onclick="handleClear()" title="ფორმის გასუფთავება">
             <i class="fas fa-trash"></i>
         </div>
-        <div class="fab fab-part" onclick="addItem('part')" title="ნაწილის დამატება">
+        <div class="fab fab-part" onclick="addItem('part')" title="ნაწილის დამატება (+ სერვისი)">
             <i class="fas fa-cog"></i>
         </div>
         <div class="fab fab-labor" onclick="addItem('labor')" title="სერვისის დამატება">
@@ -1234,7 +1234,7 @@ foreach ($oilPrices as $price) {
             const isPart = itemType === 'part';
             const isLabor = itemType === 'labor';
 
-            const partFields = isPart ? `
+            const partFields = `
                     <div class="price-input">
                         <label class="price-label">რაოდენობა</label>
                         <input type="number" class="input-field item-qty" min="1" step="0.01" value="1" oninput="calculateTotals()">
@@ -1246,7 +1246,20 @@ foreach ($oilPrices as $price) {
                     <div class="price-input">
                         <label class="price-label">ნაწილის ფასდაკლება %</label>
                         <input type="number" class="input-field item-discount-part" min="0" max="100" value="0" oninput="calculateTotals()">
-                    </div>` : '';
+                    </div>
+                    <div class="price-input">
+                        <label class="price-label">სერვისის ფასი</label>
+                        <input type="number" class="input-field item-price-svc" min="0" value="0" oninput="calculateTotals()">
+                    </div>
+                    <div class="price-input">
+                        <label class="price-label">სერვისის ფასდაკლება %</label>
+                        <input type="number" class="input-field item-discount-svc" min="0" max="100" value="0" oninput="calculateTotals()">
+                    </div>
+                    <div class="price-input">
+                        <label class="price-label">ტექნიკოსი</label>
+                        <input type="text" class="input-field item-tech" placeholder="სახელი">
+                        <div class="suggestions-box" style="display: none;"></div>
+                    </div>`;
 
             const laborFields = isLabor ? `
                     <div class="price-input">
@@ -1275,13 +1288,13 @@ foreach ($oilPrices as $price) {
                 </div>
 
                 <div class="input-group">
-                    <input type="text" class="input-field item-name-input" placeholder="${isPart ? 'ნაწილის აღწერა' : 'სერვისის აღწერა'}">
+                    <input type="text" class="input-field item-name-input" placeholder="${itemType === 'part' ? 'ნაწილის აღწერა (სერვისით ერთად)' : 'სერვისის აღწერა'}">
                     <div class="suggestions hidden"></div>
                     <div class="price-source text-xs text-gray-500 mt-1"></div>
                 </div>
 
                 <div class="price-grid">
-                    ${isPart ? partFields : laborFields}
+                    ${partFields}
                 </div>
 
                 <input type="hidden" class="item-type" value="${itemType}">
@@ -1294,11 +1307,11 @@ foreach ($oilPrices as $price) {
 
             container.appendChild(itemCard);
 
-            // Attach typeahead to the new technician input if it's a labor item
-            if (isLabor) {
-                const techInput = itemCard.querySelector('.item-tech');
-                const techIdInput = itemCard.querySelector('.item-tech-id');
+            // Attach typeahead to the technician input for both part and labor items
+            const techInput = itemCard.querySelector('.item-tech');
+            const techIdInput = itemCard.querySelector('.item-tech-id');
 
+            if (techInput && techIdInput) {
                 attachTypeahead(
                     techInput,
                     'api_technicians_search.php?q=',
@@ -1319,14 +1332,21 @@ foreach ($oilPrices as $price) {
             if (existingItem) {
                 itemCard.querySelector('.item-name-input').value = existingItem.name;
 
-                if (isPart) {
+                // For part items, populate all fields (quantity, part price, service price, technician)
+                if (itemType === 'part') {
                     itemCard.querySelector('.item-qty').value = existingItem.qty || 1;
                     itemCard.querySelector('.item-price-part').value = existingItem.price_part || 0;
                     itemCard.querySelector('.item-discount-part').value = existingItem.discount_part || 0;
-                } else if (isLabor) {
                     itemCard.querySelector('.item-price-svc').value = existingItem.price_svc || 0;
                     itemCard.querySelector('.item-discount-svc').value = existingItem.discount_svc || 0;
                     itemCard.querySelector('.item-tech').value = existingItem.technician || '';
+                    itemCard.querySelector('.item-tech-id').value = existingItem.tech_id || '';
+                } else if (itemType === 'labor') {
+                    // For labor items, only service fields
+                    itemCard.querySelector('.item-price-svc').value = existingItem.price_svc || 0;
+                    itemCard.querySelector('.item-discount-svc').value = existingItem.discount_svc || 0;
+                    itemCard.querySelector('.item-tech').value = existingItem.technician || '';
+                    itemCard.querySelector('.item-tech-id').value = existingItem.tech_id || '';
                 }
 
                 // (Oil functions moved to top-level scope)
@@ -1483,31 +1503,27 @@ foreach ($oilPrices as $price) {
             document.querySelectorAll('.item-card:not(.oil-card)').forEach(card => {
                 const itemType = card.querySelector('.item-type')?.value || 'part'; // Default to part for backward compatibility
 
+                const qtyEl = card.querySelector('.item-qty');
+                const partPriceEl = card.querySelector('.item-price-part');
+                const partDiscountEl = card.querySelector('.item-discount-part');
+                const svcPriceEl = card.querySelector('.item-price-svc');
+                const svcDiscountEl = card.querySelector('.item-discount-svc');
+
+                const qty = qtyEl ? parseFloat(qtyEl.value) || 1 : 1;
+                const partPrice = partPriceEl ? parseFloat(partPriceEl.value) || 0 : 0;
+                const partDiscount = partDiscountEl ? parseFloat(partDiscountEl.value) || 0 : 0;
+                const svcPrice = svcPriceEl ? parseFloat(svcPriceEl.value) || 0 : 0;
+                const svcDiscount = svcDiscountEl ? parseFloat(svcDiscountEl.value) || 0 : 0;
+
+                const partDiscounted = partPrice * (1 - partDiscount / 100);
+                const svcDiscounted = svcPrice * (1 - svcDiscount / 100);
+
                 if (itemType === 'part') {
-                    // Handle parts item
-                    const qtyEl = card.querySelector('.item-qty');
-                    const partPriceEl = card.querySelector('.item-price-part');
-                    const partDiscountEl = card.querySelector('.item-discount-part');
-
-                    if (!qtyEl || !partPriceEl || !partDiscountEl) return;
-
-                    const qty = parseFloat(qtyEl.value) || 0;
-                    const partPrice = parseFloat(partPriceEl.value) || 0;
-                    const partDiscount = parseFloat(partDiscountEl.value) || 0;
-
-                    const partDiscounted = partPrice * (1 - partDiscount / 100);
+                    // Part items contribute to both parts and service totals
                     partsTotal += qty * partDiscounted;
+                    serviceTotal += svcDiscounted; // Service price is not multiplied by quantity for parts
                 } else if (itemType === 'labor') {
-                    // Handle labor item
-                    const svcPriceEl = card.querySelector('.item-price-svc');
-                    const svcDiscountEl = card.querySelector('.item-discount-svc');
-
-                    if (!svcPriceEl || !svcDiscountEl) return;
-
-                    const svcPrice = parseFloat(svcPriceEl.value) || 0;
-                    const svcDiscount = parseFloat(svcDiscountEl.value) || 0;
-
-                    const svcDiscounted = svcPrice * (1 - svcDiscount / 100);
+                    // Labor items only contribute to service total
                     serviceTotal += svcDiscounted;
                 }
             });
@@ -1580,10 +1596,14 @@ foreach ($oilPrices as $price) {
                 if (nameEl && nameEl.value && nameEl.value.trim()) filledFields++;
 
                 if (itemType === 'part') {
-                    const qtyEl = card.querySelector('.item-price-part');
-                    const qtyVal = qtyEl ? parseFloat(qtyEl.value) : 0;
-                    if (qtyVal > 0) filledFields++;
+                    // Part items have multiple price fields
+                    const partPriceEl = card.querySelector('.item-price-part');
+                    const svcPriceEl = card.querySelector('.item-price-svc');
+                    const partVal = partPriceEl ? parseFloat(partPriceEl.value) : 0;
+                    const svcVal = svcPriceEl ? parseFloat(svcPriceEl.value) : 0;
+                    if (partVal > 0 || svcVal > 0) filledFields++;
                 } else if (itemType === 'labor') {
+                    // Labor items have service price
                     const svcEl = card.querySelector('.item-price-svc');
                     const svcVal = svcEl ? parseFloat(svcEl.value) : 0;
                     if (svcVal > 0) filledFields++;
@@ -2021,25 +2041,16 @@ foreach ($oilPrices as $price) {
                 };
 
                 if (itemType === 'part') {
-                    // Parts item
-                    const qtyEl = card.querySelector('.item-qty');
-                    const partEl = card.querySelector('.item-price-part');
-                    const discPartEl = card.querySelector('.item-discount-part');
-
+                    // Parts item - has all fields
                     item.qty = qtyEl ? parseFloat(qtyEl.value) || 1 : 1;
                     item.price_part = partEl ? parseFloat(partEl.value) || 0 : 0;
                     item.discount_part = discPartEl ? parseFloat(discPartEl.value) || 0 : 0;
-                    item.price_svc = 0;
-                    item.discount_svc = 0;
-                    item.technician = '';
-                    item.tech_id = null;
+                    item.price_svc = svcEl ? parseFloat(svcEl.value) || 0 : 0;
+                    item.discount_svc = discSvcEl ? parseFloat(discSvcEl.value) || 0 : 0;
+                    item.technician = techEl ? techEl.value.trim() : '';
+                    item.tech_id = techIdEl ? techIdEl.value || null : null;
                 } else if (itemType === 'labor') {
-                    // Labor item
-                    const svcEl = card.querySelector('.item-price-svc');
-                    const discSvcEl = card.querySelector('.item-discount-svc');
-                    const techEl = card.querySelector('.item-tech');
-                    const techIdEl = card.querySelector('.item-tech-id');
-
+                    // Labor item - only service fields
                     item.qty = 1; // Labor items don't have quantity
                     item.price_part = 0;
                     item.discount_part = 0;
@@ -2073,7 +2084,11 @@ foreach ($oilPrices as $price) {
                     typeFields = {
                         'item_qty_': item.qty,
                         'item_price_part_': item.price_part,
-                        'item_discount_part_': item.discount_part
+                        'item_discount_part_': item.discount_part,
+                        'item_price_svc_': item.price_svc,
+                        'item_discount_svc_': item.discount_svc,
+                        'item_tech_': item.technician,
+                        'item_tech_id_': item.tech_id
                     };
                 } else if (item.type === 'labor') {
                     typeFields = {
@@ -2407,10 +2422,16 @@ foreach ($oilPrices as $price) {
                         card.querySelector('.item-name-input').value = item.name || '';
 
                         if (itemType === 'part') {
+                            // For part items, populate all fields
                             card.querySelector('.item-qty').value = item.qty || 1;
                             card.querySelector('.item-price-part').value = item.price_part || 0;
                             card.querySelector('.item-discount-part').value = item.discount_part || 0;
+                            card.querySelector('.item-price-svc').value = item.price_svc || 0;
+                            card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
+                            card.querySelector('.item-tech').value = item.tech || '';
+                            card.querySelector('.item-tech-id').value = item.tech_id || '';
                         } else if (itemType === 'labor') {
+                            // For labor items, only service fields
                             card.querySelector('.item-price-svc').value = item.price_svc || 0;
                             card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
                             card.querySelector('.item-tech').value = item.tech || '';
