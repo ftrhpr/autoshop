@@ -2042,6 +2042,14 @@ foreach ($oilPrices as $price) {
 
                 if (itemType === 'part') {
                     // Parts item - has all fields
+                    const qtyEl = card.querySelector('.item-qty');
+                    const partEl = card.querySelector('.item-price-part');
+                    const discPartEl = card.querySelector('.item-discount-part');
+                    const svcEl = card.querySelector('.item-price-svc');
+                    const discSvcEl = card.querySelector('.item-discount-svc');
+                    const techEl = card.querySelector('.item-tech');
+                    const techIdEl = card.querySelector('.item-tech-id');
+
                     item.qty = qtyEl ? parseFloat(qtyEl.value) || 1 : 1;
                     item.price_part = partEl ? parseFloat(partEl.value) || 0 : 0;
                     item.discount_part = discPartEl ? parseFloat(discPartEl.value) || 0 : 0;
@@ -2051,6 +2059,11 @@ foreach ($oilPrices as $price) {
                     item.tech_id = techIdEl ? techIdEl.value || null : null;
                 } else if (itemType === 'labor') {
                     // Labor item - only service fields
+                    const svcEl = card.querySelector('.item-price-svc');
+                    const discSvcEl = card.querySelector('.item-discount-svc');
+                    const techEl = card.querySelector('.item-tech');
+                    const techIdEl = card.querySelector('.item-tech-id');
+
                     item.qty = 1; // Labor items don't have quantity
                     item.price_part = 0;
                     item.discount_part = 0;
