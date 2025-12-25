@@ -1462,7 +1462,7 @@ foreach ($oilPrices as $price) {
                 brand_id: parseInt(card.querySelector('.oil-brand')?.value || 0) || null,
                 viscosity_id: parseInt(card.querySelector('.oil-viscosity')?.value || 0) || null,
                 package_type: card.querySelector('.oil-package')?.value || '',
-                qty: parseInt(card.querySelector('.oil-qty')?.value || 1) || 1,
+                qty: parseFloat(card.querySelector('.oil-qty')?.value || 1) || 1,
                 discount: parseFloat(card.querySelector('.oil-discount')?.value || 0) || 0
             })));
 
@@ -2003,7 +2003,7 @@ foreach ($oilPrices as $price) {
                         brand_id: parseInt(brand) || null,
                         viscosity_id: parseInt(viscosity) || null,
                         package_type: packageType,
-                        qty: parseInt(qty) || 1,
+                        qty: parseFloat(qty) || 1,
                         discount: parseFloat(discount) || 0
                     });
 
@@ -2022,8 +2022,8 @@ foreach ($oilPrices as $price) {
                 const discountVal = (card.querySelector('.oil-discount')?.value || '').toString().trim();
                 const anyFilled = brand || viscosity || packageType || qtyVal !== '' || discountVal !== '';
                 const allRequired = brand && viscosity && packageType;
-                const qtyNum = parseInt(qtyVal) || 0;
-                if (anyFilled && (!allRequired || qtyNum < 1)) incomplete.push(card);
+                const qtyNum = parseFloat(qtyVal) || 0;
+                if (anyFilled && (!allRequired || qtyNum <= 0)) incomplete.push(card);
             });
             if (incomplete.length > 0) {
                 incomplete[0].scrollIntoView({behavior:'smooth', block:'center'});

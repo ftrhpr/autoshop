@@ -133,7 +133,7 @@ $items = json_decode($invoice['items'], true);
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td class="px-3 md:px-6 py-4 text-center text-sm text-gray-900"><?php echo $item['qty']; ?></td>
+                                        <td class="px-3 md:px-6 py-4 text-center text-sm text-gray-900"><?php echo number_format($item['qty'], 2); ?></td>
                                         <td class="px-3 md:px-6 py-4 text-right text-sm text-gray-900"><?php echo number_format($item['price_part'], 2); ?> ₾</td>
                                         <td class="px-3 md:px-6 py-4 text-right text-sm text-gray-900"><?php echo number_format($item['price_svc'], 2); ?> ₾</td>
                                         <td class="px-3 md:px-6 py-4 text-left text-sm text-gray-900"><?php echo htmlspecialchars($item['tech'] ?? ''); ?></td>

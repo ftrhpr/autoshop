@@ -206,7 +206,7 @@ endif; ?>
                             $linePart = $qty * $pPart * max(0, (1 - $dPart / 100.0));
                             $lineSvc = $qty * $pSvc * max(0, (1 - $dSvc / 100.0));
 
-                            $displayQty = $qty;
+                            $displayQty = $qty > 0 ? number_format($qty, 2) : '';
                             $displayPPart = $pPart > 0 ? number_format($pPart,2) : '';
                             $displayPartDisc = $dPart > 0 ? number_format($dPart,2) . '%' : '';
                             $displayTotalPart = ($linePart > 0 && $dPart > 0) ? number_format($linePart, 2) : '';

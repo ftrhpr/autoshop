@@ -2053,7 +2053,7 @@ if (!empty($serverInvoice)) {
                         brand_id: parseInt(brandId) || null,
                         viscosity_id: parseInt(viscosityId) || null,
                         package_type: packageType,
-                        qty: parseInt(qtyVal) || 1,
+                        qty: parseFloat(qtyVal) || 1,
                         discount: parseFloat(discountVal) || 0
                     });
 
@@ -2077,9 +2077,9 @@ if (!empty($serverInvoice)) {
 
                 const anyFilled = brand || viscosity || packageType || qtyVal !== '' || discountVal !== '';
                 const allRequired = brand && viscosity && packageType;
-                const qtyNum = parseInt(qtyVal) || 0;
+                const qtyNum = parseFloat(qtyVal) || 0;
 
-                if (anyFilled && (!allRequired || qtyNum < 1)) {
+                if (anyFilled && (!allRequired || qtyNum <= 0)) {
                     incompleteRows.push(row);
                 }
             });
