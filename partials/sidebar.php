@@ -23,7 +23,7 @@ $menu_sections = [
         ['label' => 'ექსპორტი ინვოისები', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'manage_customers'],
         ['label' => 'იმპორტი კლიენტები', 'href' => $appRoot . '/admin/import_customers.php', 'icon' => 'download', 'permission' => 'manage_customers'],
         ['label' => 'კლიენტები', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
-        ['label' => 'ავტომობილების მონაცემთა ბაზა', 'href' => $appRoot . '/admin/vehicles.php', 'icon' => 'car', 'permission' => 'manage_customers'],
+        ['label' => 'ავტომობილების მონაცემთა ბაზა', 'href' => $appRoot . '/admin/vehicles.php', 'icon' => 'vehicle-db', 'permission' => 'manage_customers'],
         ['label' => 'ნაწილები, სერვისები & ზეთები', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
         ['label' => 'მომხმარებლები & წვდომა', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
             ['label' => 'მომხმარებლები', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
