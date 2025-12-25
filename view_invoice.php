@@ -123,18 +123,14 @@ $items = json_decode($invoice['items'], true);
                                         <td class="px-3 md:px-6 py-4">
                                             <div class="flex flex-col">
                                                 <span class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($item['name']); ?></span>
-                                                <div class="flex flex-wrap gap-1 mt-1">
-                                                    <?php if (!empty($item['type'])): ?>
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800"><?php echo ucfirst(htmlspecialchars($item['type'])); ?></span>
-                                                    <?php endif; ?>
-
-                                                    <?php if (!empty($item['db_id'])): ?>
+                                                <?php if (!empty($item['db_id'])): ?>
+                                                    <div class="flex flex-wrap gap-1 mt-1">
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">DB: <?php echo strtoupper(htmlspecialchars($item['db_type'] ?? '')); ?></span>
                                                         <?php if (!empty($item['db_vehicle'])): ?>
                                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700"><?php echo htmlspecialchars($item['db_vehicle']); ?></span>
                                                         <?php endif; ?>
-                                                    <?php endif; ?>
-                                                </div>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                         <td class="px-3 md:px-6 py-4 text-center text-sm text-gray-900"><?php echo number_format($item['qty'], 2); ?></td>

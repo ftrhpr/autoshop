@@ -29,8 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'db_type' => isset($data["item_db_type_$i"]) ? $data["item_db_type_$i"] : null,
                 'db_vehicle' => isset($data["item_db_vehicle_$i"]) ? $data["item_db_vehicle_$i"] : null,
                 'db_price_source' => isset($data["item_db_price_source_$i"]) ? $data["item_db_price_source_$i"] : null,
-                // Persist explicit type (part|labor) when provided, otherwise infer from prices
-                'type' => isset($data["item_type_$i"]) ? $data["item_type_$i"] : (((float)($data["item_price_svc_$i"] ?? 0) > 0 && (float)($data["item_price_part_$i"] ?? 0) == 0) ? 'labor' : 'part'),
             ];
         }
     }

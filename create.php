@@ -514,20 +514,12 @@ foreach ($oilPrices as $price) {
                                 </tbody>
                             </table>
                         </div>
-                        <div class="mt-4 flex gap-2">
-                            <button type="button" onclick="addItemRow('part')" class="flex items-center gap-2 text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
-                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                </svg>
-                                ნაწილის დამატება
-                            </button>
-                            <button type="button" onclick="addItemRow('labor')" class="flex items-center gap-2 text-sm bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M6 12h12M6 17h12" />
-                                </svg>
-                                სერვისის დამატება
-                            </button>
-                        </div>
+                        <button type="button" onclick="addItemRow()" class="mt-4 flex items-center gap-2 text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            ნივთის დამატება
+                        </button>
 
                         <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="bg-gray-50 p-4 rounded-lg">
@@ -1744,7 +1736,7 @@ if (!empty($serverInvoice)) {
             `;
         }
 
-        function addItemRow(type = 'part') {
+        function addItemRow() {
             rowCount++;
             const tbody = document.getElementById('items-table-body');
             const tr = document.createElement('tr');
@@ -1752,8 +1744,7 @@ if (!empty($serverInvoice)) {
             tr.id = `row-${rowCount}`;
             tr.innerHTML = `
                 <td class="px-3 py-3 font-medium text-center text-gray-400 row-number"></td>
-                <td class="px-3 py-3 relative flex items-center"><div class="w-full flex items-center">
-                    <span class="item-type-badge inline-block text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 mr-2">${type === 'labor' ? 'სერვისი' : 'ნაჭტი'}</span>
+                <td class="px-3 py-3 relative flex items-center"><div class="w-full">
                     <input type="text" placeholder="Description" class="item-name flex-1 border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                     <div class="price-source text-xs text-gray-500 mt-1"></div>
                 </div>
@@ -1776,9 +1767,6 @@ if (!empty($serverInvoice)) {
                 <input type="hidden" name="item_db_price_source_${rowCount}" class="item-db-price-source">
             `;
             tbody.appendChild(tr);
-            // Save type on row dataset for later serialization
-            tr.dataset.itemType = type;
-
             // Attach per-row technician typeahead (defensive: may be defined later)
             const techInput = tr.querySelector('.item-tech');
             if (techInput){
@@ -1793,16 +1781,6 @@ if (!empty($serverInvoice)) {
                 // Clear stored technician id when user types custom text
                 techInput.addEventListener('input', ()=>{ if (tr.dataset && tr.dataset.itemTechId) delete tr.dataset.itemTechId; });
             }
-
-            // Set sensible defaults based on type
-            const partInput = tr.querySelector('.item-price-part');
-            const svcInput = tr.querySelector('.item-price-svc');
-            if (type === 'labor') {
-                if (partInput) partInput.value = 0;
-            } else {
-                if (svcInput) svcInput.value = 0;
-            }
-
             renumberRows();
         }
 
@@ -2341,8 +2319,6 @@ if (!empty($serverInvoice)) {
                     if (row.dataset && row.dataset.itemDbVehicle) {
                         form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_db_vehicle_${index}" value="${row.dataset.itemDbVehicle}">`);
                     }
-                    // Persist item type (part / labor)
-                    form.insertAdjacentHTML('beforeend', `<input class="prepared-input" type="hidden" name="item_type_${index}" value="${row.dataset.itemType || 'part'}">`);
                     index++;
                 }
             });

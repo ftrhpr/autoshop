@@ -440,6 +440,20 @@ foreach ($oilPrices as $price) {
             font-size: 1.1rem;
             box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
         }
+        .fab.fab-part {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+        .fab.fab-labor {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+        }
 
         .fab:hover {
             transform: scale(1.1);
@@ -861,10 +875,16 @@ foreach ($oilPrices as $price) {
                         <!-- Items will be added here -->
                     </div>
 
-                    <button type="button" onclick="addItem()" class="btn-secondary" style="margin-bottom: 1rem;">
-                        <i class="fas fa-plus mr-2"></i>
-                        ნივთის დამატება
-                    </button>
+                    <div class="flex gap-2 mb-4">
+                        <button type="button" onclick="addItem('part')" class="btn-secondary flex-1">
+                            <i class="fas fa-cog mr-2"></i>
+                            ნაწილის დამატება
+                        </button>
+                        <button type="button" onclick="addItem('labor')" class="btn-secondary flex-1">
+                            <i class="fas fa-wrench mr-2"></i>
+                            სერვისის დამატება
+                        </button>
+                    </div>
 
                     <!-- Oils Section -->
                     <div class="section-header" style="margin-top:0.75rem;">
@@ -994,11 +1014,11 @@ foreach ($oilPrices as $price) {
         <div class="fab fab-danger" onclick="handleClear()" title="ფორმის გასუფთავება">
             <i class="fas fa-trash"></i>
         </div>
-        <div class="fab" onclick="addItem('labor')" title="სერვისის დამატება">
-            </div>
-            <div class="fab fab-secondary" onclick="addItem('part')" title="ნაწილის დამატება" style="right: 4.25rem;">
-            </div>
-            <i class="fas fa-plus"></i>
+        <div class="fab fab-part" onclick="addItem('part')" title="ნაწილის დამატება">
+            <i class="fas fa-cog"></i>
+        </div>
+        <div class="fab fab-labor" onclick="addItem('labor')" title="სერვისის დამატება">
+            <i class="fas fa-wrench"></i>
         </div>
     </div>
 
@@ -1202,18 +1222,7 @@ foreach ($oilPrices as $price) {
         }
 
         // Add item function
-        function addItem(a = null, b = null) {
-            // Flexible signature: addItem(type, existingItem) OR addItem(existingItem)
-            let type = 'part';
-            let existingItem = null;
-            if (a && typeof a === 'object') {
-                existingItem = a;
-                type = existingItem.type || 'part';
-            } else if (typeof a === 'string') {
-                type = a;
-                existingItem = b || null;
-            }
-
+        function addItem(itemType = 'part', existingItem = null) {
             itemCount++;
             const container = document.getElementById('items-container');
 
@@ -1221,24 +1230,11 @@ foreach ($oilPrices as $price) {
             itemCard.className = 'item-card';
             itemCard.id = `item-${itemCount}`;
 
-            itemCard.innerHTML = `
-                <div class="item-header">
-                    <span class="item-name">ნივთი ${itemCount}</span>
-                    <button type="button" class="remove-item" onclick="removeItem(${itemCount})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+            // Determine which fields to show based on item type
+            const isPart = itemType === 'part';
+            const isLabor = itemType === 'labor';
 
-                <div class="input-group">
-                    <div style="display:flex;align-items:center;gap:.5rem;">
-                        <span class="item-type-badge inline-block text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">${type === 'labor' ? 'სერვისი' : 'ნაჭტი'}</span>
-                        <input type="text" class="input-field item-name-input" placeholder="ნივთის აღწერა">
-                    </div>
-                    <div class="suggestions hidden"></div>
-                    <div class="price-source text-xs text-gray-500 mt-1"></div>
-                </div>
-
-                <div class="price-grid">
+            const partFields = isPart ? `
                     <div class="price-input">
                         <label class="price-label">რაოდენობა</label>
                         <input type="number" class="input-field item-qty" min="1" step="0.01" value="1" oninput="calculateTotals()">
@@ -1250,7 +1246,9 @@ foreach ($oilPrices as $price) {
                     <div class="price-input">
                         <label class="price-label">ნაწილის ფასდაკლება %</label>
                         <input type="number" class="input-field item-discount-part" min="0" max="100" value="0" oninput="calculateTotals()">
-                    </div>
+                    </div>` : '';
+
+            const laborFields = isLabor ? `
                     <div class="price-input">
                         <label class="price-label">სერვისის ფასი</label>
                         <input type="number" class="input-field item-price-svc" min="0" value="0" oninput="calculateTotals()">
@@ -1263,9 +1261,30 @@ foreach ($oilPrices as $price) {
                         <label class="price-label">ტექნიკოსი</label>
                         <input type="text" class="input-field item-tech" placeholder="სახელი">
                         <div class="suggestions-box" style="display: none;"></div>
-                    </div>
+                    </div>` : '';
+
+            const itemTypeIcon = isPart ? 'fa-cog' : 'fa-wrench';
+            const itemTypeName = isPart ? 'ნაწილი' : 'სერვისი';
+
+            itemCard.innerHTML = `
+                <div class="item-header">
+                    <span class="item-name"><i class="fas ${itemTypeIcon} mr-2"></i>${itemTypeName} ${itemCount}</span>
+                    <button type="button" class="remove-item" onclick="removeItem(${itemCount})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
 
+                <div class="input-group">
+                    <input type="text" class="input-field item-name-input" placeholder="${isPart ? 'ნაწილის აღწერა' : 'სერვისის აღწერა'}">
+                    <div class="suggestions hidden"></div>
+                    <div class="price-source text-xs text-gray-500 mt-1"></div>
+                </div>
+
+                <div class="price-grid">
+                    ${isPart ? partFields : laborFields}
+                </div>
+
+                <input type="hidden" class="item-type" value="${itemType}">
                 <input type="hidden" class="item-tech-id">
                 <input type="hidden" class="item-db-id">
                 <input type="hidden" class="item-db-type">
@@ -1274,37 +1293,41 @@ foreach ($oilPrices as $price) {
             `;
 
             container.appendChild(itemCard);
-            // Save type on dataset so it will be serialized
-            itemCard.dataset.itemType = type;
 
-            // Attach typeahead to the new technician input
-            const techInput = itemCard.querySelector('.item-tech');
-            const techIdInput = itemCard.querySelector('.item-tech-id');
+            // Attach typeahead to the new technician input if it's a labor item
+            if (isLabor) {
+                const techInput = itemCard.querySelector('.item-tech');
+                const techIdInput = itemCard.querySelector('.item-tech-id');
 
-            attachTypeahead(
-                techInput,
-                'api_technicians_search.php?q=',
-                (item) => item.name,
-                (item) => {
-                    techInput.value = item.name;
-                    if (techIdInput) techIdInput.value = item.id;
-                }
-            );
+                attachTypeahead(
+                    techInput,
+                    'api_technicians_search.php?q=',
+                    (item) => item.name,
+                    (item) => {
+                        techInput.value = item.name;
+                        if (techIdInput) techIdInput.value = item.id;
+                    }
+                );
 
-            // Clear tech ID if user types a custom name
-            techInput.addEventListener('input', () => {
-                if (techIdInput) techIdInput.value = '';
-            });
+                // Clear tech ID if user types a custom name
+                techInput.addEventListener('input', () => {
+                    if (techIdInput) techIdInput.value = '';
+                });
+            }
 
             // If editing an existing item, populate the fields
             if (existingItem) {
                 itemCard.querySelector('.item-name-input').value = existingItem.name;
-                itemCard.querySelector('.item-qty').value = existingItem.qty;
-                itemCard.querySelector('.item-price-part').value = existingItem.price_part;
-                itemCard.querySelector('.item-discount-part').value = existingItem.discount_part;
-                itemCard.querySelector('.item-price-svc').value = existingItem.price_svc;
-                itemCard.querySelector('.item-discount-svc').value = existingItem.discount_svc;
-                itemCard.querySelector('.item-tech').value = existingItem.technician;
+
+                if (isPart) {
+                    itemCard.querySelector('.item-qty').value = existingItem.qty || 1;
+                    itemCard.querySelector('.item-price-part').value = existingItem.price_part || 0;
+                    itemCard.querySelector('.item-discount-part').value = existingItem.discount_part || 0;
+                } else if (isLabor) {
+                    itemCard.querySelector('.item-price-svc').value = existingItem.price_svc || 0;
+                    itemCard.querySelector('.item-discount-svc').value = existingItem.discount_svc || 0;
+                    itemCard.querySelector('.item-tech').value = existingItem.technician || '';
+                }
 
                 // (Oil functions moved to top-level scope)
                 itemCard.querySelector('.item-db-id').value = existingItem.db_id || '';
@@ -1325,15 +1348,6 @@ foreach ($oilPrices as $price) {
                         svcInput.value = priceToUse;
                     }
                 }
-            }
-
-            // Sensible defaults based on type
-            const partInput = itemCard.querySelector('.item-price-part');
-            const svcInput = itemCard.querySelector('.item-price-svc');
-            if (type === 'labor') {
-                if (partInput) partInput.value = 0;
-            } else {
-                if (svcInput) svcInput.value = 0;
             }
 
             updateProgress();
@@ -1467,25 +1481,35 @@ foreach ($oilPrices as $price) {
             let serviceTotal = 0;
 
             document.querySelectorAll('.item-card:not(.oil-card)').forEach(card => {
-                const qtyEl = card.querySelector('.item-qty');
-                const partPriceEl = card.querySelector('.item-price-part');
-                const partDiscountEl = card.querySelector('.item-discount-part');
-                const svcPriceEl = card.querySelector('.item-price-svc');
-                const svcDiscountEl = card.querySelector('.item-discount-svc');
+                const itemType = card.querySelector('.item-type')?.value || 'part'; // Default to part for backward compatibility
 
-                if (!qtyEl || !partPriceEl || !partDiscountEl || !svcPriceEl || !svcDiscountEl) return;
+                if (itemType === 'part') {
+                    // Handle parts item
+                    const qtyEl = card.querySelector('.item-qty');
+                    const partPriceEl = card.querySelector('.item-price-part');
+                    const partDiscountEl = card.querySelector('.item-discount-part');
 
-                const qty = parseFloat(qtyEl.value) || 0;
-                const partPrice = parseFloat(partPriceEl.value) || 0;
-                const partDiscount = parseFloat(partDiscountEl.value) || 0;
-                const svcPrice = parseFloat(svcPriceEl.value) || 0;
-                const svcDiscount = parseFloat(svcDiscountEl.value) || 0;
+                    if (!qtyEl || !partPriceEl || !partDiscountEl) return;
 
-                const partDiscounted = partPrice * (1 - partDiscount / 100);
-                const svcDiscounted = svcPrice * (1 - svcDiscount / 100);
+                    const qty = parseFloat(qtyEl.value) || 0;
+                    const partPrice = parseFloat(partPriceEl.value) || 0;
+                    const partDiscount = parseFloat(partDiscountEl.value) || 0;
 
-                partsTotal += qty * partDiscounted;
-                serviceTotal += qty * svcDiscounted;
+                    const partDiscounted = partPrice * (1 - partDiscount / 100);
+                    partsTotal += qty * partDiscounted;
+                } else if (itemType === 'labor') {
+                    // Handle labor item
+                    const svcPriceEl = card.querySelector('.item-price-svc');
+                    const svcDiscountEl = card.querySelector('.item-discount-svc');
+
+                    if (!svcPriceEl || !svcDiscountEl) return;
+
+                    const svcPrice = parseFloat(svcPriceEl.value) || 0;
+                    const svcDiscount = parseFloat(svcDiscountEl.value) || 0;
+
+                    const svcDiscounted = svcPrice * (1 - svcDiscount / 100);
+                    serviceTotal += svcDiscounted;
+                }
             });
 
             const globalPartsDiscount = parseFloat(document.getElementById('input_parts_discount').value) || 0;
@@ -1551,13 +1575,19 @@ foreach ($oilPrices as $price) {
 
             // Check items
             document.querySelectorAll('.item-card').forEach(card => {
+                const itemType = card.querySelector('.item-type')?.value || 'part';
                 const nameEl = card.querySelector('.item-name-input');
                 if (nameEl && nameEl.value && nameEl.value.trim()) filledFields++;
-                const partEl = card.querySelector('.item-price-part');
-                const svcEl = card.querySelector('.item-price-svc');
-                const partVal = partEl ? parseFloat(partEl.value) : 0;
-                const svcVal = svcEl ? parseFloat(svcEl.value) : 0;
-                if (partVal > 0 || svcVal > 0) filledFields++;
+
+                if (itemType === 'part') {
+                    const qtyEl = card.querySelector('.item-price-part');
+                    const qtyVal = qtyEl ? parseFloat(qtyEl.value) : 0;
+                    if (qtyVal > 0) filledFields++;
+                } else if (itemType === 'labor') {
+                    const svcEl = card.querySelector('.item-price-svc');
+                    const svcVal = svcEl ? parseFloat(svcEl.value) : 0;
+                    if (svcVal > 0) filledFields++;
+                }
             });
 
             const progress = Math.min((filledFields / totalPossible) * 100, 100);
@@ -1978,33 +2008,46 @@ foreach ($oilPrices as $price) {
             // Prepare items data
             const items = [];
             document.querySelectorAll('.item-card').forEach((card, index) => {
+                const itemType = card.querySelector('.item-type')?.value || 'part'; // Default to part for backward compatibility
                 const nameEl = card.querySelector('.item-name-input');
-                const qtyEl = card.querySelector('.item-qty');
-                const partEl = card.querySelector('.item-price-part');
-                const discPartEl = card.querySelector('.item-discount-part');
-                const svcEl = card.querySelector('.item-price-svc');
-                const discSvcEl = card.querySelector('.item-discount-svc');
-                const techEl = card.querySelector('.item-tech');
-                const techIdEl = card.querySelector('.item-tech-id');
-                const dbIdEl = card.querySelector('.item-db-id');
-                const dbTypeEl = card.querySelector('.item-db-type');
-                const dbVehicleEl = card.querySelector('.item-db-vehicle');
-                const dbPriceSourceEl = card.querySelector('.item-db-price-source');
 
                 const item = {
                     name: nameEl ? nameEl.value.trim() : '',
-                    qty: qtyEl ? parseFloat(qtyEl.value) || 1 : 1,
-                    price_part: partEl ? parseFloat(partEl.value) || 0 : 0,
-                    discount_part: discPartEl ? parseFloat(discPartEl.value) || 0 : 0,
-                    price_svc: svcEl ? parseFloat(svcEl.value) || 0 : 0,
-                    discount_svc: discSvcEl ? parseFloat(discSvcEl.value) || 0 : 0,
-                    technician: techEl ? techEl.value.trim() : '',
-                    tech_id: techIdEl ? techIdEl.value || null : null,
-                    db_id: dbIdEl ? dbIdEl.value : '',
-                    db_type: dbTypeEl ? dbTypeEl.value : '',
-                    db_vehicle: dbVehicleEl ? dbVehicleEl.value : '',
-                    db_price_source: dbPriceSourceEl ? dbPriceSourceEl.value : ''
+                    type: itemType,
+                    db_id: card.querySelector('.item-db-id')?.value || '',
+                    db_type: card.querySelector('.item-db-type')?.value || '',
+                    db_vehicle: card.querySelector('.item-db-vehicle')?.value || '',
+                    db_price_source: card.querySelector('.item-db-price-source')?.value || ''
                 };
+
+                if (itemType === 'part') {
+                    // Parts item
+                    const qtyEl = card.querySelector('.item-qty');
+                    const partEl = card.querySelector('.item-price-part');
+                    const discPartEl = card.querySelector('.item-discount-part');
+
+                    item.qty = qtyEl ? parseFloat(qtyEl.value) || 1 : 1;
+                    item.price_part = partEl ? parseFloat(partEl.value) || 0 : 0;
+                    item.discount_part = discPartEl ? parseFloat(discPartEl.value) || 0 : 0;
+                    item.price_svc = 0;
+                    item.discount_svc = 0;
+                    item.technician = '';
+                    item.tech_id = null;
+                } else if (itemType === 'labor') {
+                    // Labor item
+                    const svcEl = card.querySelector('.item-price-svc');
+                    const discSvcEl = card.querySelector('.item-discount-svc');
+                    const techEl = card.querySelector('.item-tech');
+                    const techIdEl = card.querySelector('.item-tech-id');
+
+                    item.qty = 1; // Labor items don't have quantity
+                    item.price_part = 0;
+                    item.discount_part = 0;
+                    item.price_svc = svcEl ? parseFloat(svcEl.value) || 0 : 0;
+                    item.discount_svc = discSvcEl ? parseFloat(discSvcEl.value) || 0 : 0;
+                    item.technician = techEl ? techEl.value.trim() : '';
+                    item.tech_id = techIdEl ? techIdEl.value || null : null;
+                }
 
                 if (item.name || item.price_part > 0 || item.price_svc > 0) {
                     items.push(item);
@@ -2016,28 +2059,39 @@ foreach ($oilPrices as $price) {
 
             // Add items as hidden inputs
             items.forEach((item, index) => {
-                const fields = {
+                const baseFields = {
                     'item_name_': item.name,
-                    'item_qty_': item.qty,
-                    'item_price_part_': item.price_part,
-                    'item_discount_part_': item.discount_part,
-                    'item_price_svc_': item.price_svc,
-                    'item_discount_svc_': item.discount_svc,
-                    'item_tech_': item.technician,
-                    'item_tech_id_': item.tech_id,
+                    'item_type_': item.type,
                     'item_db_id_': item.db_id,
                     'item_db_type_': item.db_type,
                     'item_db_vehicle_': item.db_vehicle,
-                    'item_db_price_source_': item.db_price_source,
-                    'item_type_': item.type || (item.price_svc && !item.price_part ? 'labor' : 'part')
+                    'item_db_price_source_': item.db_price_source
                 };
 
-                Object.keys(fields).forEach(key => {
+                let typeFields = {};
+                if (item.type === 'part') {
+                    typeFields = {
+                        'item_qty_': item.qty,
+                        'item_price_part_': item.price_part,
+                        'item_discount_part_': item.discount_part
+                    };
+                } else if (item.type === 'labor') {
+                    typeFields = {
+                        'item_price_svc_': item.price_svc,
+                        'item_discount_svc_': item.discount_svc,
+                        'item_tech_': item.technician,
+                        'item_tech_id_': item.tech_id
+                    };
+                }
+
+                const allFields = { ...baseFields, ...typeFields };
+
+                Object.keys(allFields).forEach(key => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
                     input.className = 'prepared-input';
                     input.name = key + index;
-                    input.value = fields[key];
+                    input.value = allFields[key];
                     document.getElementById('mobile-invoice-form').appendChild(input);
                 });
             });
@@ -2339,24 +2393,37 @@ foreach ($oilPrices as $price) {
             itemCount = 0;
             if (inv.items && inv.items.length > 0) {
                 inv.items.forEach(item => {
-                    addItem(item.type || 'part', item);
+                    // Determine item type based on which price fields have values
+                    let itemType = 'part'; // Default
+                    if ((item.price_svc && item.price_svc > 0) || item.tech) {
+                        itemType = 'labor';
+                    } else if (item.price_part && item.price_part > 0) {
+                        itemType = 'part';
+                    }
+
+                    addItem(itemType);
                     const card = document.getElementById(`item-${itemCount}`);
                     if (card) {
                         card.querySelector('.item-name-input').value = item.name || '';
-                        card.querySelector('.item-qty').value = item.qty || 1;
-                        card.querySelector('.item-price-part').value = item.price_part || 0;
-                        card.querySelector('.item-discount-part').value = item.discount_part || 0;
-                        card.querySelector('.item-price-svc').value = item.price_svc || 0;
-                        card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
-                        card.querySelector('.item-tech').value = item.tech || '';
-                        card.querySelector('.item-tech-id').value = item.tech_id || '';
-                        // preserve type badge/dataset
-                        card.dataset.itemType = item.type || (item.price_svc && !item.price_part ? 'labor' : 'part');
-                        const badge = card.querySelector('.item-type-badge'); if (badge) badge.textContent = card.dataset.itemType === 'labor' ? 'სერვისი' : 'ნაჭტი';
+
+                        if (itemType === 'part') {
+                            card.querySelector('.item-qty').value = item.qty || 1;
+                            card.querySelector('.item-price-part').value = item.price_part || 0;
+                            card.querySelector('.item-discount-part').value = item.discount_part || 0;
+                        } else if (itemType === 'labor') {
+                            card.querySelector('.item-price-svc').value = item.price_svc || 0;
+                            card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
+                            card.querySelector('.item-tech').value = item.tech || '';
+                            card.querySelector('.item-tech-id').value = item.tech_id || '';
+                        }
+
+                        // Set database fields if available
+                        if (item.db_id) card.querySelector('.item-db-id').value = item.db_id;
+                        if (item.db_type) card.querySelector('.item-db-type').value = item.db_type;
+                        if (item.db_vehicle) card.querySelector('.item-db-vehicle').value = item.db_vehicle;
+                        if (item.db_price_source) card.querySelector('.item-db-price-source').value = item.db_price_source;
                     }
                 });
-            } else {
-                 for(let i = 0; i < 1; i++) addItem(); // Add empty rows if no items
             }
 
             // Populate photos
