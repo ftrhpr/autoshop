@@ -121,8 +121,7 @@ try {
             foreach ($makes as $make) {
                 $makeId = $make['id_car_make'] ?? $make['id'] ?? $make['ID'] ?? null;
                 $makeName = $make['name'] ?? $make['Name'] ?? $make['NAME'] ?? null;
-                
-                if ($makeId && $makeName) {
+                 if ($makeId && $makeName) {
                     $stmt = $pdo->prepare("INSERT IGNORE INTO vehicle_makes (id, name, type_id) VALUES (?, ?, ?)");
                     $stmt->execute([$makeId, $makeName, $typeId]);
                     $makesCount++;
