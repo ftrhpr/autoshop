@@ -433,6 +433,13 @@ foreach ($oilPrices as $price) {
             height: 3rem;
             font-size: 1.1rem;
         }
+        .fab.fab-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        }
 
         .fab:hover {
             transform: scale(1.1);
@@ -973,10 +980,6 @@ foreach ($oilPrices as $price) {
                             <i class="fas fa-print mr-2"></i>
                             შენახვა & ბეჭდვა
                         </button>
-                        <button type="button" onclick="handleClear()" class="btn-danger">
-                            <i class="fas fa-trash mr-2"></i>
-                            ფორმის გასუფთავება
-                        </button>
                     </div>
                 </div>
             </div>
@@ -988,7 +991,10 @@ foreach ($oilPrices as $price) {
         <a href="manager.php" class="fab fab-secondary">
             <i class="fas fa-list-ul"></i>
         </a>
-        <div class="fab" onclick="addItem()">
+        <div class="fab fab-danger" onclick="handleClear()" title="ფორმის გასუფთავება">
+            <i class="fas fa-trash"></i>
+        </div>
+        <div class="fab" onclick="addItem()" title="სერვისის დამატება">
             <i class="fas fa-plus"></i>
         </div>
     </div>
