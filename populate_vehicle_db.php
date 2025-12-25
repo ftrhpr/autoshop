@@ -17,12 +17,17 @@ function fetchCSV($url) {
 
 function parseCSV($csvData) {
     $lines = explode("\n", trim($csvData));
+    if (empty($lines)) return [];
+    
     $header = str_getcsv(array_shift($lines));
+    echo "CSV Headers: " . json_encode($header) . "\n";
     $rows = [];
     foreach ($lines as $line) {
         if (trim($line)) {
             $row = str_getcsv($line);
-            $rows[] = array_combine($header, $row);
+            if (count($row) === count($header)) {
+                $rows[] = array_combine($header, $row);
+            }
         }
     }
     return $rows;
@@ -64,11 +69,24 @@ try {
     echo "Fetching vehicle types...\n";
     $typesUrl = $baseUrl . 'type.getAll.csv.en?api_key=' . $apiKey;
     $typesCSV = fetchCSV($typesUrl);
+    echo "Types CSV length: " . strlen($typesCSV) . "\n";
+    echo "First 200 chars of types CSV:\n" . substr($typesCSV, 0, 200) . "\n\n";
     $types = parseCSV($typesCSV);
+    echo "Parsed types: " . count($types) . " records\n";
+    if (!empty($types)) {
+        echo "First type: " . json_encode($types[0]) . "\n";
+    }
 
     foreach ($types as $type) {
-        $stmt = $pdo->prepare("INSERT IGNORE INTO vehicle_types (id, name) VALUES (?, ?)");
-        $stmt->execute([$type['id'], $type['name']]);
+        $typeId = $type['id'] ?? $type['ID'] ?? $type['type_id'] ?? null;
+        $typeName = $type['name'] ?? $type['Name'] ?? $type['NAME'] ?? $type['type_name'] ?? null;
+        
+        if ($typeId && $typeName) {
+            $stmt = $pdo->prepare("INSERT IGNORE INTO vehicle_types (id, name) VALUES (?, ?)");
+            $stmt->execute([$typeId, $typeName]);
+        } else {
+            echo "Skipping type - missing id or name: " . json_encode($type) . "\n";
+        }
     }
     echo "Inserted " . count($types) . " vehicle types.\n";
 
@@ -76,14 +94,49 @@ try {
     echo "Fetching vehicle makes...\n";
     $makesCount = 0;
     foreach ($types as $type) {
-        $makesUrl = $baseUrl . 'make.getAll.csv.en?api_key=' . $apiKey . '&id_type=' . $type['id'];
-        $makesCSV = fetchCSV($makesUrl);
-        $makes = parseCSV($makesCSV);
+        $typeId = $type['id'] ?? null;
+        $typeName = $type['name'] ?? 'Unknown';
+        
+        if (!$typeId) {
+            echo "Skipping type '$typeName' - no ID found\n";
+            continue;
+        }
+        
+        echo "Processing type ID: $typeId, Name: $typeName\n";
+        $makesUrl = $baseUrl . 'make.getAll.csv.en?api_key=' . $apiKey . '&id_type=' . $typeId;
+        echo "Makes URL: $makesUrl\n";
+        
+        try {
+            $makesCSV = fetchCSV($makesUrl);
+            if (empty($makesCSV) || strlen($makesCSV) < 10) {
+                echo "Empty or invalid response for type $typeId\n";
+                continue;
+            }
+            echo "Makes CSV length: " . strlen($makesCSV) . "\n";
+            if (strlen($makesCSV) > 0) {
+                echo "First 200 chars of makes CSV:\n" . substr($makesCSV, 0, 200) . "\n\n";
+            }
+            $makes = parseCSV($makesCSV);
+            echo "Parsed makes for type $typeId: " . count($makes) . " records\n";
+            if (!empty($makes)) {
+                echo "First make: " . json_encode($makes[0]) . "\n";
+            }
 
-        foreach ($makes as $make) {
-            $stmt = $pdo->prepare("INSERT IGNORE INTO vehicle_makes (id, name, type_id) VALUES (?, ?, ?)");
-            $stmt->execute([$make['id'], $make['name'], $type['id']]);
-            $makesCount++;
+            foreach ($makes as $make) {
+                $makeId = $make['id'] ?? $make['ID'] ?? null;
+                $makeName = $make['name'] ?? $make['Name'] ?? $make['NAME'] ?? null;
+                
+                if ($makeId && $makeName) {
+                    $stmt = $pdo->prepare("INSERT IGNORE INTO vehicle_makes (id, name, type_id) VALUES (?, ?, ?)");
+                    $stmt->execute([$makeId, $makeName, $typeId]);
+                    $makesCount++;
+                } else {
+                    echo "Skipping make - missing id or name: " . json_encode($make) . "\n";
+                }
+            }
+        } catch (Exception $e) {
+            echo "Error fetching makes for type $typeId: " . $e->getMessage() . "\n";
+            continue;
         }
     }
     echo "Inserted $makesCount vehicle makes.\n";
@@ -92,14 +145,37 @@ try {
     echo "Fetching vehicle models...\n";
     $modelsCount = 0;
     foreach ($types as $type) {
-        $modelsUrl = $baseUrl . 'model.getAll.csv.en?api_key=' . $apiKey . '&id_type=' . $type['id'];
-        $modelsCSV = fetchCSV($modelsUrl);
-        $models = parseCSV($modelsCSV);
+        $typeId = $type['id'] ?? $type['ID'] ?? $type['type_id'] ?? null;
+        
+        if (!$typeId) continue;
+        
+        echo "Fetching models for type $typeId...\n";
+        $modelsUrl = $baseUrl . 'model.getAll.csv.en?api_key=' . $apiKey . '&id_type=' . $typeId;
+        
+        try {
+            $modelsCSV = fetchCSV($modelsUrl);
+            if (empty($modelsCSV) || strlen($modelsCSV) < 10) {
+                echo "Empty response for models of type $typeId\n";
+                continue;
+            }
+            $models = parseCSV($modelsCSV);
+            echo "Parsed models for type $typeId: " . count($models) . " records\n";
 
-        foreach ($models as $model) {
-            $stmt = $pdo->prepare("INSERT IGNORE INTO vehicle_models (id, name, make_id) VALUES (?, ?, ?)");
-            $stmt->execute([$model['id'], $model['name'], $model['make_id']]);
-            $modelsCount++;
+            foreach ($models as $model) {
+                $modelId = $model['id'] ?? $model['ID'] ?? null;
+                $modelName = $model['name'] ?? $model['Name'] ?? $model['NAME'] ?? null;
+                $makeId = $model['make_id'] ?? $model['makeId'] ?? $model['make'] ?? null;
+                
+                if ($modelId && $modelName && $makeId) {
+                    $stmt = $pdo->prepare("INSERT IGNORE INTO vehicle_models (id, name, make_id) VALUES (?, ?, ?)");
+                    $stmt->execute([$modelId, $modelName, $makeId]);
+                    $modelsCount++;
+                } else {
+                    echo "Skipping model - missing data: " . json_encode($model) . "\n";
+                }
+            }
+        } catch (Exception $e) {
+            echo "Error fetching models for type $typeId: " . $e->getMessage() . "\n";
         }
     }
     echo "Inserted $modelsCount vehicle models.\n";
