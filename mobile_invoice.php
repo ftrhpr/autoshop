@@ -994,7 +994,10 @@ foreach ($oilPrices as $price) {
         <div class="fab fab-danger" onclick="handleClear()" title="ფორმის გასუფთავება">
             <i class="fas fa-trash"></i>
         </div>
-        <div class="fab" onclick="addItem()" title="სერვისის დამატება">
+        <div class="fab" onclick="addItem('labor')" title="სერვისის დამატება">
+            </div>
+            <div class="fab fab-secondary" onclick="addItem('part')" title="ნაწილის დამატება" style="right: 4.25rem;">
+            </div>
             <i class="fas fa-plus"></i>
         </div>
     </div>
@@ -1199,7 +1202,18 @@ foreach ($oilPrices as $price) {
         }
 
         // Add item function
-        function addItem(existingItem = null) {
+        function addItem(a = null, b = null) {
+            // Flexible signature: addItem(type, existingItem) OR addItem(existingItem)
+            let type = 'part';
+            let existingItem = null;
+            if (a && typeof a === 'object') {
+                existingItem = a;
+                type = existingItem.type || 'part';
+            } else if (typeof a === 'string') {
+                type = a;
+                existingItem = b || null;
+            }
+
             itemCount++;
             const container = document.getElementById('items-container');
 
@@ -1216,7 +1230,10 @@ foreach ($oilPrices as $price) {
                 </div>
 
                 <div class="input-group">
-                    <input type="text" class="input-field item-name-input" placeholder="ნივთის აღწერა">
+                    <div style="display:flex;align-items:center;gap:.5rem;">
+                        <span class="item-type-badge inline-block text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">${type === 'labor' ? 'სერვისი' : 'ნაჭტი'}</span>
+                        <input type="text" class="input-field item-name-input" placeholder="ნივთის აღწერა">
+                    </div>
                     <div class="suggestions hidden"></div>
                     <div class="price-source text-xs text-gray-500 mt-1"></div>
                 </div>
@@ -1257,6 +1274,8 @@ foreach ($oilPrices as $price) {
             `;
 
             container.appendChild(itemCard);
+            // Save type on dataset so it will be serialized
+            itemCard.dataset.itemType = type;
 
             // Attach typeahead to the new technician input
             const techInput = itemCard.querySelector('.item-tech');
@@ -1306,6 +1325,15 @@ foreach ($oilPrices as $price) {
                         svcInput.value = priceToUse;
                     }
                 }
+            }
+
+            // Sensible defaults based on type
+            const partInput = itemCard.querySelector('.item-price-part');
+            const svcInput = itemCard.querySelector('.item-price-svc');
+            if (type === 'labor') {
+                if (partInput) partInput.value = 0;
+            } else {
+                if (svcInput) svcInput.value = 0;
             }
 
             updateProgress();
@@ -2000,7 +2028,8 @@ foreach ($oilPrices as $price) {
                     'item_db_id_': item.db_id,
                     'item_db_type_': item.db_type,
                     'item_db_vehicle_': item.db_vehicle,
-                    'item_db_price_source_': item.db_price_source
+                    'item_db_price_source_': item.db_price_source,
+                    'item_type_': item.type || (item.price_svc && !item.price_part ? 'labor' : 'part')
                 };
 
                 Object.keys(fields).forEach(key => {
@@ -2310,7 +2339,7 @@ foreach ($oilPrices as $price) {
             itemCount = 0;
             if (inv.items && inv.items.length > 0) {
                 inv.items.forEach(item => {
-                    addItem();
+                    addItem(item.type || 'part', item);
                     const card = document.getElementById(`item-${itemCount}`);
                     if (card) {
                         card.querySelector('.item-name-input').value = item.name || '';
@@ -2321,6 +2350,9 @@ foreach ($oilPrices as $price) {
                         card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
                         card.querySelector('.item-tech').value = item.tech || '';
                         card.querySelector('.item-tech-id').value = item.tech_id || '';
+                        // preserve type badge/dataset
+                        card.dataset.itemType = item.type || (item.price_svc && !item.price_part ? 'labor' : 'part');
+                        const badge = card.querySelector('.item-type-badge'); if (badge) badge.textContent = card.dataset.itemType === 'labor' ? 'სერვისი' : 'ნაჭტი';
                     }
                 });
             } else {
