@@ -201,6 +201,57 @@ foreach ($oilPrices as $price) {
             background-color: #3b82f6;
             color: white;
         }
+
+        /* Searchable dropdown styles */
+        .searchable-dropdown {
+            position: relative;
+        }
+
+        .dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 0.75rem 0.75rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-list.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item.highlighted {
+            background-color: #f3f4f6;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item.empty {
+            color: #9ca3af;
+            font-style: italic;
+            cursor: default;
+        }
+
+        .dropdown-item.empty:hover {
+            background-color: white;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen overflow-auto font-sans text-gray-800 antialiased pb-20">
@@ -351,9 +402,32 @@ foreach ($oilPrices as $price) {
                                 <label for="input_plate_number" class="block text-sm font-medium text-gray-700 mb-2">სახელმწიფო ნომერი</label>
                                 <input type="text" id="input_plate_number" placeholder="ZZ-000-ZZ" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
                             </div>
-                            <div>
-                                <label for="input_car_mark" class="block text-sm font-medium text-gray-700 mb-2">ავტომობილის მარკა/მოდელი <span class="text-xs text-gray-500"> <button type="button" title="ფორმატი: 'მარკა მოდელი' - მაგ: 'Toyota Corolla'" class="ml-1 text-gray-400 hover:text-gray-600">ℹ️</button></span></label>
-                                <input type="text" id="input_car_mark" placeholder="მაგ: Toyota Camry" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition">
+
+                            <!-- Vehicle Make and Model Selection -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="input_vehicle_make" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-car-side mr-1"></i>
+                                        ავტომობილის მარკა
+                                    </label>
+                                    <div class="searchable-dropdown">
+                                        <input type="text" id="input_vehicle_make" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition" placeholder="მოძებნეთ მარკა..." autocomplete="off">
+                                        <input type="hidden" id="input_vehicle_make_id" name="vehicle_make_id">
+                                        <div class="dropdown-list" id="vehicle_make_dropdown"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="input_vehicle_model" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-car mr-1"></i>
+                                        მოდელი
+                                    </label>
+                                    <div class="searchable-dropdown">
+                                        <input type="text" id="input_vehicle_model" class="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3 text-base transition" placeholder="ჯერ აირჩიეთ მარკა" disabled autocomplete="off">
+                                        <input type="hidden" id="input_vehicle_model_id" name="vehicle_model_id">
+                                        <div class="dropdown-list" id="vehicle_model_dropdown"></div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -747,12 +821,11 @@ if (!empty($serverInvoice)) {
                             if (!data) return;
                             document.getElementById('input_customer_name').value = data.full_name || '';
                             document.getElementById('input_phone_number').value = data.phone || '';
-                            document.getElementById('input_car_mark').value = data.car_mark || '';
+                            setVehicleFromCarMark(data.car_mark || '');
                             const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id || '';
                             const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = data.customer_id || '';
                             // Populate VIN, make/model, and mileage if available
                             const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = data.vin || '';
-                            const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = data.car_mark || '';
                             const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = data.mileage || '';
                         }).catch(e => {
                             // ignore errors
@@ -939,7 +1012,7 @@ if (!empty($serverInvoice)) {
                     const custIdInput = document.getElementById('input_customer_id'); if (custIdInput) custIdInput.value = it.customer_id || '';
                     // Populate VIN, make/model, and mileage if present
                     const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = it.vin || '';
-                    const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = it.car_mark || '';
+                    setVehicleFromCarMark(it.car_mark || '');
                     const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = it.mileage || '';
                     // When selecting a plate, also focus the customer name for quick edits
                     const customerNameElem = document.getElementById('input_customer_name'); if (customerNameElem) customerNameElem.focus();
@@ -962,7 +1035,7 @@ if (!empty($serverInvoice)) {
                             // Always set VIN, car make/model and vehicle id
                             const cid = document.getElementById('input_vehicle_id'); if (cid) cid.value = data.id;
                             const vinInput = document.getElementById('input_vin'); if (vinInput) vinInput.value = data.vin || '';
-                            const carMarkInput = document.getElementById('input_car_mark'); if (carMarkInput) carMarkInput.value = data.car_mark || '';
+                            setVehicleFromCarMark(data.car_mark || '');
                             const mileageInput = document.getElementById('input_mileage'); if (mileageInput) mileageInput.value = data.mileage || '';
                         }).catch(e=>{});
                 });
@@ -1315,7 +1388,232 @@ if (!empty($serverInvoice)) {
 
             // Initialize tabs
             initializeTabs();
+
+            // Load vehicle makes and initialize searchable dropdowns
+            loadVehicleMakes();
         });
+
+        // Vehicle make/model data
+        let vehicleMakes = [];
+        let vehicleModels = [];
+
+        async function loadVehicleMakes() {
+            try {
+                console.log('Loading vehicle makes...');
+                const response = await fetch('./admin/api_vehicle_makes.php');
+                console.log('Makes response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                vehicleMakes = await response.json();
+                console.log('Loaded makes:', vehicleMakes);
+
+                // Initialize searchable dropdown for makes
+                initializeSearchableDropdown('input_vehicle_make', 'vehicle_make_dropdown', vehicleMakes, (make) => {
+                    document.getElementById('input_vehicle_make_id').value = make.id;
+                    document.getElementById('input_vehicle_make').value = make.name;
+                    
+                    // Clear and disable model input when make changes
+                    const modelInput = document.getElementById('input_vehicle_model');
+                    const modelIdInput = document.getElementById('input_vehicle_model_id');
+                    modelInput.value = '';
+                    modelIdInput.value = '';
+                    modelInput.disabled = true;
+                    modelInput.placeholder = 'ჯერ აირჩიეთ მარკა';
+                    
+                    loadVehicleModels(make.id);
+                });
+
+            } catch (error) {
+                console.error('Error loading vehicle makes:', error);
+                const makeInput = document.getElementById('input_vehicle_make');
+                makeInput.placeholder = 'შეცდომა ჩატვირთვაში';
+            }
+        }
+
+        async function loadVehicleModels(makeId) {
+            if (!makeId) return;
+
+            const modelInput = document.getElementById('input_vehicle_model');
+            const modelIdInput = document.getElementById('input_vehicle_model_id');
+
+            modelInput.disabled = true;
+            modelInput.placeholder = 'იტვირთება...';
+            modelIdInput.value = '';
+
+            try {
+                console.log('Loading models for make:', makeId);
+                const response = await fetch(`./admin/api_vehicle_models.php?make_id=${makeId}`);
+                console.log('Models response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                vehicleModels = await response.json();
+                console.log('Loaded models:', vehicleModels);
+
+                // Initialize searchable dropdown for models
+                initializeSearchableDropdown('input_vehicle_model', 'vehicle_model_dropdown', vehicleModels, (model) => {
+                    document.getElementById('input_vehicle_model_id').value = model.id;
+                    document.getElementById('input_vehicle_model').value = model.name;
+                });
+
+                modelInput.disabled = false;
+                modelInput.placeholder = 'მოძებნეთ მოდელი...';
+
+            } catch (error) {
+                console.error('Error loading vehicle models:', error);
+                modelInput.placeholder = 'შეცდომა მოდელების ჩატვირთვაში';
+                modelInput.disabled = false;
+            }
+        }
+
+        // Searchable dropdown functionality
+        function initializeSearchableDropdown(inputId, dropdownId, data, onSelect) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            let currentFocus = -1;
+            let filteredData = [...data];
+
+            // Input event listener for filtering
+            input.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase();
+                currentFocus = -1;
+
+                if (query.length === 0) {
+                    filteredData = [...data];
+                    showDropdown(dropdown, filteredData, 'აირჩიეთ...', onSelect);
+                } else {
+                    filteredData = data.filter(item =>
+                        item.name.toLowerCase().includes(query)
+                    );
+                    if (filteredData.length > 0) {
+                        showDropdown(dropdown, filteredData, null, onSelect);
+                    } else {
+                        showDropdown(dropdown, [], 'არ მოიძებნა', onSelect);
+                    }
+                }
+            });
+
+            // Focus event to show all options
+            input.addEventListener('focus', function() {
+                if (input.value.length === 0) {
+                    filteredData = [...data];
+                    showDropdown(dropdown, filteredData, 'აირჩიეთ...', onSelect);
+                }
+            });
+
+            // Keyboard navigation
+            input.addEventListener('keydown', function(e) {
+                const items = dropdown.querySelectorAll('.dropdown-item:not(.empty)');
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentFocus = currentFocus < items.length - 1 ? currentFocus + 1 : 0;
+                    highlightItem(items, currentFocus);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentFocus = currentFocus > 0 ? currentFocus - 1 : items.length - 1;
+                    highlightItem(items, currentFocus);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentFocus >= 0 && items[currentFocus]) {
+                        items[currentFocus].click();
+                    }
+                } else if (e.key === 'Escape') {
+                    hideDropdown(dropdown);
+                    currentFocus = -1;
+                }
+            });
+
+            // Click outside to close
+            document.addEventListener('click', function(e) {
+                if (!input.closest('.searchable-dropdown').contains(e.target)) {
+                    hideDropdown(dropdown);
+                    currentFocus = -1;
+                }
+            });
+        }
+
+        function showDropdown(dropdown, items, placeholder, onSelect) {
+            dropdown.innerHTML = '';
+
+            if (items.length === 0) {
+                const emptyItem = document.createElement('div');
+                emptyItem.className = 'dropdown-item empty';
+                emptyItem.textContent = placeholder || 'არ მოიძებნა';
+                dropdown.appendChild(emptyItem);
+            } else {
+                items.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'dropdown-item';
+                    itemDiv.textContent = item.name;
+                    itemDiv.addEventListener('click', function() {
+                        onSelect(item);
+                        hideDropdown(dropdown);
+                    });
+                    dropdown.appendChild(itemDiv);
+                });
+            }
+
+            dropdown.classList.add('show');
+        }
+
+        function hideDropdown(dropdown) {
+            dropdown.classList.remove('show');
+        }
+
+        function highlightItem(items, index) {
+            items.forEach(item => item.classList.remove('highlighted'));
+            if (items[index]) {
+                items[index].classList.add('highlighted');
+                items[index].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        // Function to set vehicle make/model from car_mark string
+        async function setVehicleFromCarMark(carMark) {
+            if (!carMark || carMark.trim() === '') return;
+
+            // Try to find matching make and model
+            try {
+                const makesResponse = await fetch('./admin/api_vehicle_makes.php');
+                const makes = await makesResponse.json();
+
+                // Look for make that matches the beginning of carMark
+                for (const make of makes) {
+                    if (carMark.toLowerCase().startsWith(make.name.toLowerCase())) {
+                        // Set make input and hidden field
+                        document.getElementById('input_vehicle_make').value = make.name;
+                        document.getElementById('input_vehicle_make_id').value = make.id;
+
+                        // Load models for this make
+                        await loadVehicleModels(make.id);
+
+                        // Try to find matching model
+                        const remaining = carMark.substring(make.name.length).trim();
+                        if (remaining) {
+                            // Wait a bit for models to load, then find matching model
+                            setTimeout(() => {
+                                const matchingModel = vehicleModels.find(model =>
+                                    model.name.toLowerCase() === remaining.toLowerCase()
+                                );
+                                if (matchingModel) {
+                                    document.getElementById('input_vehicle_model').value = matchingModel.name;
+                                    document.getElementById('input_vehicle_model_id').value = matchingModel.id;
+                                }
+                            }, 500);
+                        }
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('Error setting vehicle from car mark:', error);
+            }
+        }
 
         function initializeTabs() {
             const tabButtons = document.querySelectorAll('.tab-btn');
@@ -1393,7 +1691,9 @@ if (!empty($serverInvoice)) {
 
             const customerName = document.getElementById('input_customer_name').value || 'Not specified';
             const phone = document.getElementById('input_phone_number').value || 'Not specified';
-            const carMark = document.getElementById('input_car_mark').value || 'Not specified';
+            const makeText = document.getElementById('input_vehicle_make').value || '';
+            const modelText = document.getElementById('input_vehicle_model').value || '';
+            const carMark = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || 'Not specified');
             const plateNumber = document.getElementById('input_plate_number').value || 'Not specified';
             const vin = document.getElementById('input_vin').value || 'Not specified';
             const mileage = document.getElementById('input_mileage').value || 'Not specified';
@@ -1598,7 +1898,7 @@ if (!empty($serverInvoice)) {
 
             if (inv.customer_name) document.getElementById('input_customer_name').value = inv.customer_name;
             if (inv.phone) document.getElementById('input_phone_number').value = inv.phone;
-            if (inv.car_mark) document.getElementById('input_car_mark').value = inv.car_mark;
+            if (inv.car_mark) setVehicleFromCarMark(inv.car_mark);
             if (inv.plate_number) document.getElementById('input_plate_number').value = inv.plate_number;
             if (inv.vin) document.getElementById('input_vin').value = inv.vin || '';
             
@@ -1780,7 +2080,6 @@ if (!empty($serverInvoice)) {
             const map = {
                 'input_creation_date': 'out_creation_date',
                 'input_customer_name': 'out_customer_name',
-                'input_car_mark': 'out_car_mark',
                 'input_plate_number': 'out_plate_number',
                 'input_phone_number': 'out_phone_number',
                 'input_mileage': 'out_mileage',
@@ -1798,6 +2097,12 @@ if (!empty($serverInvoice)) {
                 }
                 document.getElementById(outId).innerText = val;
             }
+
+            // Set car mark from make and model
+            const makeText = document.getElementById('input_vehicle_make').value || '';
+            const modelText = document.getElementById('input_vehicle_model').value || '';
+            const carMark = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || 'Not specified');
+            document.getElementById('out_car_mark').innerText = carMark;
 
             // Build Table
             const totals = calculateTotals();
@@ -1927,7 +2232,10 @@ if (!empty($serverInvoice)) {
             const serviceManager = document.getElementById('input_service_manager').value;
             const customerName = document.getElementById('input_customer_name').value;
             const phoneNumber = document.getElementById('input_phone_number').value;
-            const carMark = document.getElementById('input_car_mark').value;
+            // Combine make and model for car_mark
+            const makeText = document.getElementById('input_vehicle_make').value || '';
+            const modelText = document.getElementById('input_vehicle_model').value || '';
+            const carMark = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '');
             const plateNumber = document.getElementById('input_plate_number').value;
             const mileageValue = document.getElementById('input_mileage').value;
             const mileageUnit = document.getElementById('mileage_unit').value;
@@ -2160,7 +2468,9 @@ if (!empty($serverInvoice)) {
         function showSuggestions(input, suggestions) {
             const container = input.closest('td').querySelector('.suggestions');
             container.innerHTML = '';
-            const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
+            const makeText = (document.getElementById('input_vehicle_make')?.value || '').trim();
+            const modelText = (document.getElementById('input_vehicle_model')?.value || '').trim();
+            const vehicleVal = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '');
             if (Array.isArray(suggestions) && suggestions.length > 0) {
                 suggestions.forEach(suggestion => {
                     const div = document.createElement('div');
@@ -2257,7 +2567,9 @@ if (!empty($serverInvoice)) {
                 hideSuggestions();
                 return;
             }
-            const vehicle = (document.getElementById('input_car_mark')?.value || '').trim();
+            const makeText = (document.getElementById('input_vehicle_make')?.value || '').trim();
+            const modelText = (document.getElementById('input_vehicle_model')?.value || '').trim();
+            const vehicle = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '');
             const params = new URLSearchParams({ q: query });
             if (vehicle) params.set('vehicle', vehicle);
 
@@ -2327,7 +2639,9 @@ if (!empty($serverInvoice)) {
                 document.getElementById('item-search-results').innerHTML = '<p class="text-gray-500 text-center py-4">Start typing to search...</p>';
                 return;
             }
-            const vehicle = (document.getElementById('input_car_mark')?.value || '').trim();
+            const makeText = (document.getElementById('input_vehicle_make')?.value || '').trim();
+            const modelText = (document.getElementById('input_vehicle_model')?.value || '').trim();
+            const vehicle = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '');
             const params = new URLSearchParams({ q: query });
             if (vehicle) params.set('vehicle', vehicle);
 
@@ -2346,7 +2660,9 @@ if (!empty($serverInvoice)) {
 
         function displaySearchResults(results) {
             const container = document.getElementById('item-search-results');
-            const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
+            const makeText = (document.getElementById('input_vehicle_make')?.value || '').trim();
+            const modelText = (document.getElementById('input_vehicle_model')?.value || '').trim();
+            const vehicleVal = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '');
             if (results.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 text-center py-4">No items found</p>';
                 return;
@@ -2423,7 +2739,9 @@ if (!empty($serverInvoice)) {
 
                 // Update small badge in the row
                 const badgeEl = row.querySelector('.price-source');
-                const vehicleVal = (document.getElementById('input_car_mark')?.value || '').trim();
+                const makeText = (document.getElementById('input_vehicle_make')?.value || '').trim();
+                const modelText = (document.getElementById('input_vehicle_model')?.value || '').trim();
+                const vehicleVal = makeText && modelText ? `${makeText} ${modelText}` : (makeText || modelText || '');
                 if (badgeEl) {
                     if (vehicleVal) {
                         badgeEl.textContent = hasVehicle ? 'Vehicle price' : 'Default price';
