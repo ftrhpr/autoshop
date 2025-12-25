@@ -100,22 +100,23 @@ try {
         $typeId = $type['id_car_type'] ?? $type['id'] ?? $type['ID'] ?? $type['type_id'] ?? null;
         $typeName = $type['name'] ?? $type['Name'] ?? $type['NAME'] ?? $type['type_name'] ?? 'Unknown';
         
-        if (!$typeId) {
-            echo "Skipping type '$typeName' - no ID found\n";
+        // Only process passenger cars (type 1) as the API only provides data for this type
+        if ($typeId != 1) {
+            echo "Skipping $typeName (ID: $typeId) - API only provides data for passenger cars\n";
             continue;
         }
         
-        echo "Processing type $typeId ($typeName)...\n";
+        echo "Processing $typeName (ID: $typeId)...\n";
         $makesUrl = $baseUrl . 'make.getAll.csv.en?api_key=' . $apiKey . '&id_type=' . $typeId;
         
         try {
             $makesCSV = fetchCSV($makesUrl);
             if (empty($makesCSV) || strlen($makesCSV) < 10) {
-                echo "No makes found for type $typeId\n";
+                echo "No makes found for $typeName\n";
                 continue;
             }
             $makes = parseCSV($makesCSV);
-            echo "Found " . count($makes) . " makes for type $typeId\n";
+            echo "Found " . count($makes) . " makes for $typeName\n";
 
             foreach ($makes as $make) {
                 $makeId = $make['id_car_make'] ?? $make['id'] ?? $make['ID'] ?? null;
@@ -128,7 +129,7 @@ try {
                 }
             }
         } catch (Exception $e) {
-            echo "Error fetching makes for type $typeId: " . $e->getMessage() . "\n";
+            echo "Error fetching makes for $typeName: " . $e->getMessage() . "\n";
         }
     }
     echo "Inserted $makesCount vehicle makes.\n";
@@ -138,20 +139,25 @@ try {
     $modelsCount = 0;
     foreach ($types as $type) {
         $typeId = $type['id_car_type'] ?? $type['id'] ?? $type['ID'] ?? $type['type_id'] ?? null;
+        $typeName = $type['name'] ?? $type['Name'] ?? $type['NAME'] ?? $type['type_name'] ?? 'Unknown';
         
-        if (!$typeId) continue;
+        // Only process passenger cars (type 1) as the API only provides data for this type
+        if ($typeId != 1) {
+            echo "Skipping $typeName (ID: $typeId) - API only provides data for passenger cars\n";
+            continue;
+        }
         
-        echo "Fetching models for type $typeId...\n";
+        echo "Fetching models for $typeName (ID: $typeId)...\n";
         $modelsUrl = $baseUrl . 'model.getAll.csv.en?api_key=' . $apiKey . '&id_type=' . $typeId;
         
         try {
             $modelsCSV = fetchCSV($modelsUrl);
             if (empty($modelsCSV) || strlen($modelsCSV) < 10) {
-                echo "No models found for type $typeId\n";
+                echo "No models found for $typeName\n";
                 continue;
             }
             $models = parseCSV($modelsCSV);
-            echo "Found " . count($models) . " models for type $typeId\n";
+            echo "Found " . count($models) . " models for $typeName\n";
 
             foreach ($models as $model) {
                 $modelId = $model['id_car_model'] ?? $model['id'] ?? $model['ID'] ?? null;
@@ -165,12 +171,14 @@ try {
                 }
             }
         } catch (Exception $e) {
-            echo "Error fetching models for type $typeId: " . $e->getMessage() . "\n";
+            echo "Error fetching models for $typeName: " . $e->getMessage() . "\n";
         }
     }
     echo "Inserted $modelsCount vehicle models.\n";
 
     echo "Vehicle database populated successfully!\n";
+    echo "Note: Only passenger car data (type 1) was populated as the API primarily provides data for cars.\n";
+    echo "Total: $makesCount makes and $modelsCount models for passenger cars.\n";
 
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
