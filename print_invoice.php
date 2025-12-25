@@ -65,7 +65,7 @@ foreach ($oils as &$o) {
     $priceRow = $stmt->fetch();
     $unit = $priceRow ? (float)$priceRow['price'] : 0.0;
     $o['unit_price'] = $unit;
-    $qty = isset($o['qty']) ? (int)$o['qty'] : 1;
+    $qty = isset($o['qty']) && is_numeric($o['qty']) ? max(0.01, floatval($o['qty'])) : 1.0;
     $discount = isset($o['discount']) ? (float)$o['discount'] : 0.0;
     $line = $qty * $unit * max(0, (1 - $discount / 100.0));
     $o['line_total'] = $line;

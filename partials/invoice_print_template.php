@@ -137,7 +137,7 @@ function esc($s){ return htmlspecialchars((string)$s); }
                             <tr>
                                 <td class="border border-black p-0.5 text-center"><?php echo $oi++; ?></td>
                                 <td class="border border-black p-0.5"><?php echo esc(trim(($o['brand_name'] ?? '') . ' ' . ($o['viscosity_name'] ?? '') . ' ' . ($o['package_type'] ?? ''))); ?></td>
-                                <td class="border border-black p-0.5 text-center"><?php echo isset($o['qty']) ? (int)$o['qty'] : ''; ?></td>
+                                <td class="border border-black p-0.5 text-center"><?php echo isset($o['qty']) ? number_format((float)$o['qty'], 2) : ''; ?></td>
                                 <td class="border border-black p-0.5 text-right"><?php echo isset($o['unit_price']) ? number_format((float)$o['unit_price'],2) : ''; ?></td>
                                 <td class="border border-black p-0.5 text-right"><?php echo (isset($o['discount']) && $o['discount']>0) ? number_format((float)$o['discount'],2) . '%' : ''; ?></td>
                                 <td class="border border-black p-0.5 text-right font-semibold"><?php echo (isset($o['line_total']) && $o['line_total']>0) ? number_format((float)$o['line_total'],2) : ''; ?></td>

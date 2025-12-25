@@ -1450,7 +1450,7 @@ if (!empty($serverInvoice)) {
                 </div>
                 <button class="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="openItemSearch(this)" title="Search items"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                 <div class="suggestions absolute z-50 bg-white border border-gray-300 rounded-b shadow-lg max-h-40 overflow-y-auto w-full hidden"></div></td>
-                <td class="px-3 py-3"><input type="number" min="1" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
+                <td class="px-3 py-3"><input type="number" min="1" step="0.01" value="1" oninput="calculateTotals()" class="item-qty w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-part w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
                 <td class="px-3 py-3"><input type="number" min="0" max="100" value="0" oninput="calculateTotals()" class="item-discount-part w-full border-gray-200 rounded p-2 text-sm"></td>
                 <td class="px-3 py-3"><input type="number" min="0" value="0" oninput="calculateTotals()" class="item-price-svc w-full border-gray-200 rounded p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></td>
@@ -1515,7 +1515,7 @@ if (!empty($serverInvoice)) {
                     </select>
                 </td>
                 <td class="px-4 py-3">
-                    <input name="oil_qty_${oilRowCount}" type="number" min="1" value="1" class="oil-qty w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
+                    <input name="oil_qty_${oilRowCount}" type="number" min="1" step="0.01" value="1" class="oil-qty w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" oninput="updateOilPrice(this.closest('tr'))">
                 </td>
                 <td class="px-4 py-3">
                     <input name="oil_unit_price_${oilRowCount}" type="number" min="0" step="0.01" value="0" class="oil-unit-price w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" readonly>

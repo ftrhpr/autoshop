@@ -1199,7 +1199,7 @@ foreach ($oilPrices as $price) {
                 <div class="price-grid">
                     <div class="price-input">
                         <label class="price-label">რაოდენობა</label>
-                        <input type="number" class="input-field item-qty" min="1" value="1" oninput="calculateTotals()">
+                        <input type="number" class="input-field item-qty" min="1" step="0.01" value="1" oninput="calculateTotals()">
                     </div>
                     <div class="price-input">
                         <label class="price-label">ნაწილის ფასი</label>
@@ -1341,7 +1341,7 @@ foreach ($oilPrices as $price) {
                         </div>
                         <div class="price-input">
                             <label class="price-label">რაოდენობა</label>
-                            <input type="number" min="1" value="1" class="input-field oil-qty" oninput="updateOilCardPrice(this.closest('.oil-card'))">
+                            <input type="number" min="1" step="0.01" value="1" class="input-field oil-qty" oninput="updateOilCardPrice(this.closest('.oil-card'))">
                         </div>
                         <div class="price-input">
                             <label class="price-label">ერთეული</label>

@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($name !== '') {
             $items[] = [
                 'name' => $name,
-                'qty' => $data["item_qty_$i"],
+                'qty' => isset($data["item_qty_$i"]) && is_numeric($data["item_qty_$i"]) ? max(0.01, floatval($data["item_qty_$i"])) : 1.0,
                         'price_part' => $data["item_price_part_$i"],
                 'discount_part' => isset($data["item_discount_part_$i"]) ? floatval($data["item_discount_part_$i"]) : 0.0,
                 'price_svc' => $data["item_price_svc_$i"],
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $brand_id = isset($o['brand_id']) ? (int)$o['brand_id'] : 0;
                 $viscosity_id = isset($o['viscosity_id']) ? (int)$o['viscosity_id'] : 0;
                 $package_type = isset($o['package_type']) ? trim($o['package_type']) : '';
-                $qty = isset($o['qty']) && is_numeric($o['qty']) ? max(1, (int)$o['qty']) : 1;
+                $qty = isset($o['qty']) && is_numeric($o['qty']) ? max(0.01, floatval($o['qty'])) : 1.0;
                 $discount = isset($o['discount']) && is_numeric($o['discount']) ? floatval($o['discount']) : 0.0;
                 if ($brand_id > 0 && $viscosity_id > 0 && $package_type !== '') {
                     $oils[] = ['brand_id' => $brand_id, 'viscosity_id' => $viscosity_id, 'package_type' => $package_type, 'qty' => $qty, 'discount' => $discount];
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             // Parse qty and discount defensively
             $qty_raw = isset($data["oil_qty_$i"]) ? $data["oil_qty_$i"] : '1';
-            $qty = is_numeric($qty_raw) ? max(1, (int)$qty_raw) : 1;
+            $qty = is_numeric($qty_raw) ? max(0.01, floatval($qty_raw)) : 1.0;
             $discount_raw = isset($data["oil_discount_$i"]) ? $data["oil_discount_$i"] : '0';
             $discount = is_numeric($discount_raw) ? floatval($discount_raw) : 0.0;
 
@@ -95,8 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $normalized = [];
     $raw_qty_map = [];
     foreach ($oils as $o) {
-        // Ensure qty is integer and at least 1 (defensive)
-        $o['qty'] = isset($o['qty']) ? max(1, (int)$o['qty']) : 1;
+        // Ensure qty is numeric and at least 0.01 (defensive)
+        $o['qty'] = isset($o['qty']) && is_numeric($o['qty']) ? max(0.01, floatval($o['qty'])) : 1.0;
         $key = $o['brand_id'] . '_' . $o['viscosity_id'] . '_' . $o['package_type'] . '_' . $o['discount'];
         if (!isset($raw_qty_map[$key])) $raw_qty_map[$key] = [];
         $raw_qty_map[$key][] = $o['qty'];
@@ -832,7 +832,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         if ($priceData) {
             $unitPrice = (float)$priceData['price'];
-            $qty = (int)($oil['qty'] ?? 1);
+            $qty = isset($oil['qty']) && is_numeric($oil['qty']) ? max(0.01, floatval($oil['qty'])) : 1.0;
             $discount = isset($oil['discount']) ? floatval($oil['discount']) : 0.0;
             $lineTotal = $qty * $unitPrice * max(0, (1 - $discount / 100.0));
             $oilsTotal += $lineTotal;
