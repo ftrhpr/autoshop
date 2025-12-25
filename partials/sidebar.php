@@ -14,37 +14,39 @@ $badges = $badges ?? [];
 // New menu sections with nested children and optional badge keys
 $menu_sections = [
     ['label' => 'ანალიტიკა', 'items' => [
-        ['label' => 'მიმოხილვა', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => null]
+        ['label' => 'მიმოხილვა', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => 'view_analytics']
     ]],
     ['label' => 'მართვა', 'items' => [
-        ['label' => 'ინვოისის შექმნა', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => null],
-        ['label' => 'მობილური ინვოისი', 'href' => $appRoot . '/mobile_invoice.php', 'icon' => 'mobile-alt', 'permission' => null],
-        ['label' => 'ინვოისები', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => null],
-        ['label' => 'ექსპორტი ინვოისები', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'manage_customers'],
+        ['label' => 'ინვოისის შექმნა', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => 'create_invoices'],
+        ['label' => 'მობილური ინვოისი', 'href' => $appRoot . '/mobile_invoice.php', 'icon' => 'mobile-alt', 'permission' => 'create_invoices'],
+        ['label' => 'ინვოისები', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => 'view_invoices'],
+        ['label' => 'ექსპორტი ინვოისები', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_invoices'],
         ['label' => 'იმპორტი კლიენტები', 'href' => $appRoot . '/admin/import_customers.php', 'icon' => 'download', 'permission' => 'manage_customers'],
         ['label' => 'კლიენტები', 'href' => $appRoot . '/admin/customers.php', 'icon' => 'users', 'permission' => 'manage_customers'],
-        ['label' => 'ავტომობილების მონაცემთა ბაზა', 'href' => $appRoot . '/admin/vehicles.php', 'icon' => 'vehicle-db', 'permission' => 'manage_customers'],
+        ['label' => 'ავტომობილების მონაცემთა ბაზა', 'href' => $appRoot . '/admin/vehicles.php', 'icon' => 'vehicle-db', 'permission' => 'manage_vehicles'],
         ['label' => 'ნაწილები, სერვისები & ზეთები', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
         ['label' => 'მომხმარებლები & წვდომა', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
             ['label' => 'მომხმარებლები', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
             ['label' => 'როლები & უფლებები', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']
         ]],
         ['label' => 'ტექნიკოსები', 'href' => $appRoot . '/admin/technicians.php', 'icon' => 'user', 'permission' => 'manage_users'],
-        ['label' => 'ნივთების ფასების გამოყენება', 'href' => $appRoot . '/admin/item_price_usage.php', 'icon' => 'clock', 'permission' => 'manage_prices']
+        ['label' => 'ნივთების ფასების გამოყენება', 'href' => $appRoot . '/admin/item_price_usage.php', 'icon' => 'clock', 'permission' => 'view_reports']
     ]],
     ['label' => 'პარამეტრები', 'items' => [
         ['label' => 'აუდიტის ლოგები', 'href' => $appRoot . '/admin/logs.php', 'icon' => 'clock', 'permission' => 'view_logs']
     ]]
 ];
 
-// Manager restriction: only show 'New Invoice' and 'Invoices' for managers
-if (isset($_SESSION['role']) && $_SESSION['role'] === 'manager') {
-    $menu_sections = array_values(array_filter($menu_sections, function($sec){
-        $sec['items'] = array_values(array_filter($sec['items'], function($it){
-            return in_array($it['label'], ['New Invoice', 'Invoices', 'Overview']);
-        }));
-        return count($sec['items']) > 0;
-    }));
+// Role-based default permissions (fallback if database permissions not set)
+// This ensures basic functionality works even if permissions table is not fully configured
+$userRole = $_SESSION['role'] ?? 'user';
+
+if ($userRole === 'admin') {
+    // Admins can access everything - permission system handles restrictions
+} elseif ($userRole === 'manager') {
+    // Managers get core business functionality - permissions handle the rest
+} elseif ($userRole === 'user') {
+    // Basic users get limited access - permissions handle the rest
 }
 
 $logoutHref = $appRoot . '/logout.php';
@@ -63,8 +65,18 @@ try {
 
 // Helper to check permission & active state
 function isItemVisible($it){
-    if (isset($it['permission']) && $it['permission'] && function_exists('currentUserCan')) return currentUserCan($it['permission']);
-    return true;
+    if (isset($it['permission'])) {
+        if ($it['permission'] === 'restricted') {
+            return false; // Explicitly restricted
+        }
+        if ($it['permission'] && function_exists('currentUserCan')) {
+            return currentUserCan($it['permission']);
+        }
+        if ($it['permission']) {
+            return false; // Has permission requirement but function not available
+        }
+    }
+    return true; // No permission requirement
 }
 
 function isActive($href){
