@@ -593,6 +593,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
             function handleInvoiceUpdates(updatedInvoices) {
                 let hasUpdates = false;
+            let addedNow = []; // Track invoices added during this poll
 
                 // Process each updated invoice
                 updatedInvoices.forEach(invoice => {
@@ -635,6 +636,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                             const newRow = createInvoiceRow(invoice);
                             newRow.classList.add('invoice-new'); // Start with blinking
                             newInvoiceIds.add(invoice.id);
+                            addedNow.push(invoice.id);
 
                             // Insert at the top
                             if (tableBody.firstChild) {
@@ -650,6 +652,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                             const newCard = createInvoiceCard(invoice);
                             newCard.classList.add('invoice-new'); // Start with blinking
                             newInvoiceIds.add(invoice.id);
+                            addedNow.push(invoice.id);
 
                             // Insert at the top
                             if (mobileContainer.firstChild) {
@@ -664,16 +667,12 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 // Update results count display
                 updateResultsCount();
 
-                // Play notification sound only for new invoices
-                const newInvoices = updatedInvoices.filter(inv => !document.querySelector(`tr[data-invoice-id="${inv.id}"]`) && !document.querySelector(`.md\\:hidden > div[data-invoice-id="${inv.id}"]`));
-                if (newInvoices.length > 0) {
+                // Play notification sound only for invoices added during this poll
+                if (addedNow.length > 0) {
                     playNotificationSound();
-                    // Add visual flash effect
+                    // Visual flash effect
                     flashPageBackground();
-                }
-
-                // Auto-scroll to top if there are new invoices
-                if (newInvoices.length > 0) {
+                    // Auto-scroll to top if there are new invoices
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             }
