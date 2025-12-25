@@ -197,6 +197,24 @@ foreach ($oilPrices as $price) {
             background: #e5e7eb;
         }
 
+        .btn-danger {
+            width: 100%;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        }
+
         .section-header {
             font-size: 1.25rem;
             font-weight: 700;
@@ -954,6 +972,10 @@ foreach ($oilPrices as $price) {
                         <button type="button" onclick="handleSaveAndPrint()" class="btn-secondary">
                             <i class="fas fa-print mr-2"></i>
                             შენახვა & ბეჭდვა
+                        </button>
+                        <button type="button" onclick="handleClear()" class="btn-danger">
+                            <i class="fas fa-trash mr-2"></i>
+                            ფორმის გასუფთავება
                         </button>
                     </div>
                 </div>
@@ -2100,6 +2122,99 @@ foreach ($oilPrices as $price) {
             printInput.value = '1';
             document.getElementById('mobile-invoice-form').appendChild(printInput);
             handleSave();
+        }
+
+        // Handle clear form
+        function handleClear() {
+            // Check if we're editing an existing invoice
+            const urlParams = new URLSearchParams(window.location.search);
+            const isEditing = urlParams.has('edit_id');
+
+            if (isEditing) {
+                const confirmed = confirm('თქვენ ახლა რედაქტირებთ არსებულ ინვოისს. ფორმის გასუფთავება დაიწყებს ახალ ინვოისს. გსურთ გაგრძელება?');
+            } else {
+                const confirmed = confirm('დარწმუნებული ხართ, რომ გსურთ ფორმის გასუფთავება? ეს ქმედება შეუქცევადია და ყველა შეყვანილი მონაცემი დაიკარგება.');
+            }
+
+            if (!confirmed) {
+                return;
+            }
+
+            // Clear URL parameters if editing
+            if (isEditing) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // Clear all form inputs
+            const form = document.getElementById('mobile-invoice-form');
+
+            // Clear text inputs, textareas, and selects
+            const inputs = form.querySelectorAll('input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="datetime-local"], textarea, select');
+            inputs.forEach(input => {
+                if (input.type === 'datetime-local') {
+                    // Reset to current date/time
+                    const now = new Date();
+                    const offset = now.getTimezoneOffset();
+                    const localTime = new Date(now.getTime() - (offset * 60 * 1000));
+                    input.value = localTime.toISOString().slice(0, 16);
+                } else {
+                    input.value = '';
+                }
+            });
+
+            // Clear hidden inputs (except some system ones)
+            const hiddenInputs = form.querySelectorAll('input[type="hidden"]');
+            hiddenInputs.forEach(input => {
+                // Keep some system inputs
+                if (!['edit_id', 'print_id', 'current_step'].includes(input.name)) {
+                    input.value = '';
+                }
+            });
+
+            // Clear checkboxes and radio buttons
+            const checks = form.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+            checks.forEach(check => {
+                check.checked = false;
+            });
+
+            // Clear file inputs
+            const fileInputs = form.querySelectorAll('input[type="file"]');
+            fileInputs.forEach(fileInput => {
+                fileInput.value = '';
+            });
+
+            // Clear items and oils arrays
+            items = [];
+            oils = [];
+            uploadedImages = [];
+
+            // Reset mileage unit to default (km)
+            const kmBtn = document.querySelector('.unit-btn[data-unit="km"]');
+            const miBtn = document.querySelector('.unit-btn[data-unit="mi"]');
+            if (kmBtn && miBtn) {
+                kmBtn.classList.add('active');
+                miBtn.classList.remove('active');
+            }
+
+            // Reset step to first step
+            currentStep = 1;
+            updateStepIndicator();
+            showStep(1);
+
+            // Clear any displayed images
+            const imagePreview = document.getElementById('image-preview');
+            if (imagePreview) {
+                imagePreview.innerHTML = '';
+            }
+
+            // Reset progress
+            updateProgress();
+
+            // Show success message
+            showToast('ფორმა გასუფთავებულია');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Show toast
