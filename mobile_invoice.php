@@ -635,6 +635,30 @@ foreach ($oilPrices as $price) {
         .dropdown-item.empty:hover {
             background-color: white;
         }
+
+        /* Side-by-side vehicle inputs */
+        .vehicle-inputs-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .vehicle-input-half {
+            flex: 1;
+            min-width: 0; /* Allow flex shrinking */
+        }
+
+        /* Mobile responsive: stack on small screens */
+        @media (max-width: 640px) {
+            .vehicle-inputs-row {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .vehicle-input-half {
+                flex: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -698,27 +722,29 @@ foreach ($oilPrices as $price) {
                         <div class="suggestions-box" style="display: none;"></div>
                     </div>
 
-                    <div class="input-group">
-                        <label class="input-label" for="input_vehicle_make">
-                            <i class="fas fa-car-side mr-1"></i>
-                            ავტომობილის მარკა
-                        </label>
-                        <div class="searchable-dropdown">
-                            <input type="text" id="input_vehicle_make" class="input-field" placeholder="მოძებნეთ მარკა..." autocomplete="off">
-                            <input type="hidden" id="input_vehicle_make_id" name="vehicle_make_id">
-                            <div class="dropdown-list" id="vehicle_make_dropdown"></div>
+                    <div class="vehicle-inputs-row">
+                        <div class="input-group vehicle-input-half">
+                            <label class="input-label" for="input_vehicle_make">
+                                <i class="fas fa-car-side mr-1"></i>
+                                ავტომობილის მარკა
+                            </label>
+                            <div class="searchable-dropdown">
+                                <input type="text" id="input_vehicle_make" class="input-field" placeholder="მოძებნეთ მარკა..." autocomplete="off">
+                                <input type="hidden" id="input_vehicle_make_id" name="vehicle_make_id">
+                                <div class="dropdown-list" id="vehicle_make_dropdown"></div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="input-group">
-                        <label class="input-label" for="input_vehicle_model">
-                            <i class="fas fa-car mr-1"></i>
-                            მოდელი
-                        </label>
-                        <div class="searchable-dropdown">
-                            <input type="text" id="input_vehicle_model" class="input-field" placeholder="ჯერ აირჩიეთ მარკა" disabled autocomplete="off">
-                            <input type="hidden" id="input_vehicle_model_id" name="vehicle_model_id">
-                            <div class="dropdown-list" id="vehicle_model_dropdown"></div>
+                        <div class="input-group vehicle-input-half">
+                            <label class="input-label" for="input_vehicle_model">
+                                <i class="fas fa-car mr-1"></i>
+                                მოდელი
+                            </label>
+                            <div class="searchable-dropdown">
+                                <input type="text" id="input_vehicle_model" class="input-field" placeholder="ჯერ აირჩიეთ მარკა" disabled autocomplete="off">
+                                <input type="hidden" id="input_vehicle_model_id" name="vehicle_model_id">
+                                <div class="dropdown-list" id="vehicle_model_dropdown"></div>
+                            </div>
                         </div>
                     </div>
 
