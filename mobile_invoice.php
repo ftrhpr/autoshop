@@ -2136,10 +2136,11 @@ foreach ($oilPrices as $price) {
             const urlParams = new URLSearchParams(window.location.search);
             const isEditing = urlParams.has('edit_id');
 
+            let confirmed;
             if (isEditing) {
-                const confirmed = confirm('თქვენ ახლა რედაქტირებთ არსებულ ინვოისს. ფორმის გასუფთავება დაიწყებს ახალ ინვოისს. გსურთ გაგრძელება?');
+                confirmed = confirm('თქვენ ახლა რედაქტირებთ არსებულ ინვოისს. ფორმის გასუფთავება დაიწყებს ახალ ინვოისს. გსურთ გაგრძელება?');
             } else {
-                const confirmed = confirm('დარწმუნებული ხართ, რომ გსურთ ფორმის გასუფთავება? ეს ქმედება შეუქცევადია და ყველა შეყვანილი მონაცემი დაიკარგება.');
+                confirmed = confirm('დარწმუნებული ხართ, რომ გსურთ ფორმის გასუფთავება? ეს ქმედება შეუქცევადია და ყველა შეყვანილი მონაცემი დაიკარგება.');
             }
 
             if (!confirmed) {
@@ -2158,11 +2159,14 @@ foreach ($oilPrices as $price) {
             const inputs = form.querySelectorAll('input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="datetime-local"], textarea, select');
             inputs.forEach(input => {
                 if (input.type === 'datetime-local') {
-                    // Reset to current date/time
+                    // Reset to current date/time in local timezone
                     const now = new Date();
-                    const offset = now.getTimezoneOffset();
-                    const localTime = new Date(now.getTime() - (offset * 60 * 1000));
-                    input.value = localTime.toISOString().slice(0, 16);
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    input.value = `${year}-${month}-${day}T${hours}:${minutes}`;
                 } else {
                     input.value = '';
                 }
@@ -2189,10 +2193,37 @@ foreach ($oilPrices as $price) {
                 fileInput.value = '';
             });
 
+            // Reset vehicle model input to disabled state
+            const modelInput = document.getElementById('input_vehicle_model');
+            if (modelInput) {
+                modelInput.disabled = true;
+                modelInput.placeholder = 'ჯერ აირჩიეთ მარკა';
+            }
+
             // Clear items and oils arrays
             items = [];
             oils = [];
             uploadedImages = [];
+            itemCount = 0;
+            oilCount = 0;
+
+            // Clear visual item containers
+            const itemsContainer = document.getElementById('items-container');
+            if (itemsContainer) {
+                itemsContainer.innerHTML = '';
+                // Add one empty item row
+                addItem();
+            }
+
+            const oilsContainer = document.getElementById('oils-container');
+            if (oilsContainer) {
+                oilsContainer.innerHTML = '';
+            }
+
+            const photoPreview = document.getElementById('photo-preview');
+            if (photoPreview) {
+                photoPreview.innerHTML = '';
+            }
 
             // Reset mileage unit to default (km)
             const kmBtn = document.querySelector('.unit-btn[data-unit="km"]');
