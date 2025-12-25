@@ -118,7 +118,7 @@ $stats = $pdo->query("
                     <nav class="flex mb-4" aria-label="Breadcrumb">
                         <ol class="inline-flex items-center space-x-1 md:space-x-3">
                             <li class="inline-flex items-center">
-                                <a href="index.php" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                                <a href="../create.php" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
                                     <svg class="w-3 h-3 mr-2.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                         <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2A1 1 0 0 0 1 10h2v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8h2a1 1 0 0 0 .707-1.707Z"/>
                                     </svg>
@@ -146,7 +146,7 @@ $stats = $pdo->query("
                     </header>
 
                     <div class="h-full overflow-hidden">
-                        <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; უკან</a>
+                        <a href="../create.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; უკან</a>
 
                         <!-- Stats Cards -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 px-4 md:px-6">

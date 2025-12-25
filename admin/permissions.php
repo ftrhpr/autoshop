@@ -45,7 +45,7 @@ foreach ($roles as $r) {
 <body class="bg-gray-100 p-4 md:p-6 min-h-screen overflow-x-hidden font-sans antialiased">
     <?php include __DIR__ . '/../partials/sidebar.php'; ?>
     <div class="container mx-auto ml-0 md:ml-64">
-        <a href="index.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; უკან</a>
+        <a href="../create.php" class="text-blue-500 hover:underline mb-4 inline-block">&larr; უკან</a>
 
         <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold mb-4">როლები და უფლებები</h2>

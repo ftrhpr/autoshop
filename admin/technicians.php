@@ -20,7 +20,7 @@ $title = 'Technicians';
         <div class="max-w-7xl mx-auto p-6">
             <nav aria-label="Breadcrumb" class="mb-4">
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
-                    <li><a href="index.php" class="hover:text-blue-600 transition">Dashboard</a></li>
+                    <li><a href="../create.php" class="hover:text-blue-600 transition">Dashboard</a></li>
                     <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
                     <li aria-current="page">Technicians</li>
                 </ol>
@@ -213,7 +213,7 @@ const btnCompute = document.getElementById('btnCompute'); if (btnCompute) btnCom
             tableHtml += `
                 <tr class="${bgColor}">
                     <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
-                        <a href="../index.php?print_id=${row.invoice_id}" target="_blank" class="text-blue-600 hover:underline">#${row.invoice_id}</a>
+                        <a href="../create.php?print_id=${row.invoice_id}" target="_blank" class="text-blue-600 hover:underline">#${row.invoice_id}</a>
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap text-right text-gray-500">${(row.labor_raw||0).toFixed(2)} ₾</td>
                     <td class="px-4 py-3 whitespace-nowrap text-right text-red-500">${(row.service_discount_percent||0).toFixed(2)}%</td>

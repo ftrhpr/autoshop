@@ -38,7 +38,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Support loading a saved invoice into the editor for editing or printing (index.php?edit_id=123 or ?print_id=123)
+// Support loading a saved invoice into the editor for editing or printing (create.php?edit_id=123 or ?print_id=123)
 $serverInvoice = null;
 $invoiceNotFound = false;
 $isEdit = isset($_GET['edit_id']);

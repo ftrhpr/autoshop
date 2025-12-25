@@ -194,7 +194,7 @@ function sortLink($column, $label) {
         <header class="flex-shrink-0 p-4 md:p-6">
             <nav aria-label="Breadcrumb" class="mb-4">
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
-                    <li><a href="index.php" class="hover:text-blue-600 transition">მთავარი</a></li>
+                    <li><a href="../create.php" class="hover:text-blue-600 transition">მთავარი</a></li>
                     <li><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg></li>
                     <li aria-current="page">კლიენტები</li>
                 </ol>
@@ -208,7 +208,7 @@ function sortLink($column, $label) {
             <p class="mt-2 text-gray-600">მართეთ კლიენტები, მათი ავტომობილები და იმპორტირეთ მონაცემები ეფექტურად.</p>
         </header>
         <div class="h-full overflow-hidden">
-            <a href="index.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; უკან</a>
+            <a href="../create.php" class="text-blue-500 hover:underline p-4 md:p-6 inline-block">&larr; უკან</a>
 
             <div class="bg-white p-4 md:p-6 rounded-xl shadow-xl mx-4 md:mx-6 mb-4">
             <h2 class="text-3xl font-bold mb-6 text-gray-800 flex items-center">

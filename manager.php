@@ -293,7 +293,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                         </td>
                         <td class="px-2 md:px-4 py-2 text-center">
                             <div class="flex flex-col sm:flex-row gap-1 justify-center">
-                                <a href="<?php echo ($_SESSION['role'] === 'manager') ? 'mobile_invoice.php' : 'index.php'; ?>?edit_id=<?php echo $invoice['id']; ?>" class="text-purple-600 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-purple-50 transition">რედაქტირება</a>
+                                <a href="<?php echo ($_SESSION['role'] === 'manager') ? 'mobile_invoice.php' : 'create.php'; ?>?edit_id=<?php echo $invoice['id']; ?>" class="text-purple-600 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-purple-50 transition">რედაქტირება</a>
                                 <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-500 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-blue-50 transition view-link">ნახვა</a>
                                 <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="text-green-600 hover:underline text-xs md:text-sm px-2 py-1 rounded hover:bg-green-50 transition">ბეჭდვა</a>
                                 <form method="post" style="display:inline-block" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">
@@ -367,7 +367,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 </div>
 
                 <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
-                    <a href="<?php echo ($_SESSION['role'] === 'manager') ? 'mobile_invoice.php' : 'index.php'; ?>?edit_id=<?php echo $invoice['id']; ?>" class="flex-1 min-w-[80px] bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">რედაქტირება</a>
+                    <a href="<?php echo ($_SESSION['role'] === 'manager') ? 'mobile_invoice.php' : 'create.php'; ?>?edit_id=<?php echo $invoice['id']; ?>" class="flex-1 min-w-[80px] bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">რედაქტირება</a>
                     <a href="view_invoice.php?id=<?php echo $invoice['id']; ?>" class="flex-1 min-w-[80px] bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition view-link">ნახვა</a>
                     <a href="print_invoice.php?id=<?php echo $invoice['id']; ?>" target="_blank" class="flex-1 min-w-[80px] bg-green-600 hover:bg-green-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">ბეჭდვა</a>
                     <form method="post" style="flex: 1; min-width: 80px;" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">
@@ -708,7 +708,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                         <input type="checkbox" class="fina-checkbox w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500" data-invoice-id="${invoice.id}" ${invoice.opened_in_fina ? 'checked' : ''}>
                     </td>
                     <td class="px-2 md:px-4 py-2 text-center">
-                        <a href="${userRole === 'manager' ? 'mobile_invoice.php' : 'index.php'}?edit_id=${invoice.id}" class="text-purple-600 hover:underline mr-2 text-xs md:text-sm">Edit</a>
+                        <a href="${userRole === 'manager' ? 'mobile_invoice.php' : 'create.php'}?edit_id=${invoice.id}" class="text-purple-600 hover:underline mr-2 text-xs md:text-sm">Edit</a>
                         <a href="view_invoice.php?id=${invoice.id}" class="text-blue-500 hover:underline mr-2 text-xs md:text-sm view-link">View</a>
                         <a href="print_invoice.php?id=${invoice.id}" target="_blank" class="text-green-600 hover:underline mr-2 text-xs md:text-sm">Print</a>
                         <form method="post" style="display:inline-block" onsubmit="return confirm('Are you sure you want to delete this invoice?');">
@@ -785,7 +785,7 @@ $recentInvoiceIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                     </div>
 
                     <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
-                        <a href="${userRole === 'manager' ? 'mobile_invoice.php' : 'index.php'}?edit_id=${invoice.id}" class="flex-1 min-w-[80px] bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">რედაქტირება</a>
+                        <a href="${userRole === 'manager' ? 'mobile_invoice.php' : 'create.php'}?edit_id=${invoice.id}" class="flex-1 min-w-[80px] bg-purple-600 hover:bg-purple-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">რედაქტირება</a>
                         <a href="view_invoice.php?id=${invoice.id}" class="flex-1 min-w-[80px] bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition view-link">ნახვა</a>
                         <a href="print_invoice.php?id=${invoice.id}" target="_blank" class="flex-1 min-w-[80px] bg-green-600 hover:bg-green-700 text-white text-center py-2 px-3 rounded-md text-sm font-medium transition">ბეჭდვა</a>
                         <form method="post" style="flex: 1; min-width: 80px;" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ ამ ინვოისის წაშლა?');">

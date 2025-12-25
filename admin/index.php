@@ -32,46 +32,111 @@ $totalCustomers = (int)$pdo->query('SELECT COUNT(*) FROM customers')->fetchColum
 $newCustomersThisMonth = (int)$pdo->query("SELECT COUNT(*) FROM customers WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->fetchColumn();
 $avgRevenuePerCustomer = $totalCustomers > 0 ? $totalRevenue / $totalCustomers : 0;
 
+// Invoice Analytics
+$invoicesThisMonth = (int)$pdo->query("SELECT COUNT(*) FROM invoices WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')")->fetchColumn();
+$avgInvoiceValue = $totalInvoices > 0 ? $totalRevenue / $totalInvoices : 0;
+$pendingInvoices = (int)$pdo->query("SELECT COUNT(*) FROM invoices WHERE opened_in_fina = 0 OR opened_in_fina IS NULL")->fetchColumn();
+
+// Technician Analytics (if technicians table exists)
+$technicianStats = [];
+try {
+    $technicianStats = $pdo->query("
+        SELECT t.name, COUNT(i.id) as total_invoices, IFNULL(SUM(i.grand_total), 0) as total_revenue
+        FROM technicians t
+        LEFT JOIN invoices i ON t.id = i.technician_id
+        GROUP BY t.id, t.name
+        ORDER BY total_revenue DESC
+        LIMIT 5
+    ")->fetchAll();
+} catch (Exception $e) {
+    // Technicians table might not exist
+}
+
+// Service Analytics
+$popularServices = [];
+try {
+    $popularServices = $pdo->query("
+        SELECT l.name as service_name, COUNT(il.invoice_id) as usage_count, IFNULL(SUM(il.quantity * il.price), 0) as total_revenue
+        FROM labors l
+        JOIN invoice_labors il ON l.id = il.labor_id
+        GROUP BY l.id, l.name
+        ORDER BY usage_count DESC
+        LIMIT 10
+    ")->fetchAll();
+} catch (Exception $e) {
+    // Labors table might not exist
+}
+
+// System Health
+$databaseSize = 0;
+try {
+    $dbSize = $pdo->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb FROM information_schema.tables WHERE table_schema = DATABASE()")->fetchColumn();
+    $databaseSize = (float)$dbSize;
+} catch (Exception $e) {
+    // Could not get database size
+}
+
+$lastBackup = 'Unknown';
+try {
+    // Check for backup files in uploads directory
+    $backupFiles = glob('../uploads/backup_*.sql');
+    if (!empty($backupFiles)) {
+        rsort($backupFiles);
+        $lastBackup = date('M j, Y H:i', filemtime($backupFiles[0]));
+    }
+} catch (Exception $e) {
+    // Could not check backups
+}
+
+// Recent Activity (from audit logs)
+$recentActivity = $pdo->query("
+    SELECT al.action, al.details, al.created_at, u.username
+    FROM audit_logs al
+    LEFT JOIN users u ON al.user_id = u.id
+    ORDER BY al.created_at DESC
+    LIMIT 10
+")->fetchAll();
+
 // Top customers by revenue
 $topCustomers = $pdo->query("
-    SELECT c.full_name, c.phone, c.plate_number, c.car_mark, 
-           COUNT(i.id) as total_invoices, 
+    SELECT c.full_name, c.phone, c.plate_number, c.car_mark,
+           COUNT(i.id) as total_invoices,
            IFNULL(SUM(i.grand_total), 0) as total_spent,
            MAX(i.created_at) as last_visit
-    FROM customers c 
-    LEFT JOIN invoices i ON c.id = i.customer_id 
-    GROUP BY c.id, c.full_name, c.phone, c.plate_number, c.car_mark 
-    ORDER BY total_spent DESC 
+    FROM customers c
+    LEFT JOIN invoices i ON c.id = i.customer_id
+    GROUP BY c.id, c.full_name, c.phone, c.plate_number, c.car_mark
+    ORDER BY total_spent DESC
     LIMIT 10
 ")->fetchAll();
 
 // Customer retention (customers with multiple visits)
 $repeatCustomers = (int)$pdo->query("
     SELECT COUNT(*) FROM (
-        SELECT customer_id, COUNT(*) as visit_count 
-        FROM invoices 
-        WHERE customer_id IS NOT NULL 
-        GROUP BY customer_id 
+        SELECT customer_id, COUNT(*) as visit_count
+        FROM invoices
+        WHERE customer_id IS NOT NULL
+        GROUP BY customer_id
         HAVING visit_count > 1
     ) as repeat_customers
 ")->fetchColumn();
 
 // Popular car brands
 $popularCarBrands = $pdo->query("
-    SELECT car_mark, COUNT(*) as count 
-    FROM customers 
-    WHERE car_mark IS NOT NULL AND car_mark != '' 
-    GROUP BY car_mark 
-    ORDER BY count DESC 
+    SELECT car_mark, COUNT(*) as count
+    FROM customers
+    WHERE car_mark IS NOT NULL AND car_mark != ''
+    GROUP BY car_mark
+    ORDER BY count DESC
     LIMIT 10
 ")->fetchAll();
 
 // Customer acquisition over time (last 6 months)
 $customerAcquisition = $pdo->prepare("
-    SELECT DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as new_customers 
-    FROM customers 
-    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) 
-    GROUP BY period 
+    SELECT DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as new_customers
+    FROM customers
+    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+    GROUP BY period
     ORDER BY period
 ");
 $customerAcquisition->execute();
@@ -178,8 +243,52 @@ $invoices = $stmt->fetchAll();
 
     <div class="min-h-full overflow-auto ml-0 md:ml-64 pt-4 pl-4">
         <div class="h-full overflow-auto p-4 md:p-6">
-        <!-- Analytics cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- System Health & Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">მონაცემთა ბაზა</p>
+                        <p class="text-lg font-bold"><?php echo number_format($databaseSize, 2); ?> MB</p>
+                    </div>
+                    <div class="text-blue-500 font-bold text-xl">●</div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">ბოლო ბექაფი: <?php echo $lastBackup; ?></p>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">დაუმუშავებელი ინვოისები</p>
+                        <p class="text-lg font-bold"><?php echo number_format($pendingInvoices); ?></p>
+                    </div>
+                    <div class="text-orange-500 font-bold text-xl">●</div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">FINA-ში გასახსნელი</p>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">საშუალო ინვოისი</p>
+                        <p class="text-lg font-bold"><?php echo number_format($avgInvoiceValue, 2); ?> ₾</p>
+                    </div>
+                    <div class="text-green-500 font-bold text-xl">●</div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">ამ თვეში: <?php echo number_format($invoicesThisMonth); ?> ინვოისი</p>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">აქტიური მომხმარებლები</p>
+                        <p class="text-lg font-bold"><?php echo number_format($totalUsers); ?></p>
+                    </div>
+                    <div class="text-purple-500 font-bold text-xl">●</div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">სისტემაში რეგისტრირებული</p>
+            </div>
+        </div>
+
+        <!-- Main Analytics cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500">მომხმარებლები</p>
@@ -201,10 +310,6 @@ $invoices = $stmt->fetchAll();
                 </div>
                 <div class="text-yellow-500 font-bold text-xl">●</div>
             </div>
-        </div>
-
-        <!-- Customer Analytics cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500">სულ კლიენტები</p>
@@ -212,6 +317,10 @@ $invoices = $stmt->fetchAll();
                 </div>
                 <div class="text-purple-500 font-bold text-xl">●</div>
             </div>
+        </div>
+
+        <!-- Customer Analytics cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500">ახალი კლიენტები (ამ თვეში)</p>
@@ -226,14 +335,23 @@ $invoices = $stmt->fetchAll();
                 </div>
                 <div class="text-pink-500 font-bold text-xl">●</div>
             </div>
+            <div class="bg-white p-4 rounded shadow flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">მეორედ მომსახურე კლიენტები</p>
+                    <p class="text-2xl font-bold"><?php echo number_format($repeatCustomers); ?></p>
+                </div>
+                <div class="text-green-600 font-bold text-xl">●</div>
+            </div>
         </div>
 
         <!-- Chart -->
         <div class="bg-white p-4 rounded shadow mb-6">
             <div class="flex justify-between items-center mb-2">
                 <h3 class="text-lg font-bold">ბიზნესის მიმოხილვა (ბოლო 6 თვე)</h3>
-                <div>
-                    <a href="permissions.php" class="px-3 py-2 bg-gray-200 rounded">როლები და უფლებები</a>
+                <div class="flex gap-2">
+                    <a href="permissions.php" class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">როლები და უფლებები</a>
+                    <a href="export_invoices.php" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">ექსპორტი</a>
+                    <a href="logs.php" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">ლოგები</a>
                 </div>
             </div>
             <canvas id="revenueChart" height="100"></canvas>
@@ -332,15 +450,101 @@ $invoices = $stmt->fetchAll();
             </div>
         </div>
 
+        <!-- Technician Performance & Service Analytics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Technician Performance -->
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-bold mb-4">ტექნიკოსების მუშაობა</h3>
+                <div class="space-y-3">
+                    <?php if (!empty($technicianStats)): ?>
+                        <?php foreach ($technicianStats as $tech): ?>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <div>
+                                    <p class="font-semibold"><?php echo htmlspecialchars($tech['name']); ?></p>
+                                    <p class="text-sm text-gray-600"><?php echo $tech['total_invoices']; ?> ინვოისი</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-green-600"><?php echo number_format($tech['total_revenue'], 2); ?> ₾</p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-gray-500 text-center py-4">ტექნიკოსების მონაცემები არ არის ხელმისაწვდომი</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Popular Services -->
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-bold mb-4">პოპულარული სერვისები</h3>
+                <div class="space-y-3">
+                    <?php if (!empty($popularServices)): ?>
+                        <?php foreach ($popularServices as $service): ?>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <div>
+                                    <p class="font-semibold"><?php echo htmlspecialchars($service['service_name']); ?></p>
+                                    <p class="text-sm text-gray-600"><?php echo $service['usage_count']; ?> გამოყენება</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-blue-600"><?php echo number_format($service['total_revenue'], 2); ?> ₾</p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-gray-500 text-center py-4">სერვისების მონაცემები არ არის ხელმისაწვდომი</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="bg-white p-4 rounded shadow mb-6">
+            <h3 class="text-lg font-bold mb-4">ბოლო აქტივობები</h3>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+                <?php if (!empty($recentActivity)): ?>
+                    <?php foreach ($recentActivity as $activity): ?>
+                        <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-sm font-medium text-blue-600">
+                                        <?php echo strtoupper(substr($activity['username'] ?? 'SYS', 0, 1)); ?>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">
+                                    <?php echo htmlspecialchars($activity['action']); ?>
+                                </p>
+                                <p class="text-sm text-gray-600">
+                                    <?php echo htmlspecialchars($activity['details']); ?>
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    <?php echo date('M j, Y H:i', strtotime($activity['created_at'])); ?>
+                                    <?php if ($activity['username']): ?>
+                                        by <?php echo htmlspecialchars($activity['username']); ?>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p class="text-gray-500 text-center py-4">აქტივობის მონაცემები არ არის ხელმისაწვდომი</p>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <div class="flex flex-col md:flex-row gap-6">
             <div class="md:w-1/2">
                 <div class="bg-white p-4 rounded-lg shadow-md mb-4">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">მომხმარებლები</h3>
-                        <form method="get" class="flex items-center gap-2">
-                            <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="მოძებნეთ მომხმარებლის სახელი" class="px-3 py-2 border rounded">
-                            <button type="submit" class="px-3 py-2 bg-gray-200 rounded">ძიება</button>
-                        </form>
+                        <div class="flex gap-2">
+                            <a href="users.php" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">ყველა მომხმარებელი</a>
+                            <form method="get" class="flex items-center gap-2">
+                                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="მოძებნეთ მომხმარებლის სახელი" class="px-3 py-2 border rounded text-sm">
+                                <button type="submit" class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">ძიება</button>
+                            </form>
+                        </div>
                     </div>
 
                     <?php if (isset($success)) echo "<p class='text-green-500 mb-4'>$success</p>"; ?>
@@ -348,15 +552,15 @@ $invoices = $stmt->fetchAll();
                     <form method="post" class="bg-gray-50 p-4 rounded mb-4">
                         <h4 class="font-semibold mb-2">ახალი მომხმარებლის შექმნა</h4>
                         <div class="grid grid-cols-3 gap-2">
-                            <input type="text" name="username" placeholder="მომხმარებლის სახელი" class="px-2 py-2 border rounded" required>
-                            <input type="password" name="password" placeholder="პაროლი" class="px-2 py-2 border rounded" required>
-                            <select name="role" class="px-2 py-2 border rounded" required>
+                            <input type="text" name="username" placeholder="მომხმარებლის სახელი" class="px-2 py-2 border rounded text-sm" required>
+                            <input type="password" name="password" placeholder="პაროლი" class="px-2 py-2 border rounded text-sm" required>
+                            <select name="role" class="px-2 py-2 border rounded text-sm" required>
                                 <option value="user">მომხმარებელი</option>
                                 <option value="manager">მენეჯერი</option>
                                 <option value="admin">ადმინისტრატორი</option>
                             </select>
                         </div>
-                        <button type="submit" name="create_user" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">შექმნა</button>
+                        <button type="submit" name="create_user" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 text-sm">შექმნა</button>
                     </form>
 
                     <div class="overflow-x-auto">
@@ -374,7 +578,14 @@ $invoices = $stmt->fetchAll();
                                 <tr class="border-t hover:bg-gray-50">
                                     <td class="px-2 md:px-4 py-2"><?php echo $user['id']; ?></td>
                                     <td class="px-2 md:px-4 py-2 truncate max-w-[120px]"><?php echo htmlspecialchars($user['username']); ?></td>
-                                    <td class="px-2 md:px-4 py-2"><?php echo $user['role']; ?></td>
+                                    <td class="px-2 md:px-4 py-2">
+                                        <span class="px-2 py-1 rounded text-xs <?php
+                                            echo $user['role'] === 'admin' ? 'bg-red-100 text-red-800' :
+                                                 ($user['role'] === 'manager' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800');
+                                        ?>">
+                                            <?php echo $user['role']; ?>
+                                        </span>
+                                    </td>
                                     <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo $user['created_at']; ?></td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -383,9 +594,9 @@ $invoices = $stmt->fetchAll();
                     </div>
 
                     <!-- Pagination -->
-                    <div class="mt-4 flex gap-2">
+                    <div class="mt-4 flex gap-2 justify-center">
                         <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <a href="?search=<?php echo urlencode($search); ?>&page=<?php echo $i; ?>" class="px-3 py-1 rounded <?php echo $i === $page ? 'bg-blue-600 text-white' : 'bg-gray-100'; ?>"><?php echo $i; ?></a>
+                        <a href="?search=<?php echo urlencode($search); ?>&page=<?php echo $i; ?>" class="px-3 py-1 rounded <?php echo $i === $page ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'; ?> text-sm"><?php echo $i; ?></a>
                         <?php endfor; ?>
                     </div>
                 </div>
@@ -396,9 +607,10 @@ $invoices = $stmt->fetchAll();
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">ბოლო ინვოისები</h3>
                         <div class="flex items-center gap-2">
-                            <a href="vehicles.php" class="px-3 py-2 bg-gray-200 rounded">ავტომობილების ბაზა</a>
-                            <a href="export_invoices.php" class="px-3 py-2 bg-gray-200 rounded">CSV ექსპორტი</a>
-                            <a href="logs.php" class="px-3 py-2 bg-gray-200 rounded">ლოგების ნახვა</a>
+                            <a href="../create.php" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">ახალი ინვოისი</a>
+                            <a href="vehicles.php" class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm">ავტომობილების ბაზა</a>
+                            <a href="export_invoices.php" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">CSV ექსპორტი</a>
+                            <a href="logs.php" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">ლოგები</a>
                         </div>
                     </div>
 
@@ -409,16 +621,28 @@ $invoices = $stmt->fetchAll();
                                     <th class="text-left px-2 py-2">ID</th>
                                     <th class="text-left px-2 py-2">Customer</th>
                                     <th class="text-left px-2 py-2">Total</th>
+                                    <th class="text-left px-2 py-2">Status</th>
                                     <th class="text-left px-2 py-2">Created</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($invoices as $invoice): ?>
-                                <tr class="border-t">
-                                    <td class="px-2 py-2"><?php echo $invoice['id']; ?></td>
-                                    <td class="px-2 py-2"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
-                                    <td class="px-2 py-2"><?php echo $invoice['grand_total']; ?> ₾</td>
-                                    <td class="px-2 py-2"><?php echo $invoice['created_at']; ?></td>
+                                <tr class="border-t hover:bg-gray-50">
+                                    <td class="px-2 py-2">
+                                        <a href="../view_invoice.php?id=<?php echo $invoice['id']; ?>" class="text-blue-600 hover:underline font-medium">
+                                            #<?php echo $invoice['id']; ?>
+                                        </a>
+                                    </td>
+                                    <td class="px-2 py-2 truncate max-w-[150px]"><?php echo htmlspecialchars($invoice['customer_name']); ?></td>
+                                    <td class="px-2 py-2 font-medium"><?php echo number_format($invoice['grand_total'], 2); ?> ₾</td>
+                                    <td class="px-2 py-2">
+                                        <span class="px-2 py-1 rounded text-xs <?php
+                                            echo $invoice['opened_in_fina'] ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800';
+                                        ?>">
+                                            <?php echo $invoice['opened_in_fina'] ? 'FINA' : 'დაუმუშავებელი'; ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-2 py-2 text-sm text-gray-600"><?php echo date('M j, H:i', strtotime($invoice['created_at'])); ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>

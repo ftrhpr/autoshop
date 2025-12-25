@@ -17,7 +17,7 @@ $menu_sections = [
         ['label' => 'მიმოხილვა', 'href' => $appRoot . '/admin/index.php', 'icon' => 'home', 'permission' => 'view_analytics']
     ]],
     ['label' => 'მართვა', 'items' => [
-        ['label' => 'ინვოისის შექმნა', 'href' => $appRoot . '/index.php', 'icon' => 'plus', 'permission' => 'create_invoices'],
+        ['label' => 'ინვოისის შექმნა', 'href' => $appRoot . '/create.php', 'icon' => 'plus', 'permission' => 'create_invoices'],
         ['label' => 'მობილური ინვოისი', 'href' => $appRoot . '/mobile_invoice.php', 'icon' => 'mobile-alt', 'permission' => 'create_invoices'],
         ['label' => 'ინვოისები', 'href' => $appRoot . '/manager.php', 'icon' => 'file-text', 'permission' => 'view_invoices'],
         ['label' => 'ექსპორტი ინვოისები', 'href' => $appRoot . '/admin/export_invoices.php', 'icon' => 'download', 'permission' => 'export_invoices'],
