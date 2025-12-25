@@ -130,3 +130,28 @@ CREATE TABLE parts (
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX (name)
 );
+
+-- Vehicle database tables from Car2DB API
+CREATE TABLE vehicle_types (
+    id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE vehicle_makes (
+    id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    type_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (type_id) REFERENCES vehicle_types(id),
+    INDEX (name)
+);
+
+CREATE TABLE vehicle_models (
+    id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    make_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (make_id) REFERENCES vehicle_makes(id),
+    INDEX (name)
+);

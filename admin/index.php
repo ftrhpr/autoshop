@@ -396,6 +396,7 @@ $invoices = $stmt->fetchAll();
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">ბოლო ინვოისები</h3>
                         <div class="flex items-center gap-2">
+                            <a href="vehicles.php" class="px-3 py-2 bg-gray-200 rounded">ავტომობილების ბაზა</a>
                             <a href="export_invoices.php" class="px-3 py-2 bg-gray-200 rounded">CSV ექსპორტი</a>
                             <a href="logs.php" class="px-3 py-2 bg-gray-200 rounded">ლოგების ნახვა</a>
                         </div>
