@@ -105,11 +105,13 @@ foreach ($oilPrices as $price) {
             font-family: 'BPG Arial', 'BPG Arial Caps';
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
 
-        /* Georgian fonts for headers */
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'BPG Arial', 'BPG Arial Caps';
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
         }
 
         .mobile-container {
@@ -578,6 +580,8 @@ foreach ($oilPrices as $price) {
             .mobile-container {
                 margin: 0;
                 border-radius: 0;
+                width: 100%;
+                max-width: none;
             }
         }
     </style>
