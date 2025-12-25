@@ -1026,10 +1026,7 @@ foreach ($oilPrices as $price) {
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            // Add initial items
-            for(let i = 0; i < 1; i++) {
-                addItem();
-            }
+            // No initial items - users add them manually
             calculateTotals();
             updateStep();
 
@@ -2211,8 +2208,7 @@ foreach ($oilPrices as $price) {
             const itemsContainer = document.getElementById('items-container');
             if (itemsContainer) {
                 itemsContainer.innerHTML = '';
-                // Add one empty item row
-                addItem();
+                // No default items - users add them manually
             }
 
             const oilsContainer = document.getElementById('oils-container');
