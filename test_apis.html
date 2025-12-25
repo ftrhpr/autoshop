@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Vehicle APIs</title>
+</head>
+<body>
+    <h1>Testing Vehicle APIs</h1>
+    <div>
+        <button onclick="testMakes()">Test Makes API</button>
+        <button onclick="testModels()">Test Models API</button>
+    </div>
+    <div id="results"></div>
+
+    <script>
+        async function testMakes() {
+            try {
+                const response = await fetch('./admin/api_vehicle_makes.php');
+                const data = await response.json();
+                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function testModels() {
+            try {
+                const response = await fetch('./admin/api_vehicle_models.php?make_id=1');
+                const data = await response.json();
+                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

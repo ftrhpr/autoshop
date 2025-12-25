@@ -2167,24 +2167,36 @@ foreach ($oilPrices as $price) {
         // Vehicle make and model loading functions
         async function loadVehicleMakes() {
             try {
+                console.log('Loading vehicle makes...');
                 const response = await fetch('./admin/api_vehicle_makes.php');
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const makes = await response.json();
-                
+                console.log('Loaded makes:', makes);
+
                 const makeSelect = document.getElementById('input_vehicle_make');
                 makeSelect.innerHTML = '<option value="">აირჩიეთ მარკა</option>';
-                
+
                 makes.forEach(make => {
                     const option = document.createElement('option');
                     option.value = make.id;
                     option.textContent = make.name;
                     makeSelect.appendChild(option);
                 });
-                
+
                 // Add change event listener for make selection
                 makeSelect.addEventListener('change', loadVehicleModels);
-                
+
             } catch (error) {
                 console.error('Error loading vehicle makes:', error);
+                // Show user-friendly error
+                const makeSelect = document.getElementById('input_vehicle_make');
+                makeSelect.innerHTML = '<option value="">შეცდომა ჩატვირთვაში</option>';
             }
         }
 
@@ -2197,10 +2209,20 @@ foreach ($oilPrices as $price) {
                 modelSelect.disabled = true;
                 return;
             }
+            modelSelect.disabled = true;
+            modelSelect.innerHTML = '<option value="">იტვირთება...</option>';
             
             try {
+                console.log('Loading models for make:', makeId);
                 const response = await fetch(`./admin/api_vehicle_models.php?make_id=${makeId}`);
+                console.log('Models response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const models = await response.json();
+                console.log('Loaded models:', models);
                 
                 modelSelect.innerHTML = '<option value="">აირჩიეთ მოდელი</option>';
                 
@@ -2216,6 +2238,7 @@ foreach ($oilPrices as $price) {
             } catch (error) {
                 console.error('Error loading vehicle models:', error);
                 modelSelect.innerHTML = '<option value="">შეცდომა მოდელების ჩატვირთვაში</option>';
+                modelSelect.disabled = false;
             }
         }
 
