@@ -2096,9 +2096,8 @@ foreach ($oilPrices as $price) {
             lookupServicePrice(serviceOperation, vehicle, card, partName);
         }
 
-        // Suggest service price for a selected part (in the part's service field)
-        function suggestServicePriceForPart(partSuggestion, card) {
-            const partName = partSuggestion.name.toLowerCase();
+        // Suggest service price for manually typed parts (in the part's service field)
+        function suggestServicePriceForTypedPart(partName, card) {
             const vehicle = getCurrentVehicleInfo();
 
             // Map common parts to typical service operations
@@ -2158,7 +2157,7 @@ foreach ($oilPrices as $price) {
             // Find matching service operation
             let serviceOperation = null;
             for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
-                if (partName.includes(partKeyword)) {
+                if (partName.toLowerCase().includes(partKeyword)) {
                     serviceOperation = operation;
                     break;
                 }
@@ -2173,82 +2172,7 @@ foreach ($oilPrices as $price) {
             lookupServicePrice(serviceOperation, vehicle, card, partName);
         }
 
-        // Automatically suggest service price for manually typed parts
-        function addCorrespondingLaborForTypedPart(partName, partCard) {
-            const vehicle = getCurrentVehicleInfo();
 
-            // Map common parts to typical service operations
-            const serviceMapping = {
-                // Brake system
-                'brake pad': 'brake pad replacement',
-                'brake pads': 'brake pad replacement',
-                'brake disc': 'brake disc replacement',
-                'brake discs': 'brake disc replacement',
-                'brake rotor': 'brake rotor replacement',
-                'brake rotors': 'brake rotor replacement',
-                'brake caliper': 'brake caliper replacement',
-                'brake calipers': 'brake caliper replacement',
-                'brake drum': 'brake drum replacement',
-                'brake drums': 'brake drum replacement',
-                'brake shoe': 'brake shoe replacement',
-                'brake shoes': 'brake shoe replacement',
-
-                // Engine oil and filters
-                'oil filter': 'oil change',
-                'air filter': 'air filter replacement',
-                'fuel filter': 'fuel filter replacement',
-                'cabin filter': 'cabin air filter replacement',
-                'engine oil': 'oil change',
-
-                // Battery and electrical
-                'battery': 'battery replacement',
-                'alternator': 'alternator replacement',
-                'starter': 'starter replacement',
-                'spark plug': 'spark plug replacement',
-                'spark plugs': 'spark plug replacement',
-
-                // Tires and suspension
-                'tire': 'tire replacement',
-                'tires': 'tire replacement',
-                'shock absorber': 'shock absorber replacement',
-                'shock absorbers': 'shock absorber replacement',
-                'strut': 'strut replacement',
-                'struts': 'strut replacement',
-
-                // Belts and timing
-                'timing belt': 'timing belt replacement',
-                'serpentine belt': 'serpentine belt replacement',
-                'drive belt': 'drive belt replacement',
-
-                // Cooling system
-                'radiator': 'radiator replacement',
-                'water pump': 'water pump replacement',
-                'thermostat': 'thermostat replacement',
-
-                // Exhaust system
-                'exhaust pipe': 'exhaust pipe replacement',
-                'catalytic converter': 'catalytic converter replacement',
-                'muffler': 'muffler replacement'
-            };
-
-            // Find matching service operation
-            let serviceOperation = null;
-            const lowerPartName = partName.toLowerCase();
-            for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
-                if (lowerPartName.includes(partKeyword)) {
-                    serviceOperation = operation;
-                    break;
-                }
-            }
-
-            if (!serviceOperation) {
-                // Generic fallback for unrecognized parts
-                serviceOperation = 'part installation';
-            }
-
-            // Look up the labor operation and suggest price in service field
-            lookupServicePrice(serviceOperation, vehicle, partCard, partName);
-        }
 
         // Get current vehicle information for price lookup
         function getCurrentVehicleInfo() {
