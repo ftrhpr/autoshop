@@ -39,6 +39,11 @@
             <p>Creates a table to track most-used prices per item and vehicle for smarter price suggestions.</p>
             <button onclick="runMigration('item_price_usage')">Run Migration</button>
         </div>
+        <div class="migration pending" id="parts-collection-migration">
+            <h3>Add Parts Collection System</h3>
+            <p>Creates part_pricing_requests table and adds parts_collection_manager role for managing part pricing workflow.</p>
+            <button onclick="runMigration('parts_collection')">Run Migration</button>
+        </div>
     </div>
 
     <div id="results"></div>
@@ -61,6 +66,8 @@
                     response = await fetch('migrate_create_item_price_usage.php');
                 } else if (type === 'labors_parts') {
                     response = await fetch('migrate_add_labors_parts.php');
+                } else if (type === 'parts_collection') {
+                    response = await fetch('migrate_add_parts_collection_system.php');
                 }
 
                 if (response.ok) {

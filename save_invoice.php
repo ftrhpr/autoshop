@@ -938,6 +938,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         error_log("save_invoice: inserted invoice {$invoice_id}, saved_oils=" . ($saved ? $saved['oils'] : 'NULL') . "\n");
     }
 
+    // Create part pricing requests for parts without prices
+    try {
+        // Check if part_pricing_requests table exists
+        $tableExists = $pdo->query("SHOW TABLES LIKE 'part_pricing_requests'")->rowCount() > 0;
+
+        if ($tableExists) {
+            foreach ($items as $it) {
+                // Check if this is a part item without a price (needs pricing)
+                if (!empty($it['db_type']) && $it['db_type'] === 'part' &&
+                    (empty($it['price_part']) || floatval($it['price_part']) == 0)) {
+
+                    $partName = trim($it['name']);
+                    $quantity = floatval($it['qty'] ?? 1);
+
+                    // Check if pricing request already exists for this invoice and part
+                    $stmt = $pdo->prepare('
+                        SELECT id FROM part_pricing_requests
+                        WHERE invoice_id = ? AND part_name = ? AND status != "cancelled"
+                        LIMIT 1
+                    ');
+                    $stmt->execute([$invoice_id, $partName]);
+                    $existingRequest = $stmt->fetch();
+
+                    if (!$existingRequest) {
+                        // Create new pricing request
+                        $insRequest = $pdo->prepare('
+                            INSERT INTO part_pricing_requests
+                            (invoice_id, part_name, part_description, requested_quantity, vehicle_make, vehicle_model, requested_by)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ');
+                        $insRequest->execute([
+                            $invoice_id,
+                            $partName,
+                            $it['description'] ?? '',
+                            $quantity,
+                            $vehicleMake,
+                            $vehicleModel,
+                            $_SESSION['user_id']
+                        ]);
+
+                        // Send notification to parts collection managers
+                        $notificationMessage = "New part pricing request: {$partName} for invoice #{$invoice_id} ({$data['customer_name']} - {$data['plate_number']})";
+
+                        // Find all parts collection managers
+                        $stmt = $pdo->prepare('SELECT id FROM users WHERE role = ?');
+                        $stmt->execute(['parts_collection_manager']);
+                        $managers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        foreach ($managers as $manager) {
+                            $stmt = $pdo->prepare("
+                                INSERT INTO messages (sender_id, recipient_id, subject, body)
+                                VALUES (?, ?, ?, ?)
+                            ");
+                            $stmt->execute([
+                                $_SESSION['user_id'],
+                                $manager['id'],
+                                'New Part Pricing Request',
+                                $notificationMessage
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Failed to create part pricing requests: ' . $e->getMessage());
+    }
+
     // Handle deleted existing images
     if (!empty($_POST['deleted_images'])) {
         $deletedIndices = json_decode($_POST['deleted_images'], true) ?: [];
