@@ -2096,10 +2096,81 @@ foreach ($oilPrices as $price) {
             lookupServicePrice(serviceOperation, vehicle, card, partName);
         }
 
-        // Suggest service price for manually typed part names
-        function suggestServicePriceForTypedPart(partName, card) {
-            // For manually typed parts, suggest service price in the service field
-            addCorrespondingLaborForTypedPart(partName, card);
+        // Suggest service price for a selected part (in the part's service field)
+        function suggestServicePriceForPart(partSuggestion, card) {
+            const partName = partSuggestion.name.toLowerCase();
+            const vehicle = getCurrentVehicleInfo();
+
+            // Map common parts to typical service operations
+            const serviceMapping = {
+                // Brake system
+                'brake pad': 'brake pad replacement',
+                'brake pads': 'brake pad replacement',
+                'brake disc': 'brake disc replacement',
+                'brake discs': 'brake disc replacement',
+                'brake rotor': 'brake rotor replacement',
+                'brake rotors': 'brake rotor replacement',
+                'brake caliper': 'brake caliper replacement',
+                'brake calipers': 'brake caliper replacement',
+                'brake drum': 'brake drum replacement',
+                'brake drums': 'brake drum replacement',
+                'brake shoe': 'brake shoe replacement',
+                'brake shoes': 'brake shoe replacement',
+
+                // Engine oil and filters
+                'oil filter': 'oil change',
+                'air filter': 'air filter replacement',
+                'fuel filter': 'fuel filter replacement',
+                'cabin filter': 'cabin air filter replacement',
+                'engine oil': 'oil change',
+
+                // Battery and electrical
+                'battery': 'battery replacement',
+                'alternator': 'alternator replacement',
+                'starter': 'starter replacement',
+                'spark plug': 'spark plug replacement',
+                'spark plugs': 'spark plug replacement',
+
+                // Tires and suspension
+                'tire': 'tire replacement',
+                'tires': 'tire replacement',
+                'shock absorber': 'shock absorber replacement',
+                'shock absorbers': 'shock absorber replacement',
+                'strut': 'strut replacement',
+                'struts': 'strut replacement',
+
+                // Belts and timing
+                'timing belt': 'timing belt replacement',
+                'serpentine belt': 'serpentine belt replacement',
+                'drive belt': 'drive belt replacement',
+
+                // Cooling system
+                'radiator': 'radiator replacement',
+                'water pump': 'water pump replacement',
+                'thermostat': 'thermostat replacement',
+
+                // Exhaust system
+                'exhaust pipe': 'exhaust pipe replacement',
+                'catalytic converter': 'catalytic converter replacement',
+                'muffler': 'muffler replacement'
+            };
+
+            // Find matching service operation
+            let serviceOperation = null;
+            for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
+                if (partName.includes(partKeyword)) {
+                    serviceOperation = operation;
+                    break;
+                }
+            }
+
+            if (!serviceOperation) {
+                // Generic fallback for unrecognized parts
+                serviceOperation = 'part installation';
+            }
+
+            // Look up the service price and suggest it in the part's service field
+            lookupServicePrice(serviceOperation, vehicle, card, partName);
         }
 
         // Automatically suggest service price for manually typed parts
@@ -2204,28 +2275,22 @@ foreach ($oilPrices as $price) {
                         const labor = labors[0];
                         const servicePrice = labor.suggested_price || labor.default_price || 0;
 
-                        if (servicePrice > 0) {
-                            const svcInput = card.querySelector('.item-price-svc');
-                            const techInput = card.querySelector('.item-tech');
+                        const svcInput = card.querySelector('.item-price-svc');
 
-                            // Only fill if empty
-                            if (svcInput && (!svcInput.value || svcInput.value == '0')) {
+                        // Only fill if empty and price > 0, otherwise just show the badge
+                        if (svcInput && (!svcInput.value || svcInput.value == '0')) {
+                            if (servicePrice > 0) {
                                 svcInput.value = servicePrice;
-
-                                // Update the price source badge
-                                const badgeEl = card.querySelector('.price-source');
-                                if (badgeEl) {
-                                    badgeEl.textContent = `Service: ${labor.name}`;
-                                    badgeEl.className = 'price-source text-xs text-blue-700 mt-1';
-                                }
-
-                                // Suggest technician if not already filled
-                                if (techInput && (!techInput.value || techInput.value.trim() === '')) {
-                                    // Could add logic here to suggest common technicians for this type of work
-                                }
-
-                                calculateTotals();
                             }
+
+                            // Always update the price source badge when service is found
+                            const badgeEl = card.querySelector('.price-source');
+                            if (badgeEl) {
+                                badgeEl.textContent = `Service: ${labor.name}`;
+                                badgeEl.className = 'price-source text-xs text-blue-700 mt-1';
+                            }
+
+                            calculateTotals();
                         }
                     } else {
                         // Scenario 1: No service found in database - allow manual entry
