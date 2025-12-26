@@ -1081,7 +1081,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Check if this is a part item with a service price entered
             if (!empty($it['db_type']) && $it['db_type'] === 'part' && !empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
                 $partName = trim($it['name']);
-                $laborName = $partName . ' - მომსახურება';
+                $laborName = $partName . ' - შეცვლა / შეკეთება';
                 $servicePrice = floatval($it['price_svc']);
                 $vehicleCanonical = $vehicleMake !== '' ? trim($vehicleMake) : null;
 

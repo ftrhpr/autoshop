@@ -2039,8 +2039,8 @@ foreach ($oilPrices as $price) {
             let serviceOperation;
 
             if (hasGeorgianChars) {
-                // For Georgian part names, search for the part name with " - მომსახურება" appended
-                serviceOperation = partSuggestion.name.trim() + ' - მომსახურება';
+                // For Georgian part names, search for the part name with " - შეცვლა / შეკეთება" appended
+                serviceOperation = partSuggestion.name.trim() + ' - შეცვლა / შეკეთება';
             } else {
                 // Map common English parts to typical service operations
                 const serviceMapping = {
@@ -2125,8 +2125,8 @@ foreach ($oilPrices as $price) {
             let serviceOperation;
 
             if (hasGeorgianChars) {
-                // For Georgian part names, search for the part name with " - მომსახურება" appended
-                serviceOperation = partName.trim() + ' - მომსახურება';
+                // For Georgian part names, search for the part name with " - შეცვლა / შეკეთება" appended
+                serviceOperation = partName.trim() + ' - შეცვლა / შეკეთება';
             } else {
                 // Map common English parts to typical service operations
                 const serviceMapping = {
@@ -2248,7 +2248,7 @@ foreach ($oilPrices as $price) {
                     } else {
                         // Scenario 1: No service found in database - allow manual entry
                         // Manager can manually enter service price in the item-price-svc field
-                        // When saved, this will create a labor template with name "(Part name) - მომსახურება"
+                        // When saved, this will create a labor template with name "(Part name) - შეცვლა / შეკეთება"
                         console.log('No service found for part:', originalPartName, '- manager can enter service price manually');
                     }
                 })
