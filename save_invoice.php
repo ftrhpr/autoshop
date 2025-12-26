@@ -1075,6 +1075,70 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    // Create labor templates for parts with service prices entered
+    try {
+        foreach ($items as $it) {
+            // Check if this is a part item with a service price entered
+            if (!empty($it['db_type']) && $it['db_type'] === 'part' && !empty($it['price_svc']) && floatval($it['price_svc']) > 0) {
+                $partName = trim($it['name']);
+                $laborName = $partName . ' - მომსახურება';
+                $servicePrice = floatval($it['price_svc']);
+                $vehicleCanonical = $vehicleMake !== '' ? trim($vehicleMake) : null;
+
+                // Check if this labor already exists
+                $stmt = $pdo->prepare('SELECT id FROM labors WHERE name = ? LIMIT 1');
+                $stmt->execute([$laborName]);
+                $existingLabor = $stmt->fetch();
+
+                if (!$existingLabor) {
+                    // Create new labor template
+                    $insLabor = $pdo->prepare('INSERT INTO labors (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
+                    $insLabor->execute([
+                        $laborName,
+                        'Auto-generated service for ' . $partName,
+                        $servicePrice,
+                        $vehicleCanonical,
+                        $_SESSION['user_id']
+                    ]);
+                    $newLaborId = $pdo->lastInsertId();
+
+                    // Create vehicle-specific price if vehicle is specified
+                    if ($vehicleCanonical) {
+                        $insPrice = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?)');
+                        $insPrice->execute(['labor', $newLaborId, $vehicleCanonical, $servicePrice, $_SESSION['user_id']]);
+                    }
+
+                    $created_items[] = ['type' => 'labor', 'name' => $laborName, 'price' => $servicePrice, 'vehicle' => $vehicleCanonical, 'item_id' => $newLaborId];
+                    error_log("save_invoice: created labor template '{$laborName}' with price {$servicePrice} for part '{$partName}'");
+                } else {
+                    // Update existing labor price if different
+                    $laborId = $existingLabor['id'];
+
+                    // Check current default price
+                    $stmt = $pdo->prepare('SELECT default_price FROM labors WHERE id = ? LIMIT 1');
+                    $stmt->execute([$laborId]);
+                    $currentLabor = $stmt->fetch();
+
+                    if ($currentLabor && floatval($currentLabor['default_price']) != $servicePrice) {
+                        // Update default price
+                        $updLabor = $pdo->prepare('UPDATE labors SET default_price = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+                        $updLabor->execute([$servicePrice, $_SESSION['user_id'], $laborId]);
+
+                        // Update or create vehicle-specific price
+                        if ($vehicleCanonical) {
+                            $insPrice = $pdo->prepare('INSERT INTO item_prices (item_type, item_id, vehicle_make_model, price, created_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE price = VALUES(price), created_by = VALUES(created_by), created_at = CURRENT_TIMESTAMP');
+                            $insPrice->execute(['labor', $laborId, $vehicleCanonical, $servicePrice, $_SESSION['user_id']]);
+                        }
+
+                        error_log("save_invoice: updated labor template '{$laborName}' price to {$servicePrice}");
+                    }
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log('save_invoice: failed to create/update labor templates: ' . $e->getMessage());
+    }
+
     // Store created items info into session for UI notification
     if (!empty($created_items)) {
         error_log("save_invoice: created_items: " . json_encode($created_items));

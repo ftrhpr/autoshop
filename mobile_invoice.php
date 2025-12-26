@@ -1861,8 +1861,8 @@ foreach ($oilPrices as $price) {
                                 partInput.value = priceToUse;
                             }
 
-                            // Automatically add corresponding labor item for this part
-                            addCorrespondingLaborForPart(suggestion, card);
+                            // Suggest service price for this part in the service field
+                            suggestServicePriceForPart(suggestion, card);
                         } else if (suggestion.type === 'labor') {
                             const svcInput = card.querySelector('.item-price-svc');
                             if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
@@ -2019,7 +2019,7 @@ foreach ($oilPrices as $price) {
             lookupAndAddLaborItem(serviceOperation, vehicle, partCard);
         }
 
-        // Suggest service price for a selected part
+        // Suggest service price for a selected part (in the part's service field)
         function suggestServicePriceForPart(partSuggestion, card) {
             const partName = partSuggestion.name.toLowerCase();
             const vehicle = getCurrentVehicleInfo();
@@ -2092,17 +2092,17 @@ foreach ($oilPrices as $price) {
                 serviceOperation = 'part installation';
             }
 
-            // Look up the service price
+            // Look up the service price and suggest it in the part's service field
             lookupServicePrice(serviceOperation, vehicle, card, partName);
         }
 
         // Suggest service price for manually typed part names
         function suggestServicePriceForTypedPart(partName, card) {
-            // For manually typed parts, add corresponding labor item
+            // For manually typed parts, suggest service price in the service field
             addCorrespondingLaborForTypedPart(partName, card);
         }
 
-        // Automatically add corresponding labor item for manually typed parts
+        // Automatically suggest service price for manually typed parts
         function addCorrespondingLaborForTypedPart(partName, partCard) {
             const vehicle = getCurrentVehicleInfo();
 
@@ -2175,8 +2175,8 @@ foreach ($oilPrices as $price) {
                 serviceOperation = 'part installation';
             }
 
-            // Look up the labor operation and add it as a new item
-            lookupAndAddLaborItem(serviceOperation, vehicle, partCard);
+            // Look up the labor operation and suggest price in service field
+            lookupServicePrice(serviceOperation, vehicle, partCard, partName);
         }
 
         // Get current vehicle information for price lookup
@@ -2200,7 +2200,7 @@ foreach ($oilPrices as $price) {
                     const labors = Array.isArray(data) ? data.filter(item => item.type === 'labor') : [];
 
                     if (labors.length > 0) {
-                        // Use the first (best) match
+                        // Scenario 2: Service found in database - suggest price in service field
                         const labor = labors[0];
                         const servicePrice = labor.suggested_price || labor.default_price || 0;
 
@@ -2228,119 +2228,19 @@ foreach ($oilPrices as $price) {
                             }
                         }
                     } else {
-                        // No labor operations found, create fallback service
-                        const fallbackServiceName = `${originalPartName} - მომსახურება`;
-                        const fallbackPrice = 50.00; // Default service price
-
-                        const svcInput = card.querySelector('.item-price-svc');
-                        const techInput = card.querySelector('.item-tech');
-
-                        // Only fill if empty
-                        if (svcInput && (!svcInput.value || svcInput.value == '0')) {
-                            svcInput.value = fallbackPrice;
-
-                            // Update the price source badge
-                            const badgeEl = card.querySelector('.price-source');
-                            if (badgeEl) {
-                                badgeEl.textContent = `Service: ${fallbackServiceName}`;
-                                badgeEl.className = 'price-source text-xs text-orange-700 mt-1';
-                            }
-
-                            calculateTotals();
-                        }
+                        // Scenario 1: No service found in database - allow manual entry
+                        // Manager can manually enter service price in the item-price-svc field
+                        // When saved, this will create a labor template with name "(Part name) - მომსახურება"
+                        console.log('No service found for part:', originalPartName, '- manager can enter service price manually');
                     }
                 })
                 .catch(error => {
                     console.warn('Error looking up service price:', error);
+                    // Scenario 1 fallback: allow manual entry
                 });
         }
 
-        // Look up labor operation and add as new item
-        function lookupAndAddLaborItem(operation, vehicle, partCard) {
-            const params = new URLSearchParams({
-                q: operation,
-                vehicle: vehicle
-            });
 
-            fetch(`admin/api_labors_parts.php?` + params.toString())
-                .then(response => response.json())
-                .then(resp => {
-                    const data = resp && resp.data ? resp.data : resp;
-                    const labors = Array.isArray(data) ? data.filter(item => item.type === 'labor') : [];
-
-                    if (labors.length > 0) {
-                        // Use the first (best) match
-                        const labor = labors[0];
-                        const servicePrice = labor.suggested_price || labor.default_price || 0;
-
-                        // Add new labor item
-                        addLaborItemForPart(labor, servicePrice, partCard);
-                    } else {
-                        // No labor operations found, create fallback
-                        const partName = partCard.querySelector('.item-name-input').value;
-                        const fallbackLabor = {
-                            name: `${partName} - მომსახურება`,
-                            default_price: 50.00
-                        };
-                        addLaborItemForPart(fallbackLabor, 50.00, partCard);
-                    }
-                })
-                .catch(error => {
-                    console.warn('Error looking up labor for part:', error);
-                });
-        }
-
-        // Add a new labor item card linked to a part
-        function addLaborItemForPart(laborData, price, partCard) {
-            // Add new labor item
-            addItem('labor');
-
-            // Get the newly added item card
-            const laborCard = document.getElementById(`item-${itemCount}`);
-
-            if (laborCard) {
-                // Fill the labor item with data
-                laborCard.querySelector('.item-name-input').value = laborData.name;
-
-                const svcInput = laborCard.querySelector('.item-price-svc');
-                if (svcInput && (!svcInput.value || svcInput.value == '0')) {
-                    svcInput.value = price;
-                }
-
-                // Set database info if available
-                if (laborData.id) laborCard.querySelector('.item-db-id').value = laborData.id;
-                if (laborData.type) laborCard.querySelector('.item-db-type').value = laborData.type;
-                laborCard.querySelector('.item-db-price-source').value = 'default';
-
-                // Update the price source badge
-                const badgeEl = laborCard.querySelector('.price-source');
-                if (badgeEl) {
-                    badgeEl.textContent = `Service: ${laborData.name}`;
-                    badgeEl.className = 'price-source text-xs text-blue-700 mt-1';
-                }
-
-                // Move the labor card to be right after the part card
-                const container = document.getElementById('items-container');
-                const partCardIndex = Array.from(container.children).indexOf(partCard);
-
-                if (partCardIndex !== -1) {
-                    // Insert the labor card right after the part card
-                    container.insertBefore(laborCard, container.children[partCardIndex + 1]);
-                }
-
-                // Add visual indication that this labor is linked to the part
-                laborCard.style.borderLeft = '3px solid #3b82f6'; // Blue left border
-                laborCard.setAttribute('data-linked-to-part', partCard.id);
-
-                // Add a small note in the labor item header
-                const header = laborCard.querySelector('.item-header .item-name');
-                if (header) {
-                    header.innerHTML += ' <small class="text-blue-600">(linked to part)</small>';
-                }
-
-                calculateTotals();
-            }
-        }
         
         document.getElementById('btn_take_photo').addEventListener('click', () => {
             imageInput.removeAttribute('multiple');
