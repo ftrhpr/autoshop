@@ -1857,6 +1857,9 @@ foreach ($oilPrices as $price) {
                             if (priceToUse > 0 && (!partInput.value || partInput.value == '0')) {
                                 partInput.value = priceToUse;
                             }
+
+                            // Also suggest service price for this part
+                            suggestServicePriceForPart(suggestion, card);
                         } else if (suggestion.type === 'labor') {
                             const svcInput = card.querySelector('.item-price-svc');
                             if (priceToUse > 0 && (!svcInput.value || svcInput.value == '0')) {
@@ -1936,8 +1939,137 @@ foreach ($oilPrices as $price) {
                 .catch(error => console.error('Error fetching suggestions:', error));
         }
 
-        // Photo handling
-        const imageInput = document.getElementById('input_images');
+        // Suggest service price for a selected part
+        function suggestServicePriceForPart(partSuggestion, card) {
+            const partName = partSuggestion.name.toLowerCase();
+            const vehicle = getCurrentVehicleInfo();
+
+            // Map common parts to typical service operations
+            const serviceMapping = {
+                // Brake system
+                'brake pad': 'brake pad replacement',
+                'brake pads': 'brake pad replacement',
+                'brake disc': 'brake disc replacement',
+                'brake discs': 'brake disc replacement',
+                'brake rotor': 'brake rotor replacement',
+                'brake rotors': 'brake rotor replacement',
+                'brake caliper': 'brake caliper replacement',
+                'brake calipers': 'brake caliper replacement',
+                'brake drum': 'brake drum replacement',
+                'brake drums': 'brake drum replacement',
+                'brake shoe': 'brake shoe replacement',
+                'brake shoes': 'brake shoe replacement',
+
+                // Engine oil and filters
+                'oil filter': 'oil change',
+                'air filter': 'air filter replacement',
+                'fuel filter': 'fuel filter replacement',
+                'cabin filter': 'cabin air filter replacement',
+                'engine oil': 'oil change',
+
+                // Battery and electrical
+                'battery': 'battery replacement',
+                'alternator': 'alternator replacement',
+                'starter': 'starter replacement',
+                'spark plug': 'spark plug replacement',
+                'spark plugs': 'spark plug replacement',
+
+                // Tires and suspension
+                'tire': 'tire replacement',
+                'tires': 'tire replacement',
+                'shock absorber': 'shock absorber replacement',
+                'shock absorbers': 'shock absorber replacement',
+                'strut': 'strut replacement',
+                'struts': 'strut replacement',
+
+                // Belts and timing
+                'timing belt': 'timing belt replacement',
+                'serpentine belt': 'serpentine belt replacement',
+                'drive belt': 'drive belt replacement',
+
+                // Cooling system
+                'radiator': 'radiator replacement',
+                'water pump': 'water pump replacement',
+                'thermostat': 'thermostat replacement',
+
+                // Exhaust system
+                'exhaust pipe': 'exhaust pipe replacement',
+                'catalytic converter': 'catalytic converter replacement',
+                'muffler': 'muffler replacement'
+            };
+
+            // Find matching service operation
+            let serviceOperation = null;
+            for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
+                if (partName.includes(partKeyword)) {
+                    serviceOperation = operation;
+                    break;
+                }
+            }
+
+            if (!serviceOperation) {
+                // Generic fallback for unrecognized parts
+                serviceOperation = 'part installation';
+            }
+
+            // Look up the service price
+            lookupServicePrice(serviceOperation, vehicle, card);
+        }
+
+        // Get current vehicle information for price lookup
+        function getCurrentVehicleInfo() {
+            const make = document.getElementById('input_vehicle_make').value || '';
+            const model = document.getElementById('input_vehicle_model').value || '';
+            return (make + ' ' + model).trim();
+        }
+
+        // Look up service price for a given operation and vehicle
+        function lookupServicePrice(operation, vehicle, card) {
+            const params = new URLSearchParams({
+                q: operation,
+                vehicle: vehicle
+            });
+
+            fetch(`admin/api_labors_parts.php?` + params.toString())
+                .then(response => response.json())
+                .then(resp => {
+                    const data = resp && resp.data ? resp.data : resp;
+                    const labors = Array.isArray(data) ? data.filter(item => item.type === 'labor') : [];
+
+                    if (labors.length > 0) {
+                        // Use the first (best) match
+                        const labor = labors[0];
+                        const servicePrice = labor.suggested_price || labor.default_price || 0;
+
+                        if (servicePrice > 0) {
+                            const svcInput = card.querySelector('.item-price-svc');
+                            const techInput = card.querySelector('.item-tech');
+
+                            // Only fill if empty
+                            if (svcInput && (!svcInput.value || svcInput.value == '0')) {
+                                svcInput.value = servicePrice;
+
+                                // Update the price source badge
+                                const badgeEl = card.querySelector('.price-source');
+                                if (badgeEl) {
+                                    badgeEl.textContent = `Service: ${labor.name}`;
+                                    badgeEl.className = 'price-source text-xs text-blue-700 mt-1';
+                                }
+
+                                // Suggest technician if not already filled
+                                if (techInput && (!techInput.value || techInput.value.trim() === '')) {
+                                    // Could add logic here to suggest common technicians for this type of work
+                                }
+
+                                calculateTotals();
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.warn('Error looking up service price:', error);
+                });
+        }
         
         document.getElementById('btn_take_photo').addEventListener('click', () => {
             imageInput.removeAttribute('multiple');
@@ -2434,22 +2566,14 @@ foreach ($oilPrices as $price) {
                     if (card) {
                         card.querySelector('.item-name-input').value = item.name || '';
 
-                        if (itemType === 'part') {
-                            // For part items, populate all fields
-                            card.querySelector('.item-qty').value = item.qty || 1;
-                            card.querySelector('.item-price-part').value = item.price_part || 0;
-                            card.querySelector('.item-discount-part').value = item.discount_part || 0;
-                            card.querySelector('.item-price-svc').value = item.price_svc || 0;
-                            card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
-                            card.querySelector('.item-tech').value = item.tech || '';
-                            card.querySelector('.item-tech-id').value = item.tech_id || '';
-                        } else if (itemType === 'labor') {
-                            // For labor items, only service fields
-                            card.querySelector('.item-price-svc').value = item.price_svc || 0;
-                            card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
-                            card.querySelector('.item-tech').value = item.tech || '';
-                            card.querySelector('.item-tech-id').value = item.tech_id || '';
-                        }
+                        // Populate all fields for both part and labor items
+                        card.querySelector('.item-qty').value = item.qty || 1;
+                        card.querySelector('.item-price-part').value = item.price_part || 0;
+                        card.querySelector('.item-discount-part').value = item.discount_part || 0;
+                        card.querySelector('.item-price-svc').value = item.price_svc || 0;
+                        card.querySelector('.item-discount-svc').value = item.discount_svc || 0;
+                        card.querySelector('.item-tech').value = item.tech || '';
+                        card.querySelector('.item-tech-id').value = item.tech_id || '';
 
                         // Set database fields if available
                         if (item.db_id) card.querySelector('.item-db-id').value = item.db_id;
