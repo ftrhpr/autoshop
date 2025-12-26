@@ -19,7 +19,11 @@
     <h1>Database Migration Runner</h1>
     <p>This tool will run necessary database migrations for the autoshop application.</p>
 
-    <div id="migrations">
+        <div class="migration pending" id="labors-parts-migration">
+            <h3>Add Labors and Parts Tables</h3>
+            <p>Creates labors and parts tables with default service operations for intelligent price suggestions.</p>
+            <button onclick="runMigration('labors_parts')">Run Migration</button>
+        </div>
         <div class="migration pending" id="permissions-migration">
             <h3>Add Permissions System</h3>
             <p>Creates permissions and role_permissions tables for role-based access control. Required for menu filtering by user roles.</p>
@@ -55,6 +59,8 @@
                     response = await fetch('migrate_add_fina_status.php');
                 } else if (type === 'item_price_usage') {
                     response = await fetch('migrate_create_item_price_usage.php');
+                } else if (type === 'labors_parts') {
+                    response = await fetch('migrate_add_labors_parts.php');
                 }
 
                 if (response.ok) {
