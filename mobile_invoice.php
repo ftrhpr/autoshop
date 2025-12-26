@@ -1040,6 +1040,9 @@ foreach ($oilPrices as $price) {
         let selectedFiles = [];
         let currentStep = 1;
         const totalSteps = 5;
+        const imageInput = document.getElementById('input_images');
+        let vehicleMakes = [];
+        let vehicleModels = [];
 
         // Oil data
         let oilBrands = <?php echo json_encode($oilBrands ?? []); ?>;
@@ -2660,8 +2663,6 @@ foreach ($oilPrices as $price) {
         });
 
         // Vehicle make and model loading functions
-        let vehicleMakes = [];
-        let vehicleModels = [];
 
         async function loadVehicleMakes() {
             try {
