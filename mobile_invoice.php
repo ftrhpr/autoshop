@@ -2016,7 +2016,7 @@ foreach ($oilPrices as $price) {
             }
 
             // Look up the service price
-            lookupServicePrice(serviceOperation, vehicle, card);
+            lookupServicePrice(serviceOperation, vehicle, card, partName);
         }
 
         // Suggest service price for manually typed part names
@@ -2093,7 +2093,7 @@ foreach ($oilPrices as $price) {
             }
 
             // Look up the service price
-            lookupServicePrice(serviceOperation, vehicle, card);
+            lookupServicePrice(serviceOperation, vehicle, card, partName);
         }
 
         // Get current vehicle information for price lookup
@@ -2104,7 +2104,7 @@ foreach ($oilPrices as $price) {
         }
 
         // Look up service price for a given operation and vehicle
-        function lookupServicePrice(operation, vehicle, card) {
+        function lookupServicePrice(operation, vehicle, card, originalPartName) {
             const params = new URLSearchParams({
                 q: operation,
                 vehicle: vehicle
@@ -2143,6 +2143,27 @@ foreach ($oilPrices as $price) {
 
                                 calculateTotals();
                             }
+                        }
+                    } else {
+                        // No labor operations found, create fallback service
+                        const fallbackServiceName = `${originalPartName} - მომსახურება`;
+                        const fallbackPrice = 50.00; // Default service price
+
+                        const svcInput = card.querySelector('.item-price-svc');
+                        const techInput = card.querySelector('.item-tech');
+
+                        // Only fill if empty
+                        if (svcInput && (!svcInput.value || svcInput.value == '0')) {
+                            svcInput.value = fallbackPrice;
+
+                            // Update the price source badge
+                            const badgeEl = card.querySelector('.price-source');
+                            if (badgeEl) {
+                                badgeEl.textContent = `Service: ${fallbackServiceName}`;
+                                badgeEl.className = 'price-source text-xs text-orange-700 mt-1';
+                            }
+
+                            calculateTotals();
                         }
                     }
                 })
