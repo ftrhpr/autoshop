@@ -1913,7 +1913,7 @@ foreach ($oilPrices as $price) {
             document.querySelectorAll('.suggestions').forEach(s => s.classList.add('hidden'));
         }
 
-        function fetchSuggestions(query) {
+        function fetchSuggestions(query, itemType = null) {
             if (query.length < 2) {
                 hideSuggestions();
                 return;
@@ -1928,7 +1928,16 @@ foreach ($oilPrices as $price) {
                 .then(response => response.json())
                 .then(resp => {
                     const data = resp && resp.data ? resp.data : resp;
-                    currentSuggestions = Array.isArray(data) ? data : [];
+                    let suggestions = Array.isArray(data) ? data : [];
+
+                    // Filter suggestions based on item type
+                    if (itemType === 'part') {
+                        suggestions = suggestions.filter(item => item.type === 'part');
+                    } else if (itemType === 'labor') {
+                        suggestions = suggestions.filter(item => item.type === 'labor');
+                    }
+
+                    currentSuggestions = suggestions;
                     // If we have suggestions, annotate text to show whether vehicle-specific price exists
                     currentSuggestions = currentSuggestions.map(s => {
                         s.suggested_price = (typeof s.suggested_price !== 'undefined') ? s.suggested_price : s.default_price;
@@ -2817,7 +2826,12 @@ foreach ($oilPrices as $price) {
             if (e.target.classList.contains('item-name-input')) {
                 currentInput = e.target;
                 const query = e.target.value.trim();
-                fetchSuggestions(query);
+
+                // Get the item type from the item card
+                const itemCard = e.target.closest('.item-card');
+                const itemType = itemCard ? itemCard.querySelector('.item-type')?.value : null;
+
+                fetchSuggestions(query, itemType);
 
                 // Also suggest service price for manually typed parts
                 if (query.length >= 3) {
