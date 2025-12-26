@@ -3,31 +3,6 @@ require 'config.php';
 
 // Add labors and parts tables
 try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS labors (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            default_price DECIMAL(10,2) DEFAULT 0,
-            created_by INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX (name)
-        );
-
-        CREATE TABLE IF NOT EXISTS parts (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            default_price DECIMAL(10,2) DEFAULT 0,
-            created_by INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-            INDEX (name)
-        );
-    ");
-
-    echo "Tables created successfully.";
 
     // Insert default labor operations
     $labors = [
@@ -60,12 +35,31 @@ try {
         ['name' => 'part installation', 'description' => 'General part installation service', 'default_price' => 50.00]
     ];
 
-    $stmt = $pdo->prepare("INSERT IGNORE INTO labors (name, description, default_price) VALUES (?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO labors (name, description, default_price) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE description = VALUES(description), default_price = VALUES(default_price)");
+    $inserted = 0;
     foreach ($labors as $labor) {
-        $stmt->execute([$labor['name'], $labor['description'], $labor['default_price']]);
+        try {
+            $stmt->execute([$labor['name'], $labor['description'], $labor['default_price']]);
+            $inserted++;
+        } catch (Exception $e) {
+            echo "Error inserting labor '{$labor['name']}': " . $e->getMessage() . "\n";
+        }
     }
 
-    echo " Default labor operations added successfully.";
+    echo " $inserted labor operations processed successfully.\n";
+
+    // Verify the data was inserted
+    $countStmt = $pdo->query("SELECT COUNT(*) as count FROM labors");
+    $count = $countStmt->fetch()['count'];
+    echo "Total labors in database: $count\n";
+
+    // Show a few examples
+    $sampleStmt = $pdo->query("SELECT name, default_price FROM labors LIMIT 5");
+    $samples = $sampleStmt->fetchAll(PDO::FETCH_ASSOC);
+    echo "Sample labors:\n";
+    foreach ($samples as $sample) {
+        echo "- {$sample['name']}: {$sample['default_price']} ₾\n";
+    }
 
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();
