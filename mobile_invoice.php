@@ -2024,148 +2024,168 @@ foreach ($oilPrices as $price) {
             const partName = partSuggestion.name.toLowerCase();
             const vehicle = getCurrentVehicleInfo();
 
-            // Map common parts to typical service operations
-            const serviceMapping = {
-                // Brake system
-                'brake pad': 'brake pad replacement',
-                'brake pads': 'brake pad replacement',
-                'brake disc': 'brake disc replacement',
-                'brake discs': 'brake disc replacement',
-                'brake rotor': 'brake rotor replacement',
-                'brake rotors': 'brake rotor replacement',
-                'brake caliper': 'brake caliper replacement',
-                'brake calipers': 'brake caliper replacement',
-                'brake drum': 'brake drum replacement',
-                'brake drums': 'brake drum replacement',
-                'brake shoe': 'brake shoe replacement',
-                'brake shoes': 'brake shoe replacement',
+            // Check if part name contains Georgian characters
+            const hasGeorgianChars = /[\u10A0-\u10FF]/.test(partName);
 
-                // Engine oil and filters
-                'oil filter': 'oil change',
-                'air filter': 'air filter replacement',
-                'fuel filter': 'fuel filter replacement',
-                'cabin filter': 'cabin air filter replacement',
-                'engine oil': 'oil change',
+            let serviceOperation;
 
-                // Battery and electrical
-                'battery': 'battery replacement',
-                'alternator': 'alternator replacement',
-                'starter': 'starter replacement',
-                'spark plug': 'spark plug replacement',
-                'spark plugs': 'spark plug replacement',
+            if (hasGeorgianChars) {
+                // For Georgian part names, search for the part name with " - მომსახურება" appended
+                serviceOperation = partSuggestion.name.trim() + ' - მომსახურება';
+            } else {
+                // Map common English parts to typical service operations
+                const serviceMapping = {
+                    // Brake system
+                    'brake pad': 'brake pad replacement',
+                    'brake pads': 'brake pad replacement',
+                    'brake disc': 'brake disc replacement',
+                    'brake discs': 'brake disc replacement',
+                    'brake rotor': 'brake rotor replacement',
+                    'brake rotors': 'brake rotor replacement',
+                    'brake caliper': 'brake caliper replacement',
+                    'brake calipers': 'brake caliper replacement',
+                    'brake drum': 'brake drum replacement',
+                    'brake drums': 'brake drum replacement',
+                    'brake shoe': 'brake shoe replacement',
+                    'brake shoes': 'brake shoe replacement',
 
-                // Tires and suspension
-                'tire': 'tire replacement',
-                'tires': 'tire replacement',
-                'shock absorber': 'shock absorber replacement',
-                'shock absorbers': 'shock absorber replacement',
-                'strut': 'strut replacement',
-                'struts': 'strut replacement',
+                    // Engine oil and filters
+                    'oil filter': 'oil change',
+                    'air filter': 'air filter replacement',
+                    'fuel filter': 'fuel filter replacement',
+                    'cabin filter': 'cabin air filter replacement',
+                    'engine oil': 'oil change',
 
-                // Belts and timing
-                'timing belt': 'timing belt replacement',
-                'serpentine belt': 'serpentine belt replacement',
-                'drive belt': 'drive belt replacement',
+                    // Battery and electrical
+                    'battery': 'battery replacement',
+                    'alternator': 'alternator replacement',
+                    'starter': 'starter replacement',
+                    'spark plug': 'spark plug replacement',
+                    'spark plugs': 'spark plug replacement',
 
-                // Cooling system
-                'radiator': 'radiator replacement',
-                'water pump': 'water pump replacement',
-                'thermostat': 'thermostat replacement',
+                    // Tires and suspension
+                    'tire': 'tire replacement',
+                    'tires': 'tire replacement',
+                    'shock absorber': 'shock absorber replacement',
+                    'shock absorbers': 'shock absorber replacement',
+                    'strut': 'strut replacement',
+                    'struts': 'strut replacement',
 
-                // Exhaust system
-                'exhaust pipe': 'exhaust pipe replacement',
-                'catalytic converter': 'catalytic converter replacement',
-                'muffler': 'muffler replacement'
-            };
+                    // Belts and timing
+                    'timing belt': 'timing belt replacement',
+                    'serpentine belt': 'serpentine belt replacement',
+                    'drive belt': 'drive belt replacement',
 
-            // Find matching service operation
-            let serviceOperation = null;
-            for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
-                if (partName.includes(partKeyword)) {
-                    serviceOperation = operation;
-                    break;
+                    // Cooling system
+                    'radiator': 'radiator replacement',
+                    'water pump': 'water pump replacement',
+                    'thermostat': 'thermostat replacement',
+
+                    // Exhaust system
+                    'exhaust pipe': 'exhaust pipe replacement',
+                    'catalytic converter': 'catalytic converter replacement',
+                    'muffler': 'muffler replacement'
+                };
+
+                // Find matching service operation
+                serviceOperation = null;
+                for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
+                    if (partName.includes(partKeyword)) {
+                        serviceOperation = operation;
+                        break;
+                    }
+                }
+
+                if (!serviceOperation) {
+                    // Generic fallback for unrecognized parts
+                    serviceOperation = 'part installation';
                 }
             }
 
-            if (!serviceOperation) {
-                // Generic fallback for unrecognized parts
-                serviceOperation = 'part installation';
-            }
-
             // Look up the service price and suggest it in the part's service field
-            lookupServicePrice(serviceOperation, vehicle, card, partName);
+            lookupServicePrice(serviceOperation, vehicle, card, partSuggestion.name);
         }
 
         // Suggest service price for manually typed parts (in the part's service field)
         function suggestServicePriceForTypedPart(partName, card) {
             const vehicle = getCurrentVehicleInfo();
 
-            // Map common parts to typical service operations
-            const serviceMapping = {
-                // Brake system
-                'brake pad': 'brake pad replacement',
-                'brake pads': 'brake pad replacement',
-                'brake disc': 'brake disc replacement',
-                'brake discs': 'brake disc replacement',
-                'brake rotor': 'brake rotor replacement',
-                'brake rotors': 'brake rotor replacement',
-                'brake caliper': 'brake caliper replacement',
-                'brake calipers': 'brake caliper replacement',
-                'brake drum': 'brake drum replacement',
-                'brake drums': 'brake drum replacement',
-                'brake shoe': 'brake shoe replacement',
-                'brake shoes': 'brake shoe replacement',
+            // Check if part name contains Georgian characters
+            const hasGeorgianChars = /[\u10A0-\u10FF]/.test(partName);
 
-                // Engine oil and filters
-                'oil filter': 'oil change',
-                'air filter': 'air filter replacement',
-                'fuel filter': 'fuel filter replacement',
-                'cabin filter': 'cabin air filter replacement',
-                'engine oil': 'oil change',
+            let serviceOperation;
 
-                // Battery and electrical
-                'battery': 'battery replacement',
-                'alternator': 'alternator replacement',
-                'starter': 'starter replacement',
-                'spark plug': 'spark plug replacement',
-                'spark plugs': 'spark plug replacement',
+            if (hasGeorgianChars) {
+                // For Georgian part names, search for the part name with " - მომსახურება" appended
+                serviceOperation = partName.trim() + ' - მომსახურება';
+            } else {
+                // Map common English parts to typical service operations
+                const serviceMapping = {
+                    // Brake system
+                    'brake pad': 'brake pad replacement',
+                    'brake pads': 'brake pad replacement',
+                    'brake disc': 'brake disc replacement',
+                    'brake discs': 'brake disc replacement',
+                    'brake rotor': 'brake rotor replacement',
+                    'brake rotors': 'brake rotor replacement',
+                    'brake caliper': 'brake caliper replacement',
+                    'brake calipers': 'brake caliper replacement',
+                    'brake drum': 'brake drum replacement',
+                    'brake drums': 'brake drum replacement',
+                    'brake shoe': 'brake shoe replacement',
+                    'brake shoes': 'brake shoe replacement',
 
-                // Tires and suspension
-                'tire': 'tire replacement',
-                'tires': 'tire replacement',
-                'shock absorber': 'shock absorber replacement',
-                'shock absorbers': 'shock absorber replacement',
-                'strut': 'strut replacement',
-                'struts': 'strut replacement',
+                    // Engine oil and filters
+                    'oil filter': 'oil change',
+                    'air filter': 'air filter replacement',
+                    'fuel filter': 'fuel filter replacement',
+                    'cabin filter': 'cabin air filter replacement',
+                    'engine oil': 'oil change',
 
-                // Belts and timing
-                'timing belt': 'timing belt replacement',
-                'serpentine belt': 'serpentine belt replacement',
-                'drive belt': 'drive belt replacement',
+                    // Battery and electrical
+                    'battery': 'battery replacement',
+                    'alternator': 'alternator replacement',
+                    'starter': 'starter replacement',
+                    'spark plug': 'spark plug replacement',
+                    'spark plugs': 'spark plug replacement',
 
-                // Cooling system
-                'radiator': 'radiator replacement',
-                'water pump': 'water pump replacement',
-                'thermostat': 'thermostat replacement',
+                    // Tires and suspension
+                    'tire': 'tire replacement',
+                    'tires': 'tire replacement',
+                    'shock absorber': 'shock absorber replacement',
+                    'shock absorbers': 'shock absorber replacement',
+                    'strut': 'strut replacement',
+                    'struts': 'strut replacement',
 
-                // Exhaust system
-                'exhaust pipe': 'exhaust pipe replacement',
-                'catalytic converter': 'catalytic converter replacement',
-                'muffler': 'muffler replacement'
-            };
+                    // Belts and timing
+                    'timing belt': 'timing belt replacement',
+                    'serpentine belt': 'serpentine belt replacement',
+                    'drive belt': 'drive belt replacement',
 
-            // Find matching service operation
-            let serviceOperation = null;
-            for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
-                if (partName.toLowerCase().includes(partKeyword)) {
-                    serviceOperation = operation;
-                    break;
+                    // Cooling system
+                    'radiator': 'radiator replacement',
+                    'water pump': 'water pump replacement',
+                    'thermostat': 'thermostat replacement',
+
+                    // Exhaust system
+                    'exhaust pipe': 'exhaust pipe replacement',
+                    'catalytic converter': 'catalytic converter replacement',
+                    'muffler': 'muffler replacement'
+                };
+
+                // Find matching service operation
+                serviceOperation = null;
+                for (const [partKeyword, operation] of Object.entries(serviceMapping)) {
+                    if (partName.toLowerCase().includes(partKeyword)) {
+                        serviceOperation = operation;
+                        break;
+                    }
                 }
-            }
 
-            if (!serviceOperation) {
-                // Generic fallback for unrecognized parts
-                serviceOperation = 'part installation';
+                if (!serviceOperation) {
+                    // Generic fallback for unrecognized parts
+                    serviceOperation = 'part installation';
+                }
             }
 
             // Look up the service price and suggest it in the part's service field
