@@ -287,6 +287,96 @@ $invoices = $stmt->fetchAll();
             </div>
         </div>
 
+        <!-- Parts Collection Migration -->
+        <?php
+        // Check if parts collection system is set up
+        $partsCollectionReady = false;
+        try {
+            $stmt = $pdo->query('SHOW TABLES LIKE "part_pricing_requests"');
+            $partsCollectionReady = $stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            // Table doesn't exist
+        }
+
+        // Handle migration request
+        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['run_parts_migration'])) {
+            try {
+                // Add new role to users table enum
+                $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'manager', 'parts_collection_manager', 'user') NOT NULL DEFAULT 'user'");
+
+                // Create part_pricing_requests table
+                $sql = "CREATE TABLE IF NOT EXISTS part_pricing_requests (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    invoice_id INT NOT NULL,
+                    part_name VARCHAR(255) NOT NULL,
+                    part_description TEXT,
+                    requested_quantity DECIMAL(10,2) DEFAULT 1,
+                    vehicle_make VARCHAR(100),
+                    vehicle_model VARCHAR(100),
+                    status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+                    requested_price DECIMAL(10,2) NULL,
+                    final_price DECIMAL(10,2) NULL,
+                    notes TEXT,
+                    requested_by INT NOT NULL,
+                    assigned_to INT NULL,
+                    completed_by INT NULL,
+                    completed_at DATETIME NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+                    FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+                    FOREIGN KEY (completed_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX (status),
+                    INDEX (assigned_to),
+                    INDEX (invoice_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+                $pdo->exec($sql);
+
+                // Add permissions for parts collection manager
+                $pdo->exec("INSERT IGNORE INTO permissions (name, description) VALUES
+                    ('manage_part_pricing', 'Manage part pricing requests'),
+                    ('view_part_pricing_requests', 'View part pricing requests')");
+
+                // Assign permissions to parts collection manager role
+                $pdo->exec("INSERT IGNORE INTO role_permissions (role, permission_id)
+                    SELECT 'parts_collection_manager', id FROM permissions WHERE name IN ('manage_part_pricing', 'view_part_pricing_requests')");
+
+                $success = 'Parts Collection System migration completed successfully!';
+                $partsCollectionReady = true;
+
+            } catch (PDOException $e) {
+                $error = 'Migration failed: ' . $e->getMessage();
+            }
+        }
+        ?>
+
+        <?php if (!$partsCollectionReady): ?>
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3 flex-1">
+                    <p class="text-sm text-yellow-700">
+                        <strong>Parts Collection System Not Set Up</strong><br>
+                        The parts collection workflow is not yet configured. Run the migration to enable part pricing requests.
+                    </p>
+                    <div class="mt-3">
+                        <form method="POST" class="inline">
+                            <button type="submit" name="run_parts_migration" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium">
+                                Run Parts Collection Migration
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Main Analytics cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded shadow flex items-center justify-between">
@@ -557,6 +647,7 @@ $invoices = $stmt->fetchAll();
                             <select name="role" class="px-2 py-2 border rounded text-sm" required>
                                 <option value="user">მომხმარებელი</option>
                                 <option value="manager">მენეჯერი</option>
+                                <option value="parts_collection_manager">ნაწილების ფასების მენეჯერი</option>
                                 <option value="admin">ადმინისტრატორი</option>
                             </select>
                         </div>
@@ -581,9 +672,10 @@ $invoices = $stmt->fetchAll();
                                     <td class="px-2 md:px-4 py-2">
                                         <span class="px-2 py-1 rounded text-xs <?php
                                             echo $user['role'] === 'admin' ? 'bg-red-100 text-red-800' :
-                                                 ($user['role'] === 'manager' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800');
+                                                 ($user['role'] === 'manager' ? 'bg-blue-100 text-blue-800' :
+                                                 ($user['role'] === 'parts_collection_manager' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'));
                                         ?>">
-                                            <?php echo $user['role']; ?>
+                                            <?php echo $user['role'] === 'parts_collection_manager' ? 'ნაწილების მენეჯერი' : $user['role']; ?>
                                         </span>
                                     </td>
                                     <td class="px-2 md:px-4 py-2 truncate max-w-[140px]"><?php echo $user['created_at']; ?></td>
