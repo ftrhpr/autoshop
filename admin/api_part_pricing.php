@@ -15,7 +15,7 @@ try {
     if ($method === 'GET') {
         $action = $_GET['action'] ?? 'list';
 
-    if ($action === 'test') {
+        if ($action === 'test') {
         echo json_encode(['success' => true, 'message' => 'API is working', 'user' => $_SESSION['user_id'] ?? 'none']);
     } elseif ($action === 'list') {
         try {
