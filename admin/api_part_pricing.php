@@ -128,6 +128,9 @@ try {
 
             // TODO: Implement proper activity query after fixing table issues
             echo json_encode(['success' => true, 'activities' => $activities]);
+        } elseif ($action === 'test') {
+            // Simple test endpoint
+            echo json_encode(['success' => true, 'message' => 'API is working', 'user' => $_SESSION['user_id'] ?? 'none']);
         }
 
     } elseif ($method === 'POST') {
@@ -285,4 +288,7 @@ try {
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
 }
