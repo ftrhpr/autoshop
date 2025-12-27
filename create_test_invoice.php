@@ -34,14 +34,17 @@ try {
 
     // Insert test invoice
     $stmt = $pdo->prepare("
-        INSERT INTO invoices (customer_name, plate_number, car_mark, items, parts_total, service_total, grand_total, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO invoices (creation_date, customer_name, phone, car_mark, plate_number, mileage, items, parts_total, service_total, grand_total, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     $stmt->execute([
+        date('Y-m-d H:i:s'), // creation_date
         'Test Customer',
-        'TEST-001',
+        '+995-555-123456', // phone
         'Toyota Camry',
+        'TEST-001',
+        '150000', // mileage
         json_encode($testItems),
         0, // parts_total
         0, // service_total
