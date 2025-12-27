@@ -695,21 +695,16 @@ $pageTitle = 'Parts Pricing Hub';
                 },
 
                 async loadRecentActivity() {
-                    // Mock data for now - in real implementation, this would come from an API
-                    this.recentActivity = [
-                        {
-                            id: 1,
-                            type: 'assigned',
-                            message: 'John assigned "Brake Pads" request',
-                            created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString()
-                        },
-                        {
-                            id: 2,
-                            type: 'completed',
-                            message: 'Sarah completed pricing for "Oil Filter"',
-                            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
+                    try {
+                        const response = await fetch('api_part_pricing.php?action=activity&limit=10');
+                        const data = await response.json();
+                        if (data.success) {
+                            this.recentActivity = data.activities;
                         }
-                    ];
+                    } catch (error) {
+                        console.error('Error loading recent activity:', error);
+                        this.recentActivity = [];
+                    }
                 },
 
                 async refreshData() {
@@ -737,7 +732,7 @@ $pageTitle = 'Parts Pricing Hub';
                         const data = await response.json();
 
                         if (data.success) {
-                            await this.loadRequests();
+                            await Promise.all([this.loadRequests(), this.loadRecentActivity()]);
                             this.showNotification('Request assigned successfully', 'success');
                             this.showModal = false;
                         } else {
@@ -764,7 +759,7 @@ $pageTitle = 'Parts Pricing Hub';
                         const data = await response.json();
 
                         if (data.success) {
-                            await this.loadRequests();
+                            await Promise.all([this.loadRequests(), this.loadRecentActivity()]);
                             this.showNotification('Price updated successfully', 'success');
                             this.priceForm = { price: '', supplier: '', notes: '' };
                         } else {
@@ -789,8 +784,7 @@ $pageTitle = 'Parts Pricing Hub';
                         const data = await response.json();
 
                         if (data.success) {
-                            await this.loadRequests();
-                            await this.loadStats();
+                            await Promise.all([this.loadRequests(), this.loadStats(), this.loadRecentActivity()]);
                             this.showNotification('Request completed successfully', 'success');
                             this.showModal = false;
                         } else {
@@ -830,10 +824,11 @@ $pageTitle = 'Parts Pricing Hub';
                             })
                         );
 
+                        const assignedCount = this.selectedRequests.length;
                         await Promise.all(promises);
-                        await this.loadRequests();
+                        await Promise.all([this.loadRequests(), this.loadRecentActivity()]);
                         this.selectedRequests = [];
-                        this.showNotification(`${this.selectedRequests.length} requests assigned successfully`, 'success');
+                        this.showNotification(`${assignedCount} requests assigned successfully`, 'success');
                     } catch (error) {
                         this.showNotification('Error in bulk assignment', 'error');
                         console.error('Bulk assign error:', error);

@@ -104,6 +104,65 @@ try {
             }
 
             echo json_encode(['success' => true, 'stats' => $stats]);
+        } elseif ($action === 'activity') {
+            // Get recent activity for dashboard
+            $limit = (int)($_GET['limit'] ?? 10);
+
+            // Build query based on user role
+            $whereClause = "";
+            $params = [];
+
+            if ($_SESSION['role'] === 'parts_collection_manager') {
+                $whereClause = "WHERE ppr.assigned_to IS NULL OR ppr.assigned_to = ?";
+                $params[] = $_SESSION['user_id'];
+            } elseif ($_SESSION['role'] === 'manager') {
+                $whereClause = "WHERE ppr.requested_by = ?";
+                $params[] = $_SESSION['user_id'];
+            }
+            // Admin users see all activities (no WHERE clause)
+
+            // Get recent activities (assignments, completions, creations)
+            $stmt = $pdo->prepare("
+                SELECT
+                    'assigned' as type,
+                    CONCAT(ab.username, ' assigned "', ppr.part_name, '" request') as message,
+                    ppr.updated_at as created_at,
+                    ppr.id
+                FROM part_pricing_requests ppr
+                JOIN users ab ON ppr.assigned_to = ab.id
+                {$whereClause} AND ppr.status = 'in_progress' AND ppr.assigned_to IS NOT NULL
+
+                UNION ALL
+
+                SELECT
+                    'completed' as type,
+                    CONCAT(cb.username, ' completed pricing for "', ppr.part_name, '"') as message,
+                    ppr.completed_at as created_at,
+                    ppr.id
+                FROM part_pricing_requests ppr
+                JOIN users cb ON ppr.completed_by = cb.id
+                {$whereClause} AND ppr.status = 'completed'
+
+                UNION ALL
+
+                SELECT
+                    'created' as type,
+                    CONCAT(rb.username, ' requested pricing for "', ppr.part_name, '"') as message,
+                    ppr.created_at as created_at,
+                    ppr.id
+                FROM part_pricing_requests ppr
+                JOIN users rb ON ppr.requested_by = rb.id
+                {$whereClause}
+
+                ORDER BY created_at DESC
+                LIMIT ?
+            ");
+            $params[] = $limit;
+            $stmt->execute($params);
+
+            $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode(['success' => true, 'activities' => $activities]);
         }
 
     } elseif ($method === 'POST') {
