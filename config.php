@@ -22,7 +22,12 @@ try {
     // Use native prepared statements so numeric LIMIT/OFFSET params are not quoted
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 } catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+    // For API endpoints, don't die - let them handle the error gracefully
+    if (strpos($_SERVER['REQUEST_URI'], '/api/') !== false || strpos($_SERVER['REQUEST_URI'], 'api_') !== false) {
+        $pdo = null; // Set to null so API can check
+    } else {
+        die("Database connection failed: " . $e->getMessage());
+    }
 }
 
 // Feature flags

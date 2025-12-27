@@ -1,23 +1,13 @@
 <?php
-require '../config.php';
+// Simple test - remove all dependencies to isolate the issue
 header('Content-Type: application/json; charset=utf-8');
-
-try {
-    // Check if user is logged in and has permission
-    if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'parts_collection_manager', 'manager'])) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Forbidden']);
-        exit;
-    }
-
-    $method = $_SERVER['REQUEST_METHOD'];
-
-    if ($method === 'GET') {
-        $action = $_GET['action'] ?? 'list';
-
-        if ($action === 'test') {
-        echo json_encode(['success' => true, 'message' => 'API is working', 'user' => $_SESSION['user_id'] ?? 'none']);
-    } elseif ($action === 'list') {
+echo json_encode([
+    'success' => true,
+    'message' => 'Basic API test working',
+    'timestamp' => time(),
+    'request' => $_GET
+]);
+exit;
         try {
             // List part pricing requests based on user role
             $status = $_GET['status'] ?? 'all';
