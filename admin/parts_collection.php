@@ -498,8 +498,8 @@ $pageTitle = 'Parts Pricing Hub';
                         </div>
                     </div>
 
-                    <!-- Pricing Form (only for in_progress requests) -->
-                    <div x-show="selectedRequest && selectedRequest.status === 'in_progress'" class="bg-yellow-50 rounded-lg p-6 mb-6">
+                    <!-- Pricing Form (only for pending or in_progress requests) -->
+                    <div x-show="selectedRequest && (selectedRequest.status === 'pending' || selectedRequest.status === 'in_progress')" class="bg-yellow-50 rounded-lg p-6 mb-6">
                         <h4 class="font-medium text-gray-900 mb-4">Set Part Price</h4>
                         <form @submit.prevent="submitPrice()">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -719,6 +719,11 @@ $pageTitle = 'Parts Pricing Hub';
 
                 viewRequest(request) {
                     this.selectedRequest = request;
+                    this.priceForm = {
+                        price: request.final_price || '',
+                        supplier: request.supplier || '',
+                        notes: request.notes || ''
+                    };
                     this.showModal = true;
                 },
 
@@ -752,14 +757,29 @@ $pageTitle = 'Parts Pricing Hub';
                 },
 
                 async submitPrice() {
-                    if (!this.selectedRequest) return;
+                    if (!this.selectedRequest) {
+                        this.showNotification('No request selected', 'error');
+                        return;
+                    }
+
+                    // Validate price
+                    const price = parseFloat(this.priceForm.price);
+                    if (isNaN(price) || price < 0) {
+                        this.showNotification('Please enter a valid price', 'error');
+                        return;
+                    }
 
                     this.submitting = true;
                     try {
-                        const response = await fetch('api_part_pricing.php', {
+                        const response = await fetch('api_part_pricing.php?action=update_price', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: `action=update_price&request_id=${this.selectedRequest.id}&price=${this.priceForm.price}&notes=${encodeURIComponent(this.priceForm.notes)}`
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id: this.selectedRequest.id,
+                                final_price: price,
+                                notes: this.priceForm.notes || '',
+                                supplier: this.priceForm.supplier || ''
+                            })
                         });
                         const data = await response.json();
 
@@ -767,6 +787,7 @@ $pageTitle = 'Parts Pricing Hub';
                             await Promise.all([this.loadRequests(), this.loadRecentActivity()]);
                             this.showNotification('Price updated successfully', 'success');
                             this.priceForm = { price: '', supplier: '', notes: '' };
+                            this.showModal = false; // Close modal after successful update
                         } else {
                             this.showNotification(data.message || 'Failed to update price', 'error');
                         }

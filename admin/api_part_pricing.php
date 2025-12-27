@@ -153,41 +153,73 @@ try {
 
         } elseif ($action === 'update_price') {
             // Update price for a request
-            $requestId = (int)($data['request_id'] ?? 0);
-            $price = (float)($data['price'] ?? 0);
+            $requestId = (int)($data['id'] ?? 0);
+            $price = (float)($data['final_price'] ?? 0);
             $notes = trim($data['notes'] ?? '');
+            $supplier = trim($data['supplier'] ?? '');
 
-            // Debug: Check current request status
-            $checkStmt = $pdo->prepare("SELECT status, assigned_to FROM part_pricing_requests WHERE id = ?");
+            // Debug logging
+            error_log("Update price request: ID=$requestId, Price=$price, Notes=$notes, Supplier=$supplier, User=" . $_SESSION['user_id']);
+
+            // Check current request status
+            $checkStmt = $pdo->prepare("SELECT status, assigned_to, part_name FROM part_pricing_requests WHERE id = ?");
             $checkStmt->execute([$requestId]);
             $currentRequest = $checkStmt->fetch();
 
             if (!$currentRequest) {
+                error_log("Request not found: $requestId");
                 echo json_encode(['success' => false, 'message' => 'Request not found']);
                 exit;
             }
 
-            if ($currentRequest['assigned_to'] != $_SESSION['user_id']) {
-                echo json_encode(['success' => false, 'message' => 'Request not assigned to you. Current status: ' . $currentRequest['status'] . ', assigned to: ' . ($currentRequest['assigned_to'] ?: 'nobody')]);
+            error_log("Current request state: Status={$currentRequest['status']}, AssignedTo={$currentRequest['assigned_to']}, Part={$currentRequest['part_name']}");
+
+            // If request is pending, assign it to current user first
+            if ($currentRequest['status'] === 'pending') {
+                error_log("Assigning pending request to user");
+                $assignStmt = $pdo->prepare("
+                    UPDATE part_pricing_requests
+                    SET assigned_to = ?, status = 'in_progress', updated_at = NOW()
+                    WHERE id = ? AND status = 'pending'
+                ");
+                $assignStmt->execute([$_SESSION['user_id'], $requestId]);
+                error_log("Assignment result: " . $assignStmt->rowCount() . " rows affected");
+            }
+            // If request is in_progress but not assigned, assign it
+            elseif ($currentRequest['status'] === 'in_progress' && $currentRequest['assigned_to'] == null) {
+                error_log("Assigning unassigned in_progress request to user");
+                $assignStmt = $pdo->prepare("
+                    UPDATE part_pricing_requests
+                    SET assigned_to = ?, updated_at = NOW()
+                    WHERE id = ? AND status = 'in_progress' AND assigned_to IS NULL
+                ");
+                $assignStmt->execute([$_SESSION['user_id'], $requestId]);
+                error_log("Assignment result: " . $assignStmt->rowCount() . " rows affected");
+            }
+            // If request is in_progress and assigned to someone else, check if it's assigned to current user
+            elseif ($currentRequest['status'] === 'in_progress' && $currentRequest['assigned_to'] != $_SESSION['user_id']) {
+                error_log("Request assigned to different user: {$currentRequest['assigned_to']} vs {$_SESSION['user_id']}");
+                echo json_encode(['success' => false, 'message' => 'Request is already assigned to another user']);
                 exit;
             }
 
-            if ($currentRequest['status'] !== 'in_progress') {
-                echo json_encode(['success' => false, 'message' => 'Request status is not in_progress. Current status: ' . $currentRequest['status']]);
-                exit;
-            }
-
+            // Now update the price
+            error_log("Updating price to: $price");
             $stmt = $pdo->prepare("
                 UPDATE part_pricing_requests
-                SET final_price = ?, notes = ?, updated_at = NOW()
+                SET final_price = ?, notes = ?, supplier = ?, updated_at = NOW()
                 WHERE id = ? AND assigned_to = ? AND status = 'in_progress'
             ");
-            $stmt->execute([$price, $notes, $requestId, $_SESSION['user_id']]);
+            $stmt->execute([$price, $notes, $supplier, $requestId, $_SESSION['user_id']]);
 
-            if ($stmt->rowCount() > 0) {
+            $affectedRows = $stmt->rowCount();
+            error_log("Price update result: $affectedRows rows affected");
+
+            if ($affectedRows > 0) {
                 echo json_encode(['success' => true, 'message' => 'Price updated successfully']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to update price - no rows affected']);
+                echo json_encode(['success' => false, 'message' => 'Failed to update price - request may not be in correct state']);
+            }
             }
 
         } elseif ($action === 'complete') {
