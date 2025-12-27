@@ -61,8 +61,12 @@ try {
 
     // Also trigger the parts collection request creation manually since save_invoice.php might not be called
     foreach ($testItems as $it) {
-        if (!empty($it['db_type']) && $it['db_type'] === 'part' &&
-            (empty($it['price_part']) || floatval($it['price_part']) == 0)) {
+        // Check if this item needs pricing (has no price)
+        $isPartWithoutPrice = (!empty($it['db_type']) && $it['db_type'] === 'part' &&
+                              (empty($it['price_part']) || floatval($it['price_part']) == 0)) ||
+                             (empty($it['price_part']) || floatval($it['price_part']) == 0);
+
+        if ($isPartWithoutPrice) {
 
             $partName = trim($it['name']);
             $quantity = floatval($it['qty'] ?? 1);

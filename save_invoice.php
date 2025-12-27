@@ -946,8 +946,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($tableExists) {
             foreach ($items as $it) {
                 // Check if this is a part item without a price (needs pricing)
-                if (!empty($it['db_type']) && $it['db_type'] === 'part' &&
-                    (empty($it['price_part']) || floatval($it['price_part']) == 0)) {
+                // Either it's explicitly marked as a part, or it has no price (assume it's a part that needs pricing)
+                $isPartWithoutPrice = (!empty($it['db_type']) && $it['db_type'] === 'part' &&
+                                      (empty($it['price_part']) || floatval($it['price_part']) == 0)) ||
+                                     (empty($it['price_part']) || floatval($it['price_part']) == 0);
+
+                if ($isPartWithoutPrice) {
 
                     $partName = trim($it['name']);
                     $quantity = floatval($it['qty'] ?? 1);
