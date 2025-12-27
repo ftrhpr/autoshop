@@ -327,6 +327,73 @@ try {
                 error_log("Price update result: $affectedRows rows affected");
 
                 if ($affectedRows > 0) {
+                    // Update the corresponding invoice with the new price
+                    $invoiceStmt = $pdo->prepare("SELECT invoice_id FROM part_pricing_requests WHERE id = ?");
+                    $invoiceStmt->execute([$requestId]);
+                    $pricingRequest = $invoiceStmt->fetch();
+
+                    if ($pricingRequest && $pricingRequest['invoice_id']) {
+                        $invoiceId = $pricingRequest['invoice_id'];
+
+                        // Get current invoice items
+                        $invoiceQuery = $pdo->prepare("SELECT items, parts_total, service_total FROM invoices WHERE id = ?");
+                        $invoiceQuery->execute([$invoiceId]);
+                        $invoice = $invoiceQuery->fetch();
+
+                        if ($invoice) {
+                            $items = json_decode($invoice['items'], true) ?: [];
+                            $updated = false;
+
+                            // Find and update the matching item in the invoice
+                            foreach ($items as &$item) {
+                                if (isset($item['name']) && trim($item['name']) === trim($currentRequest['part_name'])) {
+                                    // Check if this item needs pricing (no price or marked as part)
+                                    $isPartItem = (!empty($item['db_type']) && $item['db_type'] === 'part') ||
+                                                 (empty($item['price_part']) || floatval($item['price_part']) == 0);
+
+                                    if ($isPartItem) {
+                                        $item['price_part'] = $price;
+                                        $item['notes'] = $notes;
+                                        $updated = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if ($updated) {
+                                // Recalculate totals
+                                $partsTotal = 0;
+                                $serviceTotal = 0;
+
+                                foreach ($items as $item) {
+                                    $qty = floatval($item['qty'] ?? 1);
+                                    $partPrice = floatval($item['price_part'] ?? 0);
+                                    $servicePrice = floatval($item['price_service'] ?? 0);
+
+                                    $partsTotal += $partPrice * $qty;
+                                    $serviceTotal += $servicePrice * $qty;
+                                }
+
+                                $grandTotal = $partsTotal + $serviceTotal;
+
+                                // Update the invoice
+                                $updateInvoice = $pdo->prepare("
+                                    UPDATE invoices
+                                    SET items = ?, parts_total = ?, grand_total = ?, updated_at = NOW()
+                                    WHERE id = ?
+                                ");
+                                $updateInvoice->execute([
+                                    json_encode($items),
+                                    $partsTotal,
+                                    $grandTotal,
+                                    $invoiceId
+                                ]);
+
+                                error_log("Invoice updated: ID=$invoiceId, Parts Total=$partsTotal, Grand Total=$grandTotal");
+                            }
+                        }
+                    }
+
                     $pdo->commit();
                     echo json_encode(['success' => true, 'message' => 'Price updated successfully']);
                 } else {
