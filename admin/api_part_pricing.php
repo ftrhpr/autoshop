@@ -344,19 +344,24 @@ try {
                             $items = json_decode($invoice['items'], true) ?: [];
                             $updated = false;
 
+                            error_log("Invoice $invoiceId has " . count($items) . " items");
+                            error_log("Looking for part: " . $currentRequest['part_name']);
+
                             // Find and update the matching item in the invoice
                             foreach ($items as &$item) {
-                                if (isset($item['name']) && trim($item['name']) === trim($currentRequest['part_name'])) {
-                                    // Check if this item needs pricing (no price or marked as part)
-                                    $isPartItem = (!empty($item['db_type']) && $item['db_type'] === 'part') ||
-                                                 (empty($item['price_part']) || floatval($item['price_part']) == 0);
+                                $itemName = trim($item['name'] ?? '');
+                                $partName = trim($currentRequest['part_name']);
 
-                                    if ($isPartItem) {
-                                        $item['price_part'] = $price;
-                                        $item['notes'] = $notes;
-                                        $updated = true;
-                                        break;
-                                    }
+                                error_log("Comparing '$itemName' with '$partName'");
+
+                                if ($itemName === $partName) {
+                                    // Update the price regardless of current value
+                                    $oldPrice = $item['price_part'] ?? 'none';
+                                    $item['price_part'] = $price;
+                                    $item['notes'] = $notes;
+                                    $updated = true;
+                                    error_log("Updated item: $itemName from $oldPrice to $price");
+                                    break;
                                 }
                             }
 
