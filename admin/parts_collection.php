@@ -462,18 +462,18 @@ $pageTitle = 'Parts Pricing Hub';
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Part Details</label>
                             <div class="bg-gray-50 rounded-lg p-4">
-                                <h4 class="font-semibold text-gray-900" x-text="selectedRequest.part_name"></h4>
-                                <p class="text-sm text-gray-600 mt-1" x-text="selectedRequest.part_description || 'No description'"></p>
-                                <p class="text-sm text-gray-600 mt-2">Quantity: <span x-text="selectedRequest.requested_quantity"></span></p>
+                                <h4 class="font-semibold text-gray-900" x-text="selectedRequest ? selectedRequest.part_name : ''"></h4>
+                                <p class="text-sm text-gray-600 mt-1" x-text="selectedRequest ? (selectedRequest.part_description || 'No description') : ''"></p>
+                                <p class="text-sm text-gray-600 mt-2">Quantity: <span x-text="selectedRequest ? selectedRequest.requested_quantity : ''"></span></p>
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Vehicle Information</label>
                             <div class="bg-gray-50 rounded-lg p-4">
-                                <p class="text-gray-900" x-text="selectedRequest.vehicle_make || 'N/A'"></p>
-                                <p class="text-sm text-gray-600" x-text="selectedRequest.vehicle_model || ''"></p>
-                                <p class="text-sm text-gray-600 mt-2">Invoice #<span x-text="selectedRequest.invoice_id"></span></p>
+                                <p class="text-gray-900" x-text="selectedRequest ? (selectedRequest.vehicle_make || 'N/A') : ''"></p>
+                                <p class="text-sm text-gray-600" x-text="selectedRequest ? (selectedRequest.vehicle_model || '') : ''"></p>
+                                <p class="text-sm text-gray-600 mt-2">Invoice #<span x-text="selectedRequest ? selectedRequest.invoice_id : ''"></span></p>
                             </div>
                         </div>
                     </div>
@@ -482,19 +482,19 @@ $pageTitle = 'Parts Pricing Hub';
                     <div class="bg-blue-50 rounded-lg p-4 mb-6">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h4 class="font-medium text-gray-900" x-text="selectedRequest.customer_name"></h4>
-                                <p class="text-sm text-gray-600">License Plate: <span x-text="selectedRequest.plate_number"></span></p>
+                                <h4 class="font-medium text-gray-900" x-text="selectedRequest ? selectedRequest.customer_name : ''"></h4>
+                                <p class="text-sm text-gray-600">License Plate: <span x-text="selectedRequest ? selectedRequest.plate_number : ''"></span></p>
                             </div>
                             <div class="text-right">
-                                <span :class="getStatusBadgeClass(selectedRequest.status)" class="px-3 py-1 rounded-full text-xs font-medium">
-                                    <span x-text="getStatusText(selectedRequest.status)"></span>
+                                <span :class="selectedRequest ? getStatusBadgeClass(selectedRequest.status) : ''" class="px-3 py-1 rounded-full text-xs font-medium">
+                                    <span x-text="selectedRequest ? getStatusText(selectedRequest.status) : ''"></span>
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Pricing Form (only for in_progress requests) -->
-                    <div x-show="selectedRequest.status === 'in_progress'" class="bg-yellow-50 rounded-lg p-6 mb-6">
+                    <div x-show="selectedRequest && selectedRequest.status === 'in_progress'" class="bg-yellow-50 rounded-lg p-6 mb-6">
                         <h4 class="font-medium text-gray-900 mb-4">Set Part Price</h4>
                         <form @submit.prevent="submitPrice()">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -533,7 +533,7 @@ $pageTitle = 'Parts Pricing Hub';
 
                     <!-- Action Buttons -->
                     <div class="flex space-x-3">
-                        <button x-show="selectedRequest.status === 'pending'" @click="assignRequest(selectedRequest.id)"
+                        <button x-show="selectedRequest && selectedRequest.status === 'pending'" @click="assignRequest(selectedRequest.id)"
                                 class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                             <i class="fas fa-user-plus mr-2"></i>Assign to Me
                         </button>
@@ -554,6 +554,7 @@ $pageTitle = 'Parts Pricing Hub';
                 // State
                 currentView: 'dashboard',
                 loading: false,
+                loadingRequests: false,
                 showModal: false,
                 showBulkActions: false,
                 selectedRequest: null,
@@ -667,6 +668,7 @@ $pageTitle = 'Parts Pricing Hub';
                 },
 
                 async loadRequests() {
+                    this.loadingRequests = true;
                     try {
                         const response = await fetch('api_part_pricing.php?action=list&status=all&limit=100');
                         const data = await response.json();
@@ -675,6 +677,8 @@ $pageTitle = 'Parts Pricing Hub';
                         }
                     } catch (error) {
                         console.error('Error loading requests:', error);
+                    } finally {
+                        this.loadingRequests = false;
                     }
                 },
 
