@@ -133,6 +133,26 @@ try {
             $price = (float)($data['price'] ?? 0);
             $notes = trim($data['notes'] ?? '');
 
+            // Debug: Check current request status
+            $checkStmt = $pdo->prepare("SELECT status, assigned_to FROM part_pricing_requests WHERE id = ?");
+            $checkStmt->execute([$requestId]);
+            $currentRequest = $checkStmt->fetch();
+
+            if (!$currentRequest) {
+                echo json_encode(['success' => false, 'message' => 'Request not found']);
+                exit;
+            }
+
+            if ($currentRequest['assigned_to'] != $_SESSION['user_id']) {
+                echo json_encode(['success' => false, 'message' => 'Request not assigned to you. Current status: ' . $currentRequest['status'] . ', assigned to: ' . ($currentRequest['assigned_to'] ?: 'nobody')]);
+                exit;
+            }
+
+            if ($currentRequest['status'] !== 'in_progress') {
+                echo json_encode(['success' => false, 'message' => 'Request status is not in_progress. Current status: ' . $currentRequest['status']]);
+                exit;
+            }
+
             $stmt = $pdo->prepare("
                 UPDATE part_pricing_requests
                 SET final_price = ?, notes = ?, updated_at = NOW()
@@ -143,7 +163,7 @@ try {
             if ($stmt->rowCount() > 0) {
                 echo json_encode(['success' => true, 'message' => 'Price updated successfully']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Request not found or not assigned to you']);
+                echo json_encode(['success' => false, 'message' => 'Failed to update price - no rows affected']);
             }
 
         } elseif ($action === 'complete') {

@@ -439,6 +439,7 @@ $pageTitle = 'Part Pricing Requests';
             try {
                 const response = await fetch('api_part_pricing.php', {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `action=update_price&request_id=${requestId}&price=${formData.get('price')}&notes=${encodeURIComponent(formData.get('notes'))}`
                 });
                 const data = await response.json();
