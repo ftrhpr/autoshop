@@ -52,7 +52,7 @@ try {
                     LEFT JOIN users rb ON ppr.requested_by = rb.id
                     LEFT JOIN users ab ON ppr.assigned_to = ab.id
                     LEFT JOIN users cb ON ppr.completed_by = cb.id
-                    {$whereClause}
+                " . $whereClause . "
                     ORDER BY ppr.created_at DESC
                     LIMIT ? OFFSET ?
                 ");
@@ -207,10 +207,10 @@ try {
             error_log("Updating price to: $price");
             $stmt = $pdo->prepare("
                 UPDATE part_pricing_requests
-                SET final_price = ?, notes = ?, supplier = ?, updated_at = NOW()
+                SET final_price = ?, notes = ?, updated_at = NOW()
                 WHERE id = ? AND assigned_to = ? AND status = 'in_progress'
             ");
-            $stmt->execute([$price, $notes, $supplier, $requestId, $_SESSION['user_id']]);
+            $stmt->execute([$price, $notes, $requestId, $_SESSION['user_id']]);
 
             $affectedRows = $stmt->rowCount();
             error_log("Price update result: $affectedRows rows affected");
@@ -219,7 +219,6 @@ try {
                 echo json_encode(['success' => true, 'message' => 'Price updated successfully']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update price - request may not be in correct state']);
-            }
             }
 
         } elseif ($action === 'complete') {

@@ -777,8 +777,7 @@ $pageTitle = 'Parts Pricing Hub';
                             body: JSON.stringify({
                                 id: this.selectedRequest.id,
                                 final_price: price,
-                                notes: this.priceForm.notes || '',
-                                supplier: this.priceForm.supplier || ''
+                                notes: this.priceForm.notes || ''
                             })
                         });
                         const data = await response.json();
