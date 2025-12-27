@@ -309,14 +309,19 @@ $pageTitle = 'Parts Pricing Hub';
 
                     <!-- Empty State -->
                     <div x-show="!loadingRequests && filteredRequests.length === 0" class="text-center py-12">
-                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-inbox text-gray-400 text-3xl"></i>
+                        <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-tools text-yellow-600 text-3xl"></i>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No pricing requests found</h3>
-                        <p class="text-gray-600 mb-6">When invoices contain parts without prices, they'll appear here for pricing.</p>
-                        <button @click="refreshData()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            <i class="fas fa-sync-alt mr-2"></i>Refresh
-                        </button>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Parts Collection System Not Configured</h3>
+                        <p class="text-gray-600 mb-6">The parts pricing system needs to be set up first. Please run the migration from the admin dashboard.</p>
+                        <div class="flex space-x-3 justify-center">
+                            <a href="index.php" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-cog mr-2"></i>Go to Admin Dashboard
+                            </a>
+                            <button @click="refreshData()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Request Cards -->
