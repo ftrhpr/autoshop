@@ -134,6 +134,8 @@ try {
         $action = $_POST['action'] ?? $_GET['action'] ?? '';
         $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
+        try {
+
         if ($action === 'assign') {
             // Assign request to current user
             $requestId = (int)($data['request_id'] ?? 0);
