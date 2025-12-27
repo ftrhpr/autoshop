@@ -131,7 +131,57 @@ try {
 
         echo json_encode(['success' => true, 'stats' => $stats]);
     } elseif ($action === 'activity') {
-        echo json_encode(['success' => true, 'activities' => []]);
+        $activities = [];
+
+        try {
+            $limit = (int)($_GET['limit'] ?? 10);
+
+            // Get recent activities based on user role
+            $whereClause = '';
+            $params = [];
+
+            if ($_SESSION['role'] === 'parts_collection_manager') {
+                $whereClause = "WHERE ppr.assigned_to = ?";
+                $params[] = $_SESSION['user_id'];
+            } elseif ($_SESSION['role'] === 'manager') {
+                $whereClause = "WHERE ppr.requested_by = ?";
+                $params[] = $_SESSION['user_id'];
+            }
+            // Admin sees all activities
+
+            $sql = "
+                SELECT
+                    CONCAT('request_', ppr.id, '_', ppr.status) as id,
+                    CASE
+                        WHEN ppr.status = 'pending' THEN 'created'
+                        WHEN ppr.status = 'in_progress' THEN 'assigned'
+                        WHEN ppr.status = 'completed' THEN 'completed'
+                        ELSE 'created'
+                    END as type,
+                    CASE
+                        WHEN ppr.status = 'pending' THEN CONCAT('New request created: ', ppr.part_name)
+                        WHEN ppr.status = 'in_progress' THEN CONCAT('Request assigned: ', ppr.part_name)
+                        WHEN ppr.status = 'completed' THEN CONCAT('Request completed: ', ppr.part_name)
+                        ELSE CONCAT('Request updated: ', ppr.part_name)
+                    END as message,
+                    ppr.updated_at as created_at
+                FROM part_pricing_requests ppr
+                {$whereClause}
+                ORDER BY ppr.updated_at DESC
+                LIMIT ?
+            ";
+            $params[] = $limit;
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (Exception $e) {
+            // If table doesn't exist or error, return empty activities
+            $activities = [];
+        }
+
+        echo json_encode(['success' => true, 'activities' => $activities]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Unknown action']);
     }
