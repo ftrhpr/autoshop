@@ -49,6 +49,11 @@
             <p>Creates `messages` table used for inbox notifications and internal messages.</p>
             <button onclick="runMigration('messages_table')">Run Migration</button>
         </div>
+        <div class="migration pending" id="messaging-permission-migration">
+            <h3>Add Messaging Permission</h3>
+            <p>Adds messaging permission and assigns it to manager, user, and parts_collection_manager roles.</p>
+            <button onclick="runMigration('messaging_permission')">Run Migration</button>
+        </div>
         <div class="migration pending" id="vehicle-column-migration">
             <h3>Add Vehicle Column to Parts/Labors</h3>
             <p>Adds vehicle_make_model column to parts and labors tables for vehicle-specific pricing.</p>
@@ -80,6 +85,8 @@
                     response = await fetch('migrate_add_parts_collection_system.php');
                 } else if (type === 'messages_table') {
                     response = await fetch('migrate_add_messages_table.php');
+                } else if (type === 'messaging_permission') {
+                    response = await fetch('migrate_add_messaging_permission.php');
                 } else if (type === 'supplier_column') {
                     response = await fetch('migrate_add_supplier_column.php');
                 } else if (type === 'vehicle_column') {
