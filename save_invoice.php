@@ -943,52 +943,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $partName = trim($it['name']);
                     $quantity = floatval($it['qty'] ?? 1);
 
-                    // Check if pricing request already exists for this invoice and part
-                    $stmt = $pdo->prepare('
-                        SELECT id FROM part_pricing_requests
-                        WHERE invoice_id = ? AND part_name = ? AND status != "cancelled"
-                        LIMIT 1
+                    // Create new pricing request
+                    $insRequest = $pdo->prepare('
+                        INSERT INTO part_pricing_requests
+                        (invoice_id, part_name, part_description, requested_quantity, vehicle_make, vehicle_model, requested_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ');
-                    $stmt->execute([$invoice_id, $partName]);
-                    $existingRequest = $stmt->fetch();
+                    $insRequest->execute([
+                        $invoice_id,
+                        $partName,
+                        $it['description'] ?? '',
+                        $quantity,
+                        $vehicleMake,
+                        $vehicleModel,
+                        $_SESSION['user_id']
+                    ]);
 
-                    if (!$existingRequest) {
-                        // Create new pricing request
-                        $insRequest = $pdo->prepare('
-                            INSERT INTO part_pricing_requests
-                            (invoice_id, part_name, part_description, requested_quantity, vehicle_make, vehicle_model, requested_by)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        ');
-                        $insRequest->execute([
-                            $invoice_id,
-                            $partName,
-                            $it['description'] ?? '',
-                            $quantity,
-                            $vehicleMake,
-                            $vehicleModel,
-                            $_SESSION['user_id']
+                    // Send notification to parts collection managers
+                    $notificationMessage = "New part pricing request: {$partName} for invoice #{$invoice_id} ({$data['customer_name']} - {$data['plate_number']})";
+
+                    // Find all parts collection managers
+                    $stmt = $pdo->prepare('SELECT id FROM users WHERE role = ?');
+                    $stmt->execute(['parts_collection_manager']);
+                    $managers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($managers as $manager) {
+                        $stmt = $pdo->prepare("
+                            INSERT INTO messages (sender_id, recipient_id, subject, body)
+                            VALUES (?, ?, ?, ?)
+                        ");
+                        $stmt->execute([
+                            $_SESSION['user_id'],
+                            $manager['id'],
+                            'New Part Pricing Request',
+                            $notificationMessage
                         ]);
-
-                        // Send notification to parts collection managers
-                        $notificationMessage = "New part pricing request: {$partName} for invoice #{$invoice_id} ({$data['customer_name']} - {$data['plate_number']})";
-
-                        // Find all parts collection managers
-                        $stmt = $pdo->prepare('SELECT id FROM users WHERE role = ?');
-                        $stmt->execute(['parts_collection_manager']);
-                        $managers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                        foreach ($managers as $manager) {
-                            $stmt = $pdo->prepare("
-                                INSERT INTO messages (sender_id, recipient_id, subject, body)
-                                VALUES (?, ?, ?, ?)
-                            ");
-                            $stmt->execute([
-                                $_SESSION['user_id'],
-                                $manager['id'],
-                                'New Part Pricing Request',
-                                $notificationMessage
-                            ]);
-                        }
                     }
                 }
             }
