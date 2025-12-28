@@ -934,9 +934,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $tableExists = $pdo->query("SHOW TABLES LIKE 'part_pricing_requests'")->rowCount() > 0;
 
         if ($tableExists) {
+            $vehicleModel = trim($data['vehicle_model'] ?? '');
             foreach ($items as $it) {
-                // Check if this is a part item without a price (needs pricing)
-                $isPartWithoutPrice = $it['db_type'] !== 'labor' && (empty($it['price_part']) || floatval($it['price_part']) == 0);
+                // Check if this is a part item (create request for all parts, even if price exists)
+                $isPartWithoutPrice = $it['db_type'] === 'part';
 
                 error_log("Processing item: name='" . trim($it['name']) . "', db_type='" . ($it['db_type'] ?? 'null') . "', price_part='" . ($it['price_part'] ?? 'null') . "', isPartWithoutPrice=$isPartWithoutPrice");
 
@@ -972,16 +973,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $managers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     foreach ($managers as $manager) {
-                        $stmt = $pdo->prepare("
-                            INSERT INTO messages (sender_id, recipient_id, subject, body)
-                            VALUES (?, ?, ?, ?)
-                        ");
-                        $stmt->execute([
-                            $_SESSION['user_id'],
-                            $manager['id'],
-                            'New Part Pricing Request',
-                            $notificationMessage
-                        ]);
+                        // Skip messages insert if table doesn't exist
+                        try {
+                            $stmt = $pdo->prepare("
+                                INSERT INTO messages (sender_id, recipient_id, subject, body)
+                                VALUES (?, ?, ?, ?)
+                            ");
+                            $stmt->execute([
+                                $_SESSION['user_id'],
+                                $manager['id'],
+                                'New Part Pricing Request',
+                                $notificationMessage
+                            ]);
+                        } catch (PDOException $e) {
+                            // Messages table may not exist, skip notification
+                            error_log("Messages table not found, skipping notification: " . $e->getMessage());
+                        }
                     }
                 }
             }
