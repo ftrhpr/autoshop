@@ -675,7 +675,7 @@ $pageTitle = 'Parts Pricing Hub';
                 async loadRequests() {
                     this.loadingRequests = true;
                     try {
-                        const response = await fetch('api_part_pricing.php?action=list&status=all&limit=100');
+                        const response = await fetch('api_part_pricing.php?action=list&status=all&limit=1000');
                         const data = await response.json();
                         if (data.success) {
                             this.requests = data.requests;
@@ -689,7 +689,7 @@ $pageTitle = 'Parts Pricing Hub';
 
                 async loadCompletedRequests() {
                     try {
-                        const response = await fetch('api_part_pricing.php?action=list&status=completed&limit=20');
+                        const response = await fetch('api_part_pricing.php?action=list&status=completed&limit=100');
                         const data = await response.json();
                         if (data.success) {
                             this.completedRequests = data.requests;

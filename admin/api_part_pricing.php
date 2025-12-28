@@ -48,8 +48,7 @@ try {
                 $params = [];
 
                 if ($_SESSION['role'] === 'parts_collection_manager') {
-                    $whereConditions[] = "assigned_to = ?";
-                    $params[] = $_SESSION['user_id'];
+                    // Parts collection managers see all requests to manage assignments
                 } elseif ($_SESSION['role'] === 'admin') {
                     // Admins see all requests
                 } elseif ($_SESSION['role'] === 'manager') {
@@ -126,10 +125,9 @@ try {
                     $stmt = $pdo->prepare("
                         SELECT status, COUNT(*) as count
                         FROM part_pricing_requests
-                        WHERE assigned_to = ?
                         GROUP BY status
                     ");
-                    $stmt->execute([$_SESSION['user_id']]);
+                    $stmt->execute();
                 } else {
                     $stmt = $pdo->prepare("
                         SELECT status, COUNT(*) as count
