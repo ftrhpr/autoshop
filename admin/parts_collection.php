@@ -284,12 +284,6 @@ $pageTitle = 'Parts Pricing Hub';
 
                 <!-- Requests List -->
                 <div class="space-y-4">
-                    <!-- Debug info -->
-                    <div class="bg-yellow-100 p-4 rounded">
-                        <p>Total requests loaded: <span x-text="requests.length"></span></p>
-                        <p>Filtered requests: <span x-text="filteredRequests.length"></span></p>
-                        <p>Active filter: <span x-text="activeFilter"></span></p>
-                    </div>
                     <!-- Bulk Selection Header -->
                     <div x-show="selectedRequests.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div class="flex items-center justify-between">
@@ -330,88 +324,70 @@ $pageTitle = 'Parts Pricing Hub';
                         </div>
                     </div>
 
-                    <!-- Request Cards -->
-                    <template x-for="request in filteredRequests" :key="request.id">
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                            <div class="p-6">
-                                <div class="flex items-start justify-between mb-4">
-                                    <div class="flex items-start space-x-4">
-                                        <!-- Checkbox for bulk actions -->
-                                        <input :checked="selectedRequests.includes(request.id)"
-                                               @change="toggleSelection(request.id)"
-                                               type="checkbox" class="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <!-- Request Cards Grouped by Invoice -->
+                    <div x-for="invoiceId in Object.keys(groupedRequests).sort((a,b) => b - a)" :key="invoiceId" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Invoice #<span x-text="invoiceId"></span></h3>
+                                    <p class="text-sm text-gray-600 mt-1" x-text="groupedRequests[invoiceId].invoice.customer_name"></p>
+                                    <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2">
+                                        <span><i class="fas fa-car mr-1"></i><span x-text="groupedRequests[invoiceId].invoice.plate_number"></span></span>
+                                        <span><i class="fas fa-cogs mr-1"></i><span x-text="groupedRequests[invoiceId].invoice.car_mark"></span></span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                        <span x-text="groupedRequests[invoiceId].requests.length"></span> part request(s)
+                                    </span>
+                                </div>
+                            </div>
 
-                                        <!-- Part Info -->
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-900" x-text="request.part_name"></h3>
-                                            <p class="text-sm text-gray-600 mb-2" x-text="request.part_description || 'No description'"></p>
-
-                                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <!-- Parts in this invoice -->
+                            <div class="space-y-3">
+                                <div x-for="request in groupedRequests[invoiceId].requests" :key="request.id" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <h4 class="font-medium text-gray-900" x-text="request.part_name"></h4>
+                                            <p class="text-sm text-gray-600 mt-1" x-text="request.part_description || 'No description'"></p>
+                                            <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2">
                                                 <span><i class="fas fa-hashtag mr-1"></i>Qty: <span x-text="request.requested_quantity"></span></span>
                                                 <span><i class="fas fa-car mr-1"></i><span x-text="request.vehicle_make || 'N/A'"></span> <span x-text="request.vehicle_model || ''"></span></span>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Status Badge -->
-                                    <div class="flex flex-col items-end space-y-2">
-                                        <span :class="getStatusBadgeClass(request.status)" class="px-3 py-1 rounded-full text-xs font-medium">
-                                            <i :class="getStatusIcon(request.status)" class="mr-1"></i>
-                                            <span x-text="getStatusText(request.status)"></span>
-                                        </span>
-
-                                        <span class="text-xs text-gray-500" x-text="formatTime(request.created_at)"></span>
-                                    </div>
-                                </div>
-
-                                <!-- Invoice Info -->
-                                <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-900">
-                                                Invoice #<span x-text="request.invoice_id"></span>
-                                            </p>
-                                            <p class="text-sm text-gray-600" x-text="request.customer_name"></p>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-sm text-gray-600" x-text="request.plate_number"></p>
-                                            <p class="text-xs text-gray-500">License Plate</p>
+                                        <!-- Status Badge -->
+                                        <div class="ml-4">
+                                            <span :class="getStatusBadgeClass(request.status)" class="px-3 py-1 rounded-full text-xs font-medium">
+                                                <i :class="getStatusIcon(request.status)" class="mr-1"></i>
+                                                <span x-text="getStatusText(request.status)"></span>
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
 
-                                <!-- Assignment Info -->
-                                <div x-show="request.assigned_to_name" class="flex items-center justify-between text-sm text-gray-600 mb-4">
-                                    <span>Assigned to: <span class="font-medium" x-text="request.assigned_to_name"></span></span>
-                                    <span x-show="request.final_price" class="text-green-600 font-medium">
-                                        $<span x-text="request.final_price"></span>
-                                    </span>
-                                </div>
+                                    <!-- Action buttons -->
+                                    <div class="mt-4 flex items-center justify-between">
+                                        <div class="flex space-x-2">
+                                            <button @click="viewRequest(request)" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                                <i class="fas fa-eye mr-1"></i>View
+                                            </button>
+                                            <button @click="quickAssign(request)" x-show="request.status === 'pending'" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                                <i class="fas fa-user-plus mr-1"></i>Assign
+                                            </button>
+                                            <button @click="completeRequest(request)" x-show="request.status === 'in_progress'" class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+                                                <i class="fas fa-check mr-1"></i>Complete
+                                            </button>
+                                        </div>
 
-                                <!-- Action Buttons -->
-                                <div class="flex items-center justify-between">
-                                    <div class="flex space-x-2">
-                                        <button @click="viewRequest(request)" class="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                            <i class="fas fa-eye mr-1"></i>View Details
-                                        </button>
-
-                                        <button x-show="request.status === 'pending'" @click="quickAssign(request)"
-                                                class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                            <i class="fas fa-user-plus mr-1"></i>Assign to Me
-                                        </button>
-                                    </div>
-
-                                    <!-- Priority Indicator -->
-                                    <div class="flex items-center space-x-1">
-                                        <button @click="togglePriority(request)" :class="request.priority === 'high' ? 'text-red-500' : 'text-gray-400'"
-                                                class="p-1 hover:text-red-500 transition-colors">
-                                            <i class="fas fa-exclamation-triangle"></i>
-                                        </button>
+                                        <!-- Checkbox for bulk actions -->
+                                        <input :checked="selectedRequests.includes(request.id)"
+                                               @change="toggleSelection(request.id)"
+                                               type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </template>
+                    </div>
                 </div>
             </div>
 
@@ -684,8 +660,23 @@ $pageTitle = 'Parts Pricing Hub';
                         const response = await fetch('api_part_pricing.php?action=list&status=all&limit=1000');
                         const data = await response.json();
                         if (data.success) {
-                            this.requests = data.requests;
-                        }
+                            this.requests = data.requests;                            // Group requests by invoice
+                            this.groupedRequests = {};
+                            for (let request of this.requests) {
+                                if (!this.groupedRequests[request.invoice_id]) {
+                                    this.groupedRequests[request.invoice_id] = {
+                                        invoice: {
+                                            id: request.invoice_id,
+                                            customer_name: request.customer_name,
+                                            plate_number: request.plate_number,
+                                            car_mark: request.vehicle_make || request.car_mark,
+                                            created_at: request.created_at
+                                        },
+                                        requests: []
+                                    };
+                                }
+                                this.groupedRequests[request.invoice_id].requests.push(request);
+                            }                        }
                     } catch (error) {
                         console.error('Error loading requests:', error);
                     } finally {
