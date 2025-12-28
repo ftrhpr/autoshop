@@ -284,6 +284,12 @@ $pageTitle = 'Parts Pricing Hub';
 
                 <!-- Requests List -->
                 <div class="space-y-4">
+                    <!-- Debug info -->
+                    <div class="bg-yellow-100 p-4 rounded">
+                        <p>Total requests loaded: <span x-text="requests.length"></span></p>
+                        <p>Filtered requests: <span x-text="filteredRequests.length"></span></p>
+                        <p>Active filter: <span x-text="activeFilter"></span></p>
+                    </div>
                     <!-- Bulk Selection Header -->
                     <div x-show="selectedRequests.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div class="flex items-center justify-between">
