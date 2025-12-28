@@ -308,7 +308,7 @@ $pageTitle = 'Parts Pricing Hub';
                     </div>
 
                     <!-- Empty State -->
-                    <div x-show="!loadingRequests && filteredRequests.length === 0" class="text-center py-12">
+                    <div x-show="!loadingRequests && groupedFilteredInvoices.length === 0" class="text-center py-12">
                         <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-tools text-yellow-600 text-3xl"></i>
                         </div>
@@ -325,27 +325,27 @@ $pageTitle = 'Parts Pricing Hub';
                     </div>
 
                     <!-- Request Cards Grouped by Invoice -->
-                    <div x-for="invoiceId in Object.keys(groupedRequests).sort((a,b) => b - a)" :key="invoiceId" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
+                    <div x-for="invoice in groupedFilteredInvoices" :key="invoice.id" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
                         <div class="p-6">
                             <div class="flex items-start justify-between mb-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-900">Invoice #<span x-text="invoiceId"></span></h3>
-                                    <p class="text-sm text-gray-600 mt-1" x-text="groupedRequests[invoiceId].invoice.customer_name"></p>
+                                    <h3 class="text-lg font-semibold text-gray-900">Invoice #<span x-text="invoice.id"></span></h3>
+                                    <p class="text-sm text-gray-600 mt-1" x-text="invoice.customer_name"></p>
                                     <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2">
-                                        <span><i class="fas fa-car mr-1"></i><span x-text="groupedRequests[invoiceId].invoice.plate_number"></span></span>
-                                        <span><i class="fas fa-cogs mr-1"></i><span x-text="groupedRequests[invoiceId].invoice.car_mark"></span></span>
+                                        <span><i class="fas fa-car mr-1"></i><span x-text="invoice.plate_number"></span></span>
+                                        <span><i class="fas fa-cogs mr-1"></i><span x-text="invoice.car_mark"></span></span>
                                     </div>
                                 </div>
                                 <div class="text-right">
                                     <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                        <span x-text="groupedRequests[invoiceId].requests.length"></span> part request(s)
+                                        <span x-text="invoice.requests.length"></span> part request(s)
                                     </span>
                                 </div>
                             </div>
 
                             <!-- Parts in this invoice -->
                             <div class="space-y-3">
-                                <div x-for="request in groupedRequests[invoiceId].requests" :key="request.id" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                <div x-for="request in invoice.requests" :key="request.id" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
                                             <h4 class="font-medium text-gray-900" x-text="request.part_name"></h4>
@@ -550,6 +550,7 @@ $pageTitle = 'Parts Pricing Hub';
                 // Data
                 requests: [],
                 completedRequests: [],
+                groupedInvoices: [],
                 stats: { pending: 0, in_progress: 0, completed: 0, completed_today: 0, avg_time: '2.3h' },
                 recentActivity: [],
 
@@ -611,6 +612,25 @@ $pageTitle = 'Parts Pricing Hub';
                     return filtered;
                 },
 
+                get groupedFilteredInvoices() {
+                    const groups = {};
+                    for (let request of this.filteredRequests) {
+                        if (!groups[request.invoice_id]) {
+                            groups[request.invoice_id] = {
+                                id: request.invoice_id,
+                                customer_name: request.customer_name,
+                                plate_number: request.plate_number,
+                                car_mark: request.vehicle_make || request.car_mark,
+                                created_at: request.created_at,
+                                requests: []
+                            };
+                        }
+                        groups[request.invoice_id].requests.push(request);
+                    }
+                    // Convert to array and sort by invoice id desc
+                    return Object.values(groups).sort((a, b) => b.id - a.id);
+                },
+
                 // Methods
                 async init() {
                     await this.loadData();
@@ -660,23 +680,25 @@ $pageTitle = 'Parts Pricing Hub';
                         const response = await fetch('api_part_pricing.php?action=list&status=all&limit=1000');
                         const data = await response.json();
                         if (data.success) {
-                            this.requests = data.requests;                            // Group requests by invoice
-                            this.groupedRequests = {};
+                            this.requests = data.requests;
+                            // Group requests by invoice
+                            const groups = {};
                             for (let request of this.requests) {
-                                if (!this.groupedRequests[request.invoice_id]) {
-                                    this.groupedRequests[request.invoice_id] = {
-                                        invoice: {
-                                            id: request.invoice_id,
-                                            customer_name: request.customer_name,
-                                            plate_number: request.plate_number,
-                                            car_mark: request.vehicle_make || request.car_mark,
-                                            created_at: request.created_at
-                                        },
+                                if (!groups[request.invoice_id]) {
+                                    groups[request.invoice_id] = {
+                                        id: request.invoice_id,
+                                        customer_name: request.customer_name,
+                                        plate_number: request.plate_number,
+                                        car_mark: request.vehicle_make || request.car_mark,
+                                        created_at: request.created_at,
                                         requests: []
                                     };
                                 }
-                                this.groupedRequests[request.invoice_id].requests.push(request);
-                            }                        }
+                                groups[request.invoice_id].requests.push(request);
+                            }
+                            // Convert to array and sort by invoice id desc
+                            this.groupedInvoices = Object.values(groups).sort((a, b) => b.id - a.id);
+                        }
                     } catch (error) {
                         console.error('Error loading requests:', error);
                     } finally {
