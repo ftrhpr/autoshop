@@ -533,15 +533,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         error_log("save_invoice: attached to existing part id={$it['db_id']} name={$name} without creating new");
                     }
                 } else {
-                    try {
-                        $ins = $pdo->prepare('INSERT INTO parts (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
-                        $ins->execute([$name, $it['description'] ?? null, floatval($it['price_part']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
-                        $newPartId = $pdo->lastInsertId();
-                        error_log("save_invoice: attempted to create part '$name' price={$it['price_part']}, newPartId={$newPartId}");
-                    } catch (PDOException $e) {
-                        error_log("save_invoice: FAILED to create part '$name' price={$it['price_part']}: " . $e->getMessage());
-                        $newPartId = null;
-                    }
+                    $ins = $pdo->prepare('INSERT INTO parts (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
+                    $ins->execute([$name, $it['description'] ?? null, floatval($it['price_part']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
+                    $newPartId = $pdo->lastInsertId();
+                    error_log("save_invoice: created part '$name' price={$it['price_part']}, newPartId={$newPartId}");
 
                     if ($newPartId) {
                         $it['db_id'] = $newPartId;
@@ -693,15 +688,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         error_log("save_invoice: attached to existing labor id={$it['db_id']} name={$name} without creating new");
                     }
                 } else {
-                    try {
-                        $ins = $pdo->prepare('INSERT INTO labors (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
-                        $ins->execute([$name, $it['description'] ?? null, floatval($it['price_svc']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
-                        $newLaborId = $pdo->lastInsertId();
-                        error_log("save_invoice: attempted to create labor '$name' price={$it['price_svc']}, newLaborId={$newLaborId}");
-                    } catch (PDOException $e) {
-                        error_log("save_invoice: FAILED to create labor '$name' price={$it['price_svc']}: " . $e->getMessage());
-                        $newLaborId = null;
-                    }
+                    $ins = $pdo->prepare('INSERT INTO labors (name, description, default_price, vehicle_make_model, created_by) VALUES (?, ?, ?, ?, ?)');
+                    $ins->execute([$name, $it['description'] ?? null, floatval($it['price_svc']), $vehicleMake !== '' ? trim($vehicleMake) : null, $_SESSION['user_id']]);
+                    $newLaborId = $pdo->lastInsertId();
+                    error_log("save_invoice: created labor '$name' price={$it['price_svc']}, newLaborId={$newLaborId}");
 
                     if ($newLaborId) {
                         $it['db_id'] = $newLaborId;
