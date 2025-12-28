@@ -345,25 +345,23 @@ try {
                             error_log("Invoice $invoiceId has " . count($items) . " items");
                             error_log("Looking for part: " . $currentRequest['part_name']);
 
-                            // Find and update the matching item in the invoice
-                            foreach ($items as &$item) {
-                                $itemName = trim($item['name'] ?? '');
-                                $partName = trim($currentRequest['part_name']);
-
+                            // Find and update all matching items in the invoice (avoid foreach-by-reference pitfalls)
+                            $partName = trim($currentRequest['part_name']);
+                            $updatedCount = 0;
+                            for ($i = 0, $cnt = count($items); $i < $cnt; $i++) {
+                                $itemName = trim($items[$i]['name'] ?? '');
                                 error_log("Comparing '$itemName' with '$partName'");
-
                                 if ($itemName === $partName) {
-                                    // Update the price regardless of current value
-                                    $oldPrice = $item['price_part'] ?? 'none';
-                                    $item['price_part'] = $price;
-                                    $item['notes'] = $notes;
-                                    $updated = true;
+                                    $oldPrice = $items[$i]['price_part'] ?? 'none';
+                                    $items[$i]['price_part'] = $price;
+                                    $items[$i]['notes'] = $notes;
+                                    $updatedCount++;
                                     error_log("Updated item: $itemName from $oldPrice to $price");
-                                    break;
+                                    // continue to update any other matching items
                                 }
                             }
 
-                            if ($updated) {
+                            if ($updatedCount > 0) {
                                 // Recalculate totals
                                 $partsTotal = 0;
                                 $serviceTotal = 0;
@@ -371,7 +369,8 @@ try {
                                 foreach ($items as $item) {
                                     $qty = floatval($item['qty'] ?? 1);
                                     $partPrice = floatval($item['price_part'] ?? 0);
-                                    $servicePrice = floatval($item['price_service'] ?? 0);
+                                    // Support both 'price_svc' (used elsewhere) and legacy 'price_service'
+                                    $servicePrice = floatval($item['price_svc'] ?? ($item['price_service'] ?? 0));
 
                                     $partsTotal += $partPrice * $qty;
                                     $serviceTotal += $servicePrice * $qty;
@@ -392,7 +391,7 @@ try {
                                     $invoiceId
                                 ]);
 
-                                error_log("Invoice updated: ID=$invoiceId, Parts Total=$partsTotal, Grand Total=$grandTotal");
+                                error_log("Invoice updated: ID=$invoiceId, Parts Total=$partsTotal, Grand Total=$grandTotal, items_count=" . count($items) . ", updated_count={$updatedCount}");
                             }
                         }
                     }
