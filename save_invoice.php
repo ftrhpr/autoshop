@@ -938,6 +938,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Check if this is a part item without a price (needs pricing)
                 $isPartWithoutPrice = $it['db_type'] !== 'labor' && (empty($it['price_part']) || floatval($it['price_part']) == 0);
 
+                error_log("Processing item: name='" . trim($it['name']) . "', db_type='" . ($it['db_type'] ?? 'null') . "', price_part='" . ($it['price_part'] ?? 'null') . "', isPartWithoutPrice=$isPartWithoutPrice");
+
                 if ($isPartWithoutPrice) {
 
                     $partName = trim($it['name']);
@@ -958,6 +960,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $vehicleModel,
                         $_SESSION['user_id']
                     ]);
+
+                    error_log("Created part request for '$partName' in invoice $invoice_id");
 
                     // Send notification to parts collection managers
                     $notificationMessage = "New part pricing request: {$partName} for invoice #{$invoice_id} ({$data['customer_name']} - {$data['plate_number']})";
