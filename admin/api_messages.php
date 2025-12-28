@@ -14,25 +14,31 @@ try {
     switch ($action) {
         case 'get_messages':
             // Get inbox and sent messages
-            $inbox_stmt = $pdo->prepare("
-                SELECT m.*, u.username as sender_name
-                FROM messages m
-                JOIN users u ON m.sender_id = u.id
-                WHERE m.recipient_id = ?
-                ORDER BY m.created_at DESC
-            ");
-            $inbox_stmt->execute([$user_id]);
-            $inbox = $inbox_stmt->fetchAll();
+            try {
+                $inbox_stmt = $pdo->prepare("
+                    SELECT m.*, u.username as sender_name
+                    FROM messages m
+                    JOIN users u ON m.sender_id = u.id
+                    WHERE m.recipient_id = ?
+                    ORDER BY m.created_at DESC
+                ");
+                $inbox_stmt->execute([$user_id]);
+                $inbox = $inbox_stmt->fetchAll();
 
-            $sent_stmt = $pdo->prepare("
-                SELECT m.*, u.username as recipient_name
-                FROM messages m
-                JOIN users u ON m.recipient_id = u.id
-                WHERE m.sender_id = ?
-                ORDER BY m.created_at DESC
-            ");
-            $sent_stmt->execute([$user_id]);
-            $sent = $sent_stmt->fetchAll();
+                $sent_stmt = $pdo->prepare("
+                    SELECT m.*, u.username as recipient_name
+                    FROM messages m
+                    JOIN users u ON m.recipient_id = u.id
+                    WHERE m.sender_id = ?
+                    ORDER BY m.created_at DESC
+                ");
+                $sent_stmt->execute([$user_id]);
+                $sent = $sent_stmt->fetchAll();
+            } catch (PDOException $e) {
+                // Table doesn't exist yet, return empty arrays
+                $inbox = [];
+                $sent = [];
+            }
 
             echo json_encode([
                 'success' => true,
@@ -53,20 +59,23 @@ try {
             }
 
             // Verify recipient exists and is allowed to receive messages
-            $recipient_check = $pdo->prepare("SELECT id FROM users WHERE id = ? AND role IN ('manager', 'user', 'parts_collection_manager')");
+            $recipient_check = $pdo->prepare("SELECT id FROM users WHERE id = ? AND role IN ('admin', 'manager', 'user', 'parts_collection_manager')");
             $recipient_check->execute([$recipient_id]);
             if (!$recipient_check->fetch()) {
                 echo json_encode(['success' => false, 'message' => 'არასწორი მიმღები']);
                 exit;
             }
 
-            $insert_stmt = $pdo->prepare("
-                INSERT INTO messages (sender_id, recipient_id, subject, body, created_at)
-                VALUES (?, ?, ?, ?, NOW())
-            ");
-            $insert_stmt->execute([$user_id, $recipient_id, $subject, $body]);
-
-            echo json_encode(['success' => true, 'message_id' => $pdo->lastInsertId()]);
+            try {
+                $insert_stmt = $pdo->prepare("
+                    INSERT INTO messages (sender_id, recipient_id, subject, body, created_at)
+                    VALUES (?, ?, ?, ?, NOW())
+                ");
+                $insert_stmt->execute([$user_id, $recipient_id, $subject, $body]);
+                echo json_encode(['success' => true, 'message_id' => $pdo->lastInsertId()]);
+            } catch (PDOException $e) {
+                echo json_encode(['success' => false, 'message' => 'შეტყობინების ცხრილი არ არსებობს. გთხოვთ, გაუშვათ მიგრაცია.']);
+            }
             break;
 
         case 'mark_read':
@@ -79,17 +88,20 @@ try {
             }
 
             // Verify the message belongs to current user
-            $check_stmt = $pdo->prepare("SELECT id FROM messages WHERE id = ? AND recipient_id = ?");
-            $check_stmt->execute([$message_id, $user_id]);
-            if (!$check_stmt->fetch()) {
-                echo json_encode(['success' => false, 'message' => 'შეტყობინება არ მოიძებნა']);
-                exit;
+            try {
+                $check_stmt = $pdo->prepare("SELECT id FROM messages WHERE id = ? AND recipient_id = ?");
+                $check_stmt->execute([$message_id, $user_id]);
+                if (!$check_stmt->fetch()) {
+                    echo json_encode(['success' => false, 'message' => 'შეტყობინება არ მოიძებნა']);
+                    exit;
+                }
+
+                $update_stmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?");
+                $update_stmt->execute([$message_id]);
+                echo json_encode(['success' => true]);
+            } catch (PDOException $e) {
+                echo json_encode(['success' => false, 'message' => 'შეტყობინების ცხრილი არ არსებობს.']);
             }
-
-            $update_stmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?");
-            $update_stmt->execute([$message_id]);
-
-            echo json_encode(['success' => true]);
             break;
 
         default:

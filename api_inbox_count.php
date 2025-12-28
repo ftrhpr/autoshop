@@ -13,6 +13,6 @@ try {
     $count = (int)$stmt->fetchColumn();
     echo json_encode(['success' => true, 'unread_count' => $count]);
 } catch (PDOException $e) {
-    // If table doesn't exist or other error, return zero and an error field
-    echo json_encode(['success' => false, 'error' => 'db_error', 'message' => $e->getMessage()]);
+    // If table doesn't exist or other error, return zero
+    echo json_encode(['success' => true, 'unread_count' => 0]);
 }

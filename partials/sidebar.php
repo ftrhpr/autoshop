@@ -26,7 +26,7 @@ $menu_sections = [
         ['label' => 'ავტომობილების მონაცემთა ბაზა', 'href' => $appRoot . '/admin/vehicles.php', 'icon' => 'vehicle-db', 'permission' => 'manage_vehicles'],
         ['label' => 'ნაწილები, სერვისები & ზეთები', 'href' => $appRoot . '/admin/labors_parts_pro.php', 'icon' => 'wrench', 'permission' => 'manage_prices'],
         ['label' => 'ნაწილების ფასების მოთხოვნები', 'href' => $appRoot . '/admin/parts_collection.php', 'icon' => 'clock', 'permission' => 'manage_part_pricing'],
-        ['label' => 'შეტყობინებები', 'href' => $appRoot . '/admin/inbox.php', 'icon' => 'message', 'badge_key' => 'inbox', 'permission' => 'send_messages'],
+        ['label' => 'შეტყობინებები', 'href' => $appRoot . '/admin/inbox.php', 'icon' => 'message', 'badge_key' => 'inbox'],
         ['label' => 'მომხმარებლები & წვდომა', 'icon' => 'user', 'permission' => 'manage_users', 'children' => [
             ['label' => 'მომხმარებლები', 'href' => $appRoot . '/admin/users.php', 'permission' => 'manage_users'],
             ['label' => 'როლები & უფლებები', 'href' => $appRoot . '/admin/permissions.php', 'permission' => 'manage_permissions']

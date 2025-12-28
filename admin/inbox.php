@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // Only allow managers and part collectors to access messaging
-$allowed_roles = ['manager', 'user', 'parts_collection_manager'];
+$allowed_roles = ['admin', 'manager', 'user', 'parts_collection_manager'];
 if (!in_array($_SESSION['role'], $allowed_roles)) {
     header('Location: ../index.php');
     exit;
@@ -19,7 +19,7 @@ $stmt->execute([$_SESSION['user_id']]);
 $current_user = $stmt->fetch();
 
 // Get list of users for messaging (managers and part collectors)
-$users_stmt = $pdo->prepare("SELECT id, username, role FROM users WHERE role IN ('manager', 'user', 'parts_collection_manager') AND id != ? ORDER BY role, username");
+$users_stmt = $pdo->prepare("SELECT id, username, role FROM users WHERE role IN ('admin', 'manager', 'user', 'parts_collection_manager') AND id != ? ORDER BY role, username");
 $users_stmt->execute([$_SESSION['user_id']]);
 $available_users = $users_stmt->fetchAll();
 
@@ -152,7 +152,7 @@ $available_users = $users_stmt->fetchAll();
                             <option value="">აირჩიეთ მიმღები</option>
                             <?php foreach ($available_users as $user): ?>
                                 <option value="<?php echo $user['id']; ?>">
-                                    <?php echo htmlspecialchars($user['username']); ?> (<?php echo $user['role'] === 'manager' ? 'მენეჯერი' : ($user['role'] === 'parts_collection_manager' ? 'ნაწილების მენეჯერი' : 'ნაწილების მკრებელი'); ?>)
+                                    <?php echo htmlspecialchars($user['username']); ?> (<?php echo $user['role'] === 'admin' ? 'ადმინისტრატორი' : ($user['role'] === 'manager' ? 'მენეჯერი' : ($user['role'] === 'parts_collection_manager' ? 'ნაწილების მენეჯერი' : 'ნაწილების მკრებელი')); ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>
