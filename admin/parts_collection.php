@@ -308,7 +308,7 @@ $pageTitle = 'Parts Pricing Hub';
                     </div>
 
                     <!-- Empty State -->
-                    <div x-show="!loadingRequests && groupedFilteredInvoices.length === 0" class="text-center py-12">
+                    <div x-show="!loadingRequests && safeGroupedFilteredInvoices.length === 0" class="text-center py-12">
                         <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-tools text-yellow-600 text-3xl"></i>
                         </div>
@@ -325,8 +325,8 @@ $pageTitle = 'Parts Pricing Hub';
                     </div>
 
                     <!-- Request Cards Grouped by Invoice -->
-                    <div x-show="groupedFilteredInvoices && groupedFilteredInvoices.length > 0">
-                        <div x-for="invoice in groupedFilteredInvoices" :key="invoice.id" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
+                    <template x-if="safeGroupedFilteredInvoices.length > 0">
+                        <div x-for="invoice in safeGroupedFilteredInvoices" :key="invoice.id" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
                         <div class="p-6">
                             <div class="flex items-start justify-between mb-4">
                                 <div>
@@ -389,8 +389,7 @@ $pageTitle = 'Parts Pricing Hub';
                             </div>
                         </div>
                     </div>
-                    </div>
-                </div>
+                    </template>
             </div>
 
             <!-- Completed View -->
@@ -556,6 +555,11 @@ $pageTitle = 'Parts Pricing Hub';
                 groupedFilteredInvoices: [],
                 stats: { pending: 0, in_progress: 0, completed: 0, completed_today: 0, avg_time: '2.3h' },
                 recentActivity: [],
+
+                // Computed
+                get safeGroupedFilteredInvoices() {
+                    return Array.isArray(this.groupedFilteredInvoices) ? this.groupedFilteredInvoices : [];
+                },
 
                 // Filters & Search
                 activeFilter: 'all',
