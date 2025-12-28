@@ -508,7 +508,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             // If still not identified but part price was provided and nothing found, prefer attaching to existing part by name (avoid duplicates), otherwise create new part
-            if (empty($it['db_id']) && !empty($it['price_part'])) {
+            if (empty($it['db_id']) && isset($it['price_part'])) {
                 // Try to find an existing part with exact name regardless of vehicle
                 $stmtExisting = $pdo->prepare("SELECT * FROM parts WHERE name = ? LIMIT 1");
                 $stmtExisting->execute([$name]);
@@ -659,7 +659,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             // If still not identified after search and we have a labor price, first try attaching to an existing labor by name, otherwise create a new labor entry
-            if (empty($it['db_id']) && !empty($it['price_svc'])) {
+            if (empty($it['db_id']) && isset($it['price_svc'])) {
                 // Try to find existing labor by exact name
                 $stmtExistingL = $pdo->prepare("SELECT * FROM labors WHERE name = ? LIMIT 1");
                 $stmtExistingL->execute([$name]);
