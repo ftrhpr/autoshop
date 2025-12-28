@@ -37,8 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $price = (float)($_POST['default_price'] ?? 0);
                 $vehicle = trim($_POST['vehicle_make_model'] ?? '');
                 if ($name === '') throw new Exception('Name is required');
+                $errors[] = "Attempting to add: name='$name', desc='$desc', price=$price, vehicle='$vehicle', table='$table', user=" . $_SESSION['user_id'];
                 $stmt = $pdo->prepare("INSERT INTO {$table} (name, description, default_price, created_by, vehicle_make_model) VALUES (?, ?, ?, ?, ?)");
                 $stmt->execute([$name, $desc, $price, $_SESSION['user_id'], $vehicle ?: NULL]);
+                $errors[] = "Insert successful, id=" . $pdo->lastInsertId();
                 $success = ucfirst($type) . ' created';
             } elseif ($action === 'edit') {
                 $id = (int)($_POST['id'] ?? 0);
