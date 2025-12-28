@@ -77,18 +77,18 @@ try {
                     LEFT JOIN users cb ON ppr.completed_by = cb.id
                 " . $whereClause . "
                     ORDER BY ppr.created_at DESC
-                    LIMIT ? OFFSET ?
                 ";
+
+                error_log("API list SQL: $sql");
+
                 $stmt = $pdo->prepare($sql);
-                $params[] = $limit;
-                $params[] = $offset;
                 $stmt->execute($params);
                 $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                error_log("API list: role=" . $_SESSION['role'] . ", status=$status, whereClause='$whereClause', params=" . json_encode($params) . ", total requests: " . count($requests));
+
                 // Get total count
                 $countStmt = $pdo->prepare("SELECT COUNT(*) FROM part_pricing_requests ppr {$whereClause}");
-                array_pop($params); // Remove limit
-                array_pop($params); // Remove offset
                 $countStmt->execute($params);
                 $total = $countStmt->fetchColumn();
 
