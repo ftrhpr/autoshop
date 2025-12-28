@@ -249,17 +249,17 @@ $pageTitle = 'Parts Pricing Hub';
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                         <div class="flex flex-wrap gap-2">
-                            <button @click="activeFilter = 'all'"
+                            <button @click="activeFilter = 'all'; updateGroupedFilteredInvoices()"
                                     :class="activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                     class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 All Requests
                             </button>
-                            <button @click="activeFilter = 'pending'"
+                            <button @click="activeFilter = 'pending'; updateGroupedFilteredInvoices()"
                                     :class="activeFilter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                     class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 <i class="fas fa-clock mr-2"></i>Pending
                             </button>
-                            <button @click="activeFilter = 'in_progress'"
+                            <button @click="activeFilter = 'in_progress'; updateGroupedFilteredInvoices()"
                                     :class="activeFilter === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-200'"
                                     class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 <i class="fas fa-spinner mr-2"></i>In Progress
@@ -268,11 +268,11 @@ $pageTitle = 'Parts Pricing Hub';
 
                         <div class="flex items-center space-x-4">
                             <div class="relative">
-                                <input x-model="searchQuery" type="text" placeholder="Search parts, invoices, customers..."
+                                <input x-model="searchQuery" @input="updateGroupedFilteredInvoices()" type="text" placeholder="Search parts, invoices, customers..."
                                        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                             </div>
-                            <select x-model="sortBy" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <select x-model="sortBy" @change="updateGroupedFilteredInvoices()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                                 <option value="created_at">Newest First</option>
                                 <option value="part_name">Part Name</option>
                                 <option value="customer_name">Customer</option>
@@ -325,7 +325,8 @@ $pageTitle = 'Parts Pricing Hub';
                     </div>
 
                     <!-- Request Cards Grouped by Invoice -->
-                    <div x-for="invoice in groupedFilteredInvoices" :key="invoice.id" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
+                    <div x-show="groupedFilteredInvoices && groupedFilteredInvoices.length > 0">
+                        <div x-for="invoice in groupedFilteredInvoices" :key="invoice.id" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
                         <div class="p-6">
                             <div class="flex items-start justify-between mb-4">
                                 <div>
@@ -387,6 +388,7 @@ $pageTitle = 'Parts Pricing Hub';
                                 </div>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -551,6 +553,7 @@ $pageTitle = 'Parts Pricing Hub';
                 requests: [],
                 completedRequests: [],
                 groupedInvoices: [],
+                groupedFilteredInvoices: [],
                 stats: { pending: 0, in_progress: 0, completed: 0, completed_today: 0, avg_time: '2.3h' },
                 recentActivity: [],
 
@@ -576,6 +579,11 @@ $pageTitle = 'Parts Pricing Hub';
 
                 // Computed
                 get filteredRequests() {
+                    // Ensure requests is an array
+                    if (!Array.isArray(this.requests)) {
+                        return [];
+                    }
+
                     let filtered = this.requests;
 
                     // Filter by status
@@ -612,9 +620,39 @@ $pageTitle = 'Parts Pricing Hub';
                     return filtered;
                 },
 
-                get groupedFilteredInvoices() {
+                // Methods
+                async init() {
+                    await this.loadData();
+                },
+
+                updateGroupedFilteredInvoices() {
+                    // Ensure we have valid data
+                    if (!Array.isArray(this.requests)) {
+                        this.groupedFilteredInvoices = [];
+                        return;
+                    }
+
+                    let filtered = this.requests;
+
+                    // Filter by status
+                    if (this.activeFilter !== 'all') {
+                        filtered = filtered.filter(r => r.status === this.activeFilter);
+                    }
+
+                    // Search
+                    if (this.searchQuery) {
+                        const query = this.searchQuery.toLowerCase();
+                        filtered = filtered.filter(r =>
+                            r.part_name.toLowerCase().includes(query) ||
+                            r.customer_name.toLowerCase().includes(query) ||
+                            r.plate_number.toLowerCase().includes(query) ||
+                            r.invoice_id.toString().includes(query)
+                        );
+                    }
+
+                    // Group the filtered requests
                     const groups = {};
-                    for (let request of this.filteredRequests) {
+                    for (let request of filtered) {
                         if (!groups[request.invoice_id]) {
                             groups[request.invoice_id] = {
                                 id: request.invoice_id,
@@ -627,13 +665,9 @@ $pageTitle = 'Parts Pricing Hub';
                         }
                         groups[request.invoice_id].requests.push(request);
                     }
-                    // Convert to array and sort by invoice id desc
-                    return Object.values(groups).sort((a, b) => b.id - a.id);
-                },
 
-                // Methods
-                async init() {
-                    await this.loadData();
+                    // Sort by invoice id desc
+                    this.groupedFilteredInvoices = Object.values(groups).sort((a, b) => b.id - a.id);
                 },
 
                 getPageTitle() {
@@ -698,6 +732,8 @@ $pageTitle = 'Parts Pricing Hub';
                             }
                             // Convert to array and sort by invoice id desc
                             this.groupedInvoices = Object.values(groups).sort((a, b) => b.id - a.id);
+                            // Also update the filtered version
+                            this.updateGroupedFilteredInvoices();
                         }
                     } catch (error) {
                         console.error('Error loading requests:', error);
