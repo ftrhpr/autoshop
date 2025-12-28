@@ -265,14 +265,18 @@ try {
             $notes = trim($data['notes'] ?? '');
 
             error_log("Update price request: ID=$requestId, Price=$price, Notes=$notes, User=" . $_SESSION['user_id']);
+            error_log("POST data: " . json_encode($_POST));
+            error_log("JSON data: " . json_encode($data));
 
             try {
                 $pdo->beginTransaction();
 
-                // Check if request exists and get its current state
-                $checkStmt = $pdo->prepare("SELECT status, assigned_to, part_name, invoice_id FROM part_pricing_requests WHERE id = ?");
+                // Check current request status
+                $checkStmt = $pdo->prepare("SELECT status, assigned_to, part_name FROM part_pricing_requests WHERE id = ?");
                 $checkStmt->execute([$requestId]);
                 $currentRequest = $checkStmt->fetch();
+
+                error_log("Current request: " . json_encode($currentRequest));
 
                 if (!$currentRequest) {
                     $pdo->rollBack();
@@ -280,50 +284,59 @@ try {
                     exit;
                 }
 
-                // Check permissions - allow if user is admin, or if request is assigned to them, or if they're a parts manager
-                $canUpdate = false;
-                if ($_SESSION['role'] === 'admin') {
-                    $canUpdate = true;
-                } elseif ($_SESSION['role'] === 'parts_collection_manager') {
-                    $canUpdate = true; // Parts managers can update any request
-                } elseif ($currentRequest['assigned_to'] == $_SESSION['user_id']) {
-                    $canUpdate = true; // User owns the request
-                }
-
-                if (!$canUpdate) {
-                    $pdo->rollBack();
-                    echo json_encode(['success' => false, 'message' => 'Permission denied']);
-                    exit;
-                }
-
-                // If request is pending, assign it to current user
+                // If request is pending, assign it to current user first
                 if ($currentRequest['status'] === 'pending') {
+                    error_log("Assigning pending request");
                     $assignStmt = $pdo->prepare("
                         UPDATE part_pricing_requests
                         SET assigned_to = ?, status = 'in_progress', updated_at = NOW()
-                        WHERE id = ?
+                        WHERE id = ? AND status = 'pending'
                     ");
                     $assignStmt->execute([$_SESSION['user_id'], $requestId]);
+                    error_log("Assign result: " . $assignStmt->rowCount() . " rows");
+                }
+                // If request is in_progress but not assigned, assign it
+                elseif ($currentRequest['status'] === 'in_progress' && $currentRequest['assigned_to'] == null) {
+                    error_log("Assigning unassigned in_progress request");
+                    $assignStmt = $pdo->prepare("
+                        UPDATE part_pricing_requests
+                        SET assigned_to = ?, updated_at = NOW()
+                        WHERE id = ? AND status = 'in_progress' AND assigned_to IS NULL
+                    ");
+                    $assignStmt->execute([$_SESSION['user_id'], $requestId]);
+                    error_log("Assign result: " . $assignStmt->rowCount() . " rows");
+                }
+                // If request is in_progress and assigned to someone else, check if it's assigned to current user
+                elseif ($currentRequest['status'] === 'in_progress' && $currentRequest['assigned_to'] != $_SESSION['user_id']) {
+                    error_log("Request assigned to different user");
+                    $pdo->rollBack();
+                    echo json_encode(['success' => false, 'message' => 'Request is already assigned to another user']);
+                    exit;
                 }
 
-                // Update the price
+                // Now update the price
+                error_log("Updating price");
                 $stmt = $pdo->prepare("
                     UPDATE part_pricing_requests
                     SET final_price = ?, notes = ?, updated_at = NOW()
-                    WHERE id = ?
+                    WHERE id = ? AND assigned_to = ? AND status = 'in_progress'
                 ");
-                $stmt->execute([$price, $notes, $requestId]);
+                $stmt->execute([$price, $notes, $requestId, $_SESSION['user_id']]);
 
                 $affectedRows = $stmt->rowCount();
                 error_log("Price update result: $affectedRows rows affected");
 
                 if ($affectedRows > 0) {
                     // Update the corresponding invoice with the new price
-                    if ($currentRequest['invoice_id']) {
-                        $invoiceId = $currentRequest['invoice_id'];
+                    $invoiceStmt = $pdo->prepare("SELECT invoice_id FROM part_pricing_requests WHERE id = ?");
+                    $invoiceStmt->execute([$requestId]);
+                    $pricingRequest = $invoiceStmt->fetch();
+
+                    if ($pricingRequest && $pricingRequest['invoice_id']) {
+                        $invoiceId = $pricingRequest['invoice_id'];
 
                         // Get current invoice items
-                        $invoiceQuery = $pdo->prepare("SELECT items FROM invoices WHERE id = ?");
+                        $invoiceQuery = $pdo->prepare("SELECT items, parts_total, service_total FROM invoices WHERE id = ?");
                         $invoiceQuery->execute([$invoiceId]);
                         $invoice = $invoiceQuery->fetch();
 
@@ -331,16 +344,23 @@ try {
                             $items = json_decode($invoice['items'], true) ?: [];
                             $updated = false;
 
+                            error_log("Invoice $invoiceId has " . count($items) . " items");
+                            error_log("Looking for part: " . $currentRequest['part_name']);
+
                             // Find and update the matching item in the invoice
                             foreach ($items as &$item) {
                                 $itemName = trim($item['name'] ?? '');
                                 $partName = trim($currentRequest['part_name']);
 
+                                error_log("Comparing '$itemName' with '$partName'");
+
                                 if ($itemName === $partName) {
+                                    // Update the price regardless of current value
+                                    $oldPrice = $item['price_part'] ?? 'none';
                                     $item['price_part'] = $price;
                                     $item['notes'] = $notes;
                                     $updated = true;
-                                    error_log("Updated invoice item: $itemName with price $price");
+                                    error_log("Updated item: $itemName from $oldPrice to $price");
                                     break;
                                 }
                             }
@@ -383,7 +403,7 @@ try {
                     echo json_encode(['success' => true, 'message' => 'Price updated successfully']);
                 } else {
                     $pdo->rollBack();
-                    echo json_encode(['success' => false, 'message' => 'Failed to update price']);
+                    echo json_encode(['success' => false, 'message' => 'Failed to update price - request may not be in correct state']);
                 }
             } catch (Exception $e) {
                 $pdo->rollBack();

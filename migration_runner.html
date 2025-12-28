@@ -44,10 +44,10 @@
             <p>Creates part_pricing_requests table and adds parts_collection_manager role for managing part pricing workflow.</p>
             <button onclick="runMigration('parts_collection')">Run Migration</button>
         </div>
-        <div class="migration pending" id="supplier-column-migration">
-            <h3>Add Supplier Column to Parts Collection</h3>
-            <p>Adds supplier column to part_pricing_requests table for tracking part suppliers/sources.</p>
-            <button onclick="runMigration('supplier_column')">Run Migration</button>
+        <div class="migration pending" id="vehicle-column-migration">
+            <h3>Add Vehicle Column to Parts/Labors</h3>
+            <p>Adds vehicle_make_model column to parts and labors tables for vehicle-specific pricing.</p>
+            <button onclick="runMigration('vehicle_column')">Run Migration</button>
         </div>
     </div>
 
@@ -75,6 +75,8 @@
                     response = await fetch('migrate_add_parts_collection_system.php');
                 } else if (type === 'supplier_column') {
                     response = await fetch('migrate_add_supplier_column.php');
+                } else if (type === 'vehicle_column') {
+                    response = await fetch('migrate_add_vehicle_column.php');
                 }
 
                 if (response.ok) {
