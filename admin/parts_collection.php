@@ -45,58 +45,13 @@ $pageTitle = 'Parts Pricing Hub';
         </div>
     </div>
 
-    <div class="min-h-screen flex">
-        <!-- Sidebar -->
-        <div class="w-64 bg-gradient-to-b from-blue-800 to-blue-900 text-white shadow-xl">
-            <div class="p-6">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-cogs text-xl"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold">Parts Hub</h2>
-                        <p class="text-sm text-blue-200">Pricing Management</p>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="mt-6 px-4">
-                <a href="#" @click="currentView = 'dashboard'"
-                   :class="currentView === 'dashboard' ? 'bg-blue-700 text-white' : 'text-blue-200 hover:text-white hover:bg-blue-700'"
-                   class="nav-link flex items-center px-4 py-3 rounded-lg mb-2 transition-colors">
-                    <i class="fas fa-tachometer-alt mr-3"></i>
-                    <span>Dashboard</span>
-                </a>
-
-                <a href="#" @click="currentView = 'requests'"
-                   :class="currentView === 'requests' ? 'bg-blue-700 text-white' : 'text-blue-200 hover:text-white hover:bg-blue-700'"
-                   class="nav-link flex items-center px-4 py-3 rounded-lg mb-2 transition-colors">
-                    <i class="fas fa-list-check mr-3"></i>
-                    <span>Active Requests</span>
-                    <span x-show="stats.pending > 0" class="ml-auto bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold"
-                          x-text="stats.pending"></span>
-                </a>
-
-                <a href="#" @click="currentView = 'completed'"
-                   :class="currentView === 'completed' ? 'bg-blue-700 text-white' : 'text-blue-200 hover:text-white hover:bg-blue-700'"
-                   class="nav-link flex items-center px-4 py-3 rounded-lg mb-2 transition-colors">
-                    <i class="fas fa-check-circle mr-3"></i>
-                    <span>Completed</span>
-                </a>
-
-                <div class="border-t border-blue-700 mt-6 pt-6">
-                    <a href="../logout.php" class="flex items-center px-4 py-3 text-blue-200 hover:text-white hover:bg-blue-700 rounded-lg transition-colors">
-                        <i class="fas fa-sign-out-alt mr-3"></i>
-                        <span>Logout</span>
-                    </a>
-                </div>
-            </nav>
-        </div>
+    <div class="min-h-screen bg-gray-50">
+        <?php include __DIR__ . '/../partials/sidebar.php'; ?>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
+        <div class="ml-64 p-6">
             <!-- Header -->
-            <header class="bg-white shadow-sm px-6 py-4 border-b">
+            <header class="bg-white shadow-sm -mx-6 -mt-6 px-6 py-4 border-b mb-6">
                 <div class="flex justify-between items-center">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900" x-text="getPageTitle()"></h1>
@@ -142,7 +97,7 @@ $pageTitle = 'Parts Pricing Hub';
             </header>
 
             <!-- Dashboard View -->
-            <div x-show="currentView === 'dashboard'" x-transition class="flex-1 p-6">
+            <div x-show="currentView === 'dashboard'" x-transition class="flex-1">
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -244,7 +199,7 @@ $pageTitle = 'Parts Pricing Hub';
             </div>
 
             <!-- Requests View -->
-            <div x-show="currentView === 'requests'" x-transition class="flex-1 p-6">
+            <div x-show="currentView === 'requests'" x-transition class="flex-1">
                 <!-- Filters and Search -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
@@ -404,7 +359,7 @@ $pageTitle = 'Parts Pricing Hub';
             </div>
 
             <!-- Completed View -->
-            <div x-show="currentView === 'completed'" x-transition class="flex-1 p-6">
+            <div x-show="currentView === 'completed'" x-transition class="flex-1">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div class="px-6 py-4 border-b border-gray-200">
                         <h2 class="text-lg font-semibold text-gray-900">Completed Pricing Requests</h2>
