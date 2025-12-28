@@ -52,10 +52,17 @@ $pageTitle = 'Parts Pricing Hub';
         <div class="ml-64 p-6">
             <!-- Header -->
             <header class="bg-white shadow-sm -mx-6 -mt-6 px-6 py-4 border-b mb-6">
+                <!-- Breadcrumb -->
+                <div class="flex items-center text-sm text-gray-500 mb-2">
+                    <a href="index.php" class="hover:text-blue-600">Dashboard</a>
+                    <i class="fas fa-chevron-right mx-2"></i>
+                    <span class="text-gray-900 font-medium">Parts Pricing Hub</span>
+                </div>
+
                 <div class="flex justify-between items-center">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900" x-text="getPageTitle()"></h1>
-                        <p class="text-sm text-gray-600 mt-1">Manage part pricing requests efficiently</p>
+                        <p class="text-sm text-gray-600 mt-1">Manage part pricing requests, track progress, and communicate with the team</p>
                     </div>
 
                     <div class="flex items-center space-x-4">
@@ -64,7 +71,7 @@ $pageTitle = 'Parts Pricing Hub';
                             <button @click="showBulkActions = !showBulkActions"
                                     class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                                 <i class="fas fa-ellipsis-h mr-2"></i>
-                                Actions
+                                Bulk Actions
                             </button>
 
                             <div x-show="showBulkActions" @click.away="showBulkActions = false"
@@ -80,8 +87,27 @@ $pageTitle = 'Parts Pricing Hub';
                             </div>
                         </div>
 
+                        <!-- View Switcher -->
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button @click="currentView = 'dashboard'"
+                                    :class="currentView === 'dashboard' ? 'bg-white shadow-sm' : 'text-gray-600'"
+                                    class="px-3 py-1 rounded text-sm font-medium transition-colors">
+                                <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                            </button>
+                            <button @click="currentView = 'requests'"
+                                    :class="currentView === 'requests' ? 'bg-white shadow-sm' : 'text-gray-600'"
+                                    class="px-3 py-1 rounded text-sm font-medium transition-colors">
+                                <i class="fas fa-list mr-1"></i>Requests
+                            </button>
+                            <button @click="currentView = 'completed'"
+                                    :class="currentView === 'completed' ? 'bg-white shadow-sm' : 'text-gray-600'"
+                                    class="px-3 py-1 rounded text-sm font-medium transition-colors">
+                                <i class="fas fa-check-circle mr-1"></i>Completed
+                            </button>
+                        </div>
+
                         <!-- Refresh Button -->
-                        <button @click="refreshData()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                        <button @click="refreshData()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title="Refresh Data">
                             <i class="fas fa-sync-alt" :class="{'fa-spin': loading}"></i>
                         </button>
 
@@ -100,7 +126,7 @@ $pageTitle = 'Parts Pricing Hub';
             <div x-show="currentView === 'dashboard'" x-transition class="flex-1">
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer" @click="currentView = 'requests'; activeFilter = 'pending'">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Pending Requests</p>
@@ -111,13 +137,14 @@ $pageTitle = 'Parts Pricing Hub';
                             </div>
                         </div>
                         <div class="mt-4">
-                            <div class="flex items-center text-sm">
-                                <span class="text-gray-500">Awaiting assignment</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Awaiting assignment</span>
+                                <span class="text-xs text-blue-600 hover:text-blue-800">View →</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer" @click="currentView = 'requests'; activeFilter = 'in_progress'">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600">In Progress</p>
@@ -128,13 +155,14 @@ $pageTitle = 'Parts Pricing Hub';
                             </div>
                         </div>
                         <div class="mt-4">
-                            <div class="flex items-center text-sm">
-                                <span class="text-gray-500">Being priced</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Being priced</span>
+                                <span class="text-xs text-blue-600 hover:text-blue-800">View →</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer" @click="currentView = 'completed'">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600">Completed Today</p>
@@ -145,8 +173,9 @@ $pageTitle = 'Parts Pricing Hub';
                             </div>
                         </div>
                         <div class="mt-4">
-                            <div class="flex items-center text-sm">
-                                <span class="text-gray-500">Finished pricing</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Finished pricing</span>
+                                <span class="text-xs text-blue-600 hover:text-blue-800">View →</span>
                             </div>
                         </div>
                     </div>
@@ -166,6 +195,52 @@ $pageTitle = 'Parts Pricing Hub';
                                 <span class="text-gray-500">From assignment to completion</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links to Related Pages -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Links</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <a href="labors_parts_pro.php" class="flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-all duration-200 group">
+                            <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-cogs text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">Parts & Labor Pricing</h3>
+                                <p class="text-sm text-gray-600">Manage prices database</p>
+                            </div>
+                        </a>
+
+                        <a href="customers.php" class="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg hover:from-green-100 hover:to-green-200 transition-all duration-200 group">
+                            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-users text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">Customer Database</h3>
+                                <p class="text-sm text-gray-600">View customer info</p>
+                            </div>
+                        </a>
+
+                        <a href="inbox.php" class="flex items-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg hover:from-purple-100 hover:to-purple-200 transition-all duration-200 group">
+                            <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-envelope text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">Messages</h3>
+                                <p class="text-sm text-gray-600">Communication hub</p>
+                            </div>
+                        </a>
+
+                        <a href="item_price_usage.php" class="flex items-center p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg hover:from-orange-100 hover:to-orange-200 transition-all duration-200 group">
+                            <div class="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-chart-bar text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">Price Analytics</h3>
+                                <p class="text-sm text-gray-600">Usage statistics</p>
+                            </div>
+                        </a>
                     </div>
                 </div>
 
@@ -196,10 +271,66 @@ $pageTitle = 'Parts Pricing Hub';
                         </div>
                     </div>
                 </div>
+
+                <!-- Quick Tips -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mt-8">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-lightbulb text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Quick Tips</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                                <div>
+                                    <p class="font-medium mb-1">📋 Bulk Actions</p>
+                                    <p>Select multiple requests to assign or complete them all at once.</p>
+                                </div>
+                                <div>
+                                    <p class="font-medium mb-1">🔍 Smart Search</p>
+                                    <p>Use the search bar to find requests by part name, invoice, or customer.</p>
+                                </div>
+                                <div>
+                                    <p class="font-medium mb-1">📊 Click Stats</p>
+                                    <p>Click on any stat card to quickly filter to that category of requests.</p>
+                                </div>
+                                <div>
+                                    <p class="font-medium mb-1">💬 Communication</p>
+                                    <p>Use the Messages page to communicate with team members about pricing.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Requests View -->
             <div x-show="currentView === 'requests'" x-transition class="flex-1">
+                <!-- Current Filter Summary -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-filter text-blue-600"></i>
+                                <span class="text-sm font-medium text-blue-900">
+                                    Showing <span x-text="filteredRequests.length"></span> of <span x-text="requests.length"></span> requests
+                                </span>
+                            </div>
+                            <div x-show="activeFilter !== 'all'" class="flex items-center space-x-2">
+                                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full" x-text="activeFilter.replace('_', ' ').toUpperCase()"></span>
+                            </div>
+                            <div x-show="searchQuery" class="flex items-center space-x-2">
+                                <i class="fas fa-search text-gray-500 text-xs"></i>
+                                <span class="text-xs text-gray-600">"{{ searchQuery }}"</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button @click="clearFilters()" class="text-xs text-blue-600 hover:text-blue-800 underline">
+                                Clear filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Filters and Search -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
@@ -239,12 +370,6 @@ $pageTitle = 'Parts Pricing Hub';
 
                 <!-- Requests List -->
                 <div class="space-y-4">
-                    <!-- Debug info -->
-                    <div class="bg-yellow-100 p-4 rounded">
-                        <p>Total requests loaded: <span x-text="requests.length"></span></p>
-                        <p>Filtered requests: <span x-text="filteredRequests.length"></span></p>
-                        <p>Active filter: <span x-text="activeFilter"></span></p>
-                    </div>
                     <!-- Bulk Selection Header -->
                     <div x-show="selectedRequests.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div class="flex items-center justify-between">
@@ -360,6 +485,27 @@ $pageTitle = 'Parts Pricing Hub';
 
             <!-- Completed View -->
             <div x-show="currentView === 'completed'" x-transition class="flex-1">
+                <!-- Completed Summary -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                                <span class="text-sm font-medium text-green-900">
+                                    <span x-text="completedRequests.length"></span> completed requests
+                                </span>
+                            </div>
+                            <div class="text-xs text-green-700">
+                                Successfully priced parts ready for invoicing
+                            </div>
+                        </div>
+                        <div class="text-sm text-green-700">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            Last 30 days
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div class="px-6 py-4 border-b border-gray-200">
                         <h2 class="text-lg font-semibold text-gray-900">Completed Pricing Requests</h2>
@@ -866,6 +1012,12 @@ $pageTitle = 'Parts Pricing Hub';
 
                 clearSelection() {
                     this.selectedRequests = [];
+                },
+
+                clearFilters() {
+                    this.activeFilter = 'all';
+                    this.searchQuery = '';
+                    this.sortBy = 'created_at';
                 },
 
                 async bulkAssign() {
