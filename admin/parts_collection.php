@@ -249,17 +249,17 @@ $pageTitle = 'Parts Pricing Hub';
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                         <div class="flex flex-wrap gap-2">
-                            <button @click="activeFilter = 'all'; updateGroupedFilteredInvoices()"
+                            <button @click="activeFilter = 'all'"
                                     :class="activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                     class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 All Requests
                             </button>
-                            <button @click="activeFilter = 'pending'; updateGroupedFilteredInvoices()"
+                            <button @click="activeFilter = 'pending'"
                                     :class="activeFilter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                     class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 <i class="fas fa-clock mr-2"></i>Pending
                             </button>
-                            <button @click="activeFilter = 'in_progress'; updateGroupedFilteredInvoices()"
+                            <button @click="activeFilter = 'in_progress'"
                                     :class="activeFilter === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-200'"
                                     class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 <i class="fas fa-spinner mr-2"></i>In Progress
@@ -268,11 +268,11 @@ $pageTitle = 'Parts Pricing Hub';
 
                         <div class="flex items-center space-x-4">
                             <div class="relative">
-                                <input x-model="searchQuery" @input="updateGroupedFilteredInvoices()" type="text" placeholder="Search parts, invoices, customers..."
+                                <input x-model="searchQuery" type="text" placeholder="Search parts, invoices, customers..."
                                        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                             </div>
-                            <select x-model="sortBy" @change="updateGroupedFilteredInvoices()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <select x-model="sortBy" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                                 <option value="created_at">Newest First</option>
                                 <option value="part_name">Part Name</option>
                                 <option value="customer_name">Customer</option>
@@ -284,6 +284,12 @@ $pageTitle = 'Parts Pricing Hub';
 
                 <!-- Requests List -->
                 <div class="space-y-4">
+                    <!-- Debug info -->
+                    <div class="bg-yellow-100 p-4 rounded">
+                        <p>Total requests loaded: <span x-text="requests.length"></span></p>
+                        <p>Filtered requests: <span x-text="filteredRequests.length"></span></p>
+                        <p>Active filter: <span x-text="activeFilter"></span></p>
+                    </div>
                     <!-- Bulk Selection Header -->
                     <div x-show="selectedRequests.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div class="flex items-center justify-between">
@@ -308,7 +314,7 @@ $pageTitle = 'Parts Pricing Hub';
                     </div>
 
                     <!-- Empty State -->
-                    <div x-show="!loadingRequests && safeGroupedFilteredInvoices.length === 0" class="text-center py-12">
+                    <div x-show="!loadingRequests && filteredRequests.length === 0" class="text-center py-12">
                         <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-tools text-yellow-600 text-3xl"></i>
                         </div>
@@ -324,72 +330,77 @@ $pageTitle = 'Parts Pricing Hub';
                         </div>
                     </div>
 
-                    <!-- Request Cards Grouped by Invoice -->
-                    <template x-if="safeGroupedFilteredInvoices.length > 0">
-                        <div x-for="invoice in safeGroupedFilteredInvoices" :key="invoice.id" class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow mb-6">
-                        <div class="p-6">
-                            <div class="flex items-start justify-between mb-4">
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900">Invoice #<span x-text="invoice.id"></span></h3>
-                                    <p class="text-sm text-gray-600 mt-1" x-text="invoice.customer_name"></p>
-                                    <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2">
-                                        <span><i class="fas fa-car mr-1"></i><span x-text="invoice.plate_number"></span></span>
-                                        <span><i class="fas fa-cogs mr-1"></i><span x-text="invoice.car_mark"></span></span>
+                    <!-- Request Cards grouped by invoice -->
+                    <template x-for="group in groupedRequests" :key="group.invoice_id">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                            <div class="p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" :checked="group.requests.every(r => selectedRequests.includes(r.id))" @change="toggleInvoiceSelection(group)" class="mr-2 w-4 h-4">
+                                            <button @click="toggleInvoiceExpanded(group.invoice_id)" class="p-2 rounded hover:bg-gray-100">
+                                                <i :class="isInvoiceExpanded(group.invoice_id) ? 'fas fa-chevron-down' : 'fas fa-chevron-right'" class="text-gray-600"></i>
+                                            </button>
+
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900">Invoice #<span x-text="group.invoice_id"></span> <span class="text-xs text-gray-500">(<span x-text="group.requests.length"></span> requests)</span></p>
+                                                <p class="text-sm text-gray-600" x-text="group.customer_name"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center space-x-2">
+                                        <button @click="assignAllForInvoice(group)" class="px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">Assign All</button>
+                                        <button @click="completeAllForInvoice(group)" class="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Complete All</button>
+                                        <button @click="window.open('view_invoice.php?id='+group.invoice_id,'_blank')" class="px-2 py-1 bg-gray-100 rounded text-sm">Open Invoice</button>
                                     </div>
                                 </div>
-                                <div class="text-right">
-                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                        <span x-text="invoice.requests.length"></span> part request(s)
-                                    </span>
-                                </div>
-                            </div>
 
-                            <!-- Parts in this invoice -->
-                            <div class="space-y-3">
-                                <div x-for="request in invoice.requests" :key="request.id" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex-1">
-                                            <h4 class="font-medium text-gray-900" x-text="request.part_name"></h4>
-                                            <p class="text-sm text-gray-600 mt-1" x-text="request.part_description || 'No description'"></p>
-                                            <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2">
-                                                <span><i class="fas fa-hashtag mr-1"></i>Qty: <span x-text="request.requested_quantity"></span></span>
-                                                <span><i class="fas fa-car mr-1"></i><span x-text="request.vehicle_make || 'N/A'"></span> <span x-text="request.vehicle_model || ''"></span></span>
+                                <!-- Collapsed preview (first item) -->
+                                <div x-show="!isInvoiceExpanded(group.invoice_id)" class="p-3 bg-gray-50 rounded mb-3">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div>
+                                                <div class="font-medium" x-text="group.requests[0].part_name"></div>
+                                                <div class="text-sm text-gray-500" x-text="group.requests[0].part_description || 'No description'"></div>
                                             </div>
                                         </div>
 
-                                        <!-- Status Badge -->
-                                        <div class="ml-4">
-                                            <span :class="getStatusBadgeClass(request.status)" class="px-3 py-1 rounded-full text-xs font-medium">
-                                                <i :class="getStatusIcon(request.status)" class="mr-1"></i>
-                                                <span x-text="getStatusText(request.status)"></span>
-                                            </span>
+                                        <div class="text-sm text-gray-500">
+                                            <span x-text="group.requests[0].requested_quantity"></span> pcs • <span x-text="group.requests[0].vehicle_make || 'N/A'"></span>
                                         </div>
-                                    </div>
-
-                                    <!-- Action buttons -->
-                                    <div class="mt-4 flex items-center justify-between">
-                                        <div class="flex space-x-2">
-                                            <button @click="viewRequest(request)" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                                                <i class="fas fa-eye mr-1"></i>View
-                                            </button>
-                                            <button @click="quickAssign(request)" x-show="request.status === 'pending'" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                                                <i class="fas fa-user-plus mr-1"></i>Assign
-                                            </button>
-                                            <button @click="completeRequest(request)" x-show="request.status === 'in_progress'" class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                                                <i class="fas fa-check mr-1"></i>Complete
-                                            </button>
-                                        </div>
-
-                                        <!-- Checkbox for bulk actions -->
-                                        <input :checked="selectedRequests.includes(request.id)"
-                                               @change="toggleSelection(request.id)"
-                                               type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
                                     </div>
                                 </div>
+
+                                <!-- Expanded list of requests -->
+                                <div x-show="isInvoiceExpanded(group.invoice_id)" class="space-y-2">
+                                    <template x-for="req in group.requests" :key="req.id">
+                                        <div class="flex items-start justify-between p-3 bg-gray-50 rounded">
+                                            <div class="flex items-start space-x-3">
+                                                <input type="checkbox" :checked="selectedRequests.includes(req.id)" @change="toggleSelection(req.id)" class="mt-1 w-4 h-4">
+                                                <div>
+                                                    <div class="font-medium" x-text="req.part_name"></div>
+                                                    <div class="text-sm text-gray-500" x-text="req.part_description || 'No description'"></div>
+                                                    <div class="text-sm text-gray-500">Qty: <span x-text="req.requested_quantity"></span> • <span x-text="req.vehicle_make || 'N/A'"></span> <span x-text="req.vehicle_model || ''"></span></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center space-x-3">
+                                                <span :class="getStatusBadgeClass(req.status) + ' px-2 py-1 rounded text-xs font-medium'">
+                                                    <i :class="getStatusIcon(req.status) + ' mr-1'"></i>
+                                                    <span x-text="getStatusText(req.status)"></span>
+                                                </span>
+                                                <button @click="viewRequest(req)" class="text-blue-600 px-2 py-1 rounded hover:bg-blue-50">View</button>
+                                                <button x-show="req.status === 'pending'" @click="quickAssign(req)" class="px-2 py-1 bg-blue-600 text-white rounded">Assign</button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
                             </div>
                         </div>
-                    </div>
                     </template>
+                </div>
             </div>
 
             <!-- Completed View -->
@@ -551,21 +562,16 @@ $pageTitle = 'Parts Pricing Hub';
                 // Data
                 requests: [],
                 completedRequests: [],
-                groupedInvoices: [],
-                groupedFilteredInvoices: [],
                 stats: { pending: 0, in_progress: 0, completed: 0, completed_today: 0, avg_time: '2.3h' },
                 recentActivity: [],
-
-                // Computed
-                get safeGroupedFilteredInvoices() {
-                    return Array.isArray(this.groupedFilteredInvoices) ? this.groupedFilteredInvoices : [];
-                },
 
                 // Filters & Search
                 activeFilter: 'all',
                 searchQuery: '',
                 sortBy: 'created_at',
                 selectedRequests: [],
+                // UI state for grouping
+                expandedInvoices: [],
 
                 // Forms
                 priceForm: {
@@ -583,11 +589,6 @@ $pageTitle = 'Parts Pricing Hub';
 
                 // Computed
                 get filteredRequests() {
-                    // Ensure requests is an array
-                    if (!Array.isArray(this.requests)) {
-                        return [];
-                    }
-
                     let filtered = this.requests;
 
                     // Filter by status
@@ -624,54 +625,32 @@ $pageTitle = 'Parts Pricing Hub';
                     return filtered;
                 },
 
-                // Methods
-                async init() {
-                    await this.loadData();
-                },
-
-                updateGroupedFilteredInvoices() {
-                    // Ensure we have valid data
-                    if (!Array.isArray(this.requests)) {
-                        this.groupedFilteredInvoices = [];
-                        return;
-                    }
-
-                    let filtered = this.requests;
-
-                    // Filter by status
-                    if (this.activeFilter !== 'all') {
-                        filtered = filtered.filter(r => r.status === this.activeFilter);
-                    }
-
-                    // Search
-                    if (this.searchQuery) {
-                        const query = this.searchQuery.toLowerCase();
-                        filtered = filtered.filter(r =>
-                            r.part_name.toLowerCase().includes(query) ||
-                            r.customer_name.toLowerCase().includes(query) ||
-                            r.plate_number.toLowerCase().includes(query) ||
-                            r.invoice_id.toString().includes(query)
-                        );
-                    }
-
-                    // Group the filtered requests
+                // Group requests by invoice for compact display
+                get groupedRequests() {
                     const groups = {};
-                    for (let request of filtered) {
-                        if (!groups[request.invoice_id]) {
-                            groups[request.invoice_id] = {
-                                id: request.invoice_id,
-                                customer_name: request.customer_name,
-                                plate_number: request.plate_number,
-                                car_mark: request.vehicle_make || request.car_mark,
-                                created_at: request.created_at,
+                    for (const r of this.filteredRequests) {
+                        const inv = r.invoice_id || 'no_invoice';
+                        if (!groups[inv]) {
+                            groups[inv] = {
+                                invoice_id: r.invoice_id,
+                                customer_name: r.customer_name,
+                                plate_number: r.plate_number,
+                                car_mark: r.car_mark,
+                                created_at: r.created_at,
                                 requests: []
                             };
                         }
-                        groups[request.invoice_id].requests.push(request);
+                        groups[inv].requests.push(r);
                     }
+                    // Convert to array and sort by newest invoice-created_at
+                    const arr = Object.values(groups);
+                    arr.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    return arr;
+                },
 
-                    // Sort by invoice id desc
-                    this.groupedFilteredInvoices = Object.values(groups).sort((a, b) => b.id - a.id);
+                // Methods
+                async init() {
+                    await this.loadData();
                 },
 
                 getPageTitle() {
@@ -719,25 +698,6 @@ $pageTitle = 'Parts Pricing Hub';
                         const data = await response.json();
                         if (data.success) {
                             this.requests = data.requests;
-                            // Group requests by invoice
-                            const groups = {};
-                            for (let request of this.requests) {
-                                if (!groups[request.invoice_id]) {
-                                    groups[request.invoice_id] = {
-                                        id: request.invoice_id,
-                                        customer_name: request.customer_name,
-                                        plate_number: request.plate_number,
-                                        car_mark: request.vehicle_make || request.car_mark,
-                                        created_at: request.created_at,
-                                        requests: []
-                                    };
-                                }
-                                groups[request.invoice_id].requests.push(request);
-                            }
-                            // Convert to array and sort by invoice id desc
-                            this.groupedInvoices = Object.values(groups).sort((a, b) => b.id - a.id);
-                            // Also update the filtered version
-                            this.updateGroupedFilteredInvoices();
                         }
                     } catch (error) {
                         console.error('Error loading requests:', error);
@@ -882,12 +842,70 @@ $pageTitle = 'Parts Pricing Hub';
                     }
                 },
 
+                // Invoice selection helpers
+                toggleInvoiceSelection(inv) {
+                    const ids = inv.requests.map(r => r.id);
+                    const allSelected = ids.every(id => this.selectedRequests.includes(id));
+                    if (allSelected) {
+                        // Deselect all
+                        this.selectedRequests = this.selectedRequests.filter(id => !ids.includes(id));
+                    } else {
+                        // Add missing ids
+                        this.selectedRequests = Array.from(new Set([...this.selectedRequests, ...ids]));
+                    }
+                },
+
                 // Bulk operations
                 toggleSelection(requestId) {
                     if (this.selectedRequests.includes(requestId)) {
                         this.selectedRequests = this.selectedRequests.filter(id => id !== requestId);
                     } else {
                         this.selectedRequests.push(requestId);
+                    }
+                },
+
+                // Invoice group helpers
+                isInvoiceExpanded(invId) {
+                    return this.expandedInvoices.includes(invId);
+                },
+
+                toggleInvoiceExpanded(invId) {
+                    if (this.isInvoiceExpanded(invId)) {
+                        this.expandedInvoices = this.expandedInvoices.filter(i => i !== invId);
+                    } else {
+                        this.expandedInvoices.push(invId);
+                    }
+                },
+
+                async assignAllForInvoice(inv) {
+                    const ids = inv.requests.map(r => r.id);
+                    this.loading = true;
+                    try {
+                        const promises = ids.map(id => fetch('api_part_pricing.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `action=assign&request_id=${id}` }));
+                        await Promise.all(promises);
+                        await Promise.all([this.loadRequests(), this.loadRecentActivity()]);
+                        this.showNotification(`Assigned ${ids.length} requests for invoice ${inv.invoice_id}`, 'success');
+                    } catch (error) {
+                        this.showNotification('Error assigning invoice requests', 'error');
+                        console.error('assignAllForInvoice error:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async completeAllForInvoice(inv) {
+                    const ids = inv.requests.map(r => r.id);
+                    this.loading = true;
+                    try {
+                        const promises = ids.map(id => fetch('api_part_pricing.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `action=complete&request_id=${id}` }));
+                        await Promise.all(promises);
+                        await Promise.all([this.loadRequests(), this.loadStats(), this.loadRecentActivity()]);
+                        this.showNotification(`Completed ${ids.length} requests for invoice ${inv.invoice_id}`, 'success');
+                    } catch (error) {
+                        this.showNotification('Error completing invoice requests', 'error');
+                        console.error('completeAllForInvoice error:', error);
+                    } finally {
+                        this.loading = false;
                     }
                 },
 
